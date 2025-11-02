@@ -1,3 +1,7 @@
+#!/bin/sh
+
+cp restart.sh "$HOME/vps-infra/restart.sh"
+
 HOST_IP="127.0.0.1"
 cat > docker-compose.yml << EOF
 services:

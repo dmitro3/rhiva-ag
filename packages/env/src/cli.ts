@@ -3,7 +3,6 @@ import { Command } from "commander";
 import { writeEnvTypes } from ".";
 
 const program = new Command();
-
 program
   .name("write-env-types")
   .description("Generate environment variable type definitions")
@@ -17,4 +16,4 @@ program
     writeEnvTypes(options);
   });
 
-program.parse();
+program.parse(process.argv);

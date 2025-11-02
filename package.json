@@ -20,9 +20,6 @@
     "tsup": "^8.5.0",
     "turbo": "^2.6.0"
   },
-  "resolutions": {
-    "@solana/kit": "^2.3.0"
-  },
   "peerDependencies": {
     "typescript": "^5.9.3"
   },

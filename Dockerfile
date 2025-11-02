@@ -52,3 +52,11 @@ CMD sh -c "bun x pm2-runtime start ecosystem.config.js"
 FROM runtime as trpc 
 WORKDIR /usr/src/app/servers/trpc
 CMD ["bun", "src/index.ts"]
+
+FROM runtime as cron 
+WORKDIR /usr/src/app/servers/cron
+CMD sh -c "bun src/schedules/index.ts & bun src/workers/index.ts"
+
+FROM runtime as mcp
+WORKDIR /usr/src/app/servers/mcp
+CMD sh -c "bun src/index.ts"

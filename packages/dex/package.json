@@ -21,7 +21,7 @@
     "@orca-so/whirlpools-core": "^2.0.0",
     "@raydium-io/raydium-sdk-v2": "^0.2.30-alpha",
     "@rhiva-ag/shared": "*",
-    "@saros-finance/dlmm-sdk": "^1.5.0",
+    "@saros-finance/dlmm-sdk": "^1.4.1",
     "@solana-program/token": "^0.7.0",
     "@solana/compat": "^4.0.0",
     "@solana/kit": "^2.3.0",

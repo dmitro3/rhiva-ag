@@ -1,6 +1,6 @@
 # syntax = docker/dockerfile:1.2
 
-FROM oven/bun:1.2.9 as base
+FROM oven/bun:latest as base
 
 ENV NODE_ENV="production"
 
@@ -24,8 +24,7 @@ COPY bun.lock ./bun.lock
 COPY package.json ./package.json
 
 # Run turbo prune for docker build
-RUN bun install turbo --global && \
-  bun x turbo prune @rhiva-ag/trpc @rhiva-ag/cron @rhiva-ag/mcp --docker
+RUN bun x turbo prune @rhiva-ag/trpc @rhiva-ag/cron @rhiva-ag/mcp --docker
 
 FROM base as builder
 WORKDIR /usr/src/app

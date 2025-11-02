@@ -20,16 +20,13 @@
     "codegen": "bun x @rhiva-ag/env",
     "dev": "bun run --watch src/index.ts"
   },
-  "peerDependencies": {
-    "ajv": "^8.12.0"
-  },
   "dependencies": {
     "@coingecko/coingecko-typescript": "^2.2.0",
     "@modelcontextprotocol/sdk": "^1.20.1",
     "@openai/agents": "^0.1.10",
     "@rhiva-ag/datasource": "*",
-    "@rhiva-ag/shared": "*",
     "@rhiva-ag/dex-api": "*",
+    "@rhiva-ag/shared": "*",
     "fastify": "^5.6.1",
     "fastify-mcp": "^2.0.8",
     "fs": "^0.0.1-security",

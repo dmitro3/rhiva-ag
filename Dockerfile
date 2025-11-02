@@ -47,11 +47,10 @@ ENV NODE_ENV=production
 
 FROM runtime as dev
 WORKDIR /usr/src/app
-RUN bun install pm2 drizzle-kit --global
 CMD sh -c "cd packages/datasource && \
   bun x drizzle-kit migrate && \
   cd ../../servers && \
-  bunx --bun pm2-runtime start ecosystem.config.js"
+  bun trpc/src/index.ts & bun cron/src/index.ts & bun cron/src/schedules/index.ts & bun cron/src/workers/index.ts"
 
 FROM runtime as trpc 
 WORKDIR /usr/src/app/servers/trpc

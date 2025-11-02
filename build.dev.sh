@@ -19,24 +19,24 @@ services:
       - "$HOME/vps-infra/.env"
     environment: 
       DATABASE_URL: \${APP_DATABASE_URL}
-  alloy:
-    image: grafana/alloy:latest
-    container_name: alloy 
-    volumes: 
-      - ./config.alloy:/etc/alloy/config.alloy
-      - /var/run/docker.sock:/var/run/docker.sock
-    ports: 
-      - "$HOST_IP:4317:4317"
-      - "$HOST_IP:4318:4318"
-      - "$HOST_IP:12345:12345"
-    command: run --server.http.listen-addr=$HOST_IP:12345 --storage.path=/var/lib/alloy/data /etc/alloy/config.alloy
-    networks:
-      - webnet
+  # alloy:
+  #   image: grafana/alloy:latest
+  #   container_name: alloy 
+  #   volumes: 
+  #     - ./config.alloy:/etc/alloy/config.alloy
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #   ports: 
+  #     - "$HOST_IP:4317:4317"
+  #     - "$HOST_IP:4318:4318"
+  #     - "$HOST_IP:12345:12345"
+  #   command: run --server.http.listen-addr=$HOST_IP:12345 --storage.path=/var/lib/alloy/data /etc/alloy/config.alloy
+  #   networks:
+  #     - webnet
 networks:
   webnet:
     driver: bridge
 EOF
 
-git pull
-sudo docker compose build
-sudo docker compose up -d --remove-orphans
+# git pull
+# sudo docker compose build
+# sudo docker compose up -d --remove-orphans

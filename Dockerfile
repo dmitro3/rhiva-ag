@@ -1,6 +1,6 @@
 # syntax = docker/dockerfile:1.2
 
-FROM oven/bun:latest as base
+FROM oven/bun:1.2.9 as base
 
 ENV NODE_ENV="production"
 

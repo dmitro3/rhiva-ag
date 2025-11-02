@@ -51,7 +51,7 @@ RUN bun install pm2 drizzle-kit --global
 CMD sh -c "cd packages/datasource && \
   bun x drizzle-kit migrate && \
   cd ../../servers && \
-  pm2-runtime start ecosystem.config.js"
+  bunx --bun pm2-runtime start ecosystem.config.js"
 
 FROM runtime as trpc 
 WORKDIR /usr/src/app/servers/trpc

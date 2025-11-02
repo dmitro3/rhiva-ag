@@ -24,7 +24,8 @@
     "@solana/kit": "^2.3.0"
   },
   "peerDependencies": {
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "commander": "^14.0.2"
   },
   "workspaces": [
     "packages/*",

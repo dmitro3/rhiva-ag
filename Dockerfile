@@ -47,7 +47,7 @@ ENV NODE_ENV=production
 
 FROM runtime as dev
 WORKDIR /usr/src/app/
-RUN bun add pm2 --global
+RUN bun add pm2@5.3.0 commander@2.20.3 --global
 CMD sh -c "cd packages/datasource && \
   bun x drizzle-kit migrate && \
   cd ../../servers && \

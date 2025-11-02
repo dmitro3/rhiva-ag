@@ -31,8 +31,7 @@ FROM base as builder
 WORKDIR /usr/src/app
 
 COPY --from=codegen /usr/src/app/out/json .
-RUN --mount=type=cache,target=/root/.bun/cache\
-    bun install --frozen-lockfile
+RUN bun install --frozen-lockfile
 
 COPY --from=codegen /usr/src/app/out/full . 
 COPY --from=codegen /usr/src/app/servers/ecosystem.config.js servers/ecosystem.config.js

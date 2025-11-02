@@ -46,7 +46,7 @@ ENV HOST="0.0.0.0"
 ENV NODE_ENV=production
 
 FROM runtime as dev
-WORKDIR /usr/src/app/servers
+WORKDIR /usr/src/app
 CMD sh -c "cd packages/datasource && \
   npx drizzle-kit migrate && \
   cd ../../servers && \

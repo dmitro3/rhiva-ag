@@ -49,7 +49,7 @@ FROM runtime as dev
 WORKDIR /usr/src/app
 RUN bun install pm2 drizzle-kit --global
 CMD sh -c "cd packages/datasource && \
-  drizzle-kit migrate && \
+  bun x drizzle-kit migrate && \
   cd ../../servers && \
   pm2-runtime start ecosystem.config.js"
 

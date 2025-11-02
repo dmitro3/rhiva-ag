@@ -37,6 +37,6 @@ networks:
     driver: bridge
 EOF
 
-# git pull
-# sudo docker compose build
-# sudo docker compose up -d --remove-orphans
+git pull
+sudo docker compose build
+sudo docker compose up -d --remove-orphans

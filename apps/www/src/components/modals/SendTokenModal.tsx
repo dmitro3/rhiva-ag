@@ -3,9 +3,9 @@ import { toast } from "react-toastify";
 import { MdClose } from "react-icons/md";
 import { number, object, string } from "yup";
 import { Field, Form, Formik } from "formik";
+import { logEvent } from "firebase/analytics";
 import { useEffect, useMemo, useState } from "react";
 import type { Token } from "@rhiva-ag/dex-api/jup/types";
-import { getAnalytics, logEvent } from "firebase/analytics";
 import { useConnection } from "@solana/wallet-adapter-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
@@ -21,6 +21,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { getWalletPNL } from "@/lib/get-tokens";
 import TokenInput from "../send-token/TokenInput";
 import TokenSelect from "../send-token/TokenSelect";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 export default function SendTokenModal(
   props: React.ComponentProps<typeof Dialog>,
@@ -53,6 +54,7 @@ export default function SendTokenModal(
 
 function SendTokenForm(props: React.ComponentProps<typeof Form>) {
   const trpc = useTRPC();
+  const analytics = useAnalytics();
   const { connection } = useConnection();
   const { isAuthenticated, user } = useAuth();
   const [token, setToken] = useState<Token & { balance: number }>();
@@ -64,7 +66,6 @@ function SendTokenForm(props: React.ComponentProps<typeof Form>) {
 
   const { mutateAsync } = useMutation(trpc.token.send.mutationOptions({}));
 
-  const analytics = useMemo(() => getAnalytics(), []);
   const tokens = useMemo(
     () => data?.tokens.filter((token) => token.balance > 0),
     [data],
@@ -101,10 +102,11 @@ function SendTokenForm(props: React.ComponentProps<typeof Form>) {
                 BigInt(values.amount) * BigInt(Math.pow(10, token.decimals)),
             };
             const signature = await mutateAsync(sendValues);
-            logEvent(analytics, "send_token_transaction", {
-              signature,
-              ...sendValues,
-            });
+            if (analytics)
+              logEvent(analytics, "send_token_transaction", {
+                signature,
+                ...sendValues,
+              });
             toast.success("🎉 Token sent successfully.");
           }
         }}

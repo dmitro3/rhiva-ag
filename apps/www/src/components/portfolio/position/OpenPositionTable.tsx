@@ -2,10 +2,10 @@ import ms from "ms";
 import { toast } from "react-toastify";
 import { MdMoreVert } from "react-icons/md";
 import { mapFilter } from "@rhiva-ag/shared";
+import { logEvent } from "firebase/analytics";
 import type { AppRouter } from "@rhiva-ag/trpc";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
-import { getAnalytics, logEvent } from "firebase/analytics";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 
@@ -14,6 +14,7 @@ import Pagination from "../Pagination";
 import PnLCardModal from "./PnLCardModal";
 import { useAuth } from "@/hooks/useAuth";
 import CopyButton from "@/components/CopyButton";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import { useTRPC, useTRPCClient } from "@/trpc.client";
 import PositionDetailModal from "./PositionDetailModal";
 import NativeOrUsdAndPercentage from "./NativeOrUsdAndPercentage";
@@ -33,6 +34,7 @@ export default function OpenPositionTable({
 }: OpenPositionTableProps) {
   const trpc = useTRPC();
   const { user } = useAuth();
+  const analytics = useAnalytics();
   const trpcClient = useTRPCClient();
 
   const itemsPerPage = useRef(5);
@@ -45,7 +47,6 @@ export default function OpenPositionTable({
     null,
   );
 
-  const analytic = useMemo(() => getAnalytics(), []);
   const dex = useMemo(() => searchParams.get("dex"), [searchParams]);
   const { data } = useQuery(
     trpc.position.list.queryOptions({
@@ -197,13 +198,14 @@ export default function OpenPositionTable({
       });
       if (result) {
         const { bundleId } = result;
-        logEvent(analytic, "position_closed", {
-          bundleId,
-          dex,
-        });
+        if (analytics)
+          logEvent(analytics, "position_closed", {
+            bundleId,
+            dex,
+          });
       }
     },
-    [closePosition, dex, analytic],
+    [closePosition, dex, analytics],
   );
   const onClaimRewards = useCallback(
     async (position: Position) => {
@@ -214,13 +216,14 @@ export default function OpenPositionTable({
       });
       if (result) {
         const { bundleId } = result;
-        logEvent(analytic, "rewards_claimed", {
-          bundleId,
-          dex: dex,
-        });
+        if (analytics)
+          logEvent(analytics, "rewards_claimed", {
+            bundleId,
+            dex: dex,
+          });
       }
     },
-    [claimRewards, dex, analytic],
+    [claimRewards, dex, analytics],
   );
 
   return (

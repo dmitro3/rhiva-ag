@@ -4,11 +4,11 @@ import { useMemo } from "react";
 import { number, object } from "yup";
 import { toast } from "react-toastify";
 import { PublicKey } from "@solana/web3.js";
+import { logEvent } from "firebase/analytics";
 import { NATIVE_MINT } from "@solana/spl-token";
 import { IoArrowBack } from "react-icons/io5";
 import type { Pair } from "@rhiva-ag/dex-api";
 import { Form, FormikContext, useFormik } from "formik";
-import { getAnalytics, logEvent } from "firebase/analytics";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useConnection } from "@solana/wallet-adapter-react";
 import { Dialog, DialogBackdrop, DialogPanel } from "@headlessui/react";
@@ -18,6 +18,7 @@ import { useAuth } from "@/hooks/useAuth";
 import DepositInput from "../DepositInput";
 import PriceRangeInput from "./PriceRangeInput";
 import PositionOverview from "../PositionOverview";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import { getPoolState } from "@/lib/web3/raydium-patch";
 
 type RaydiumOpenPositionProps = {
@@ -49,6 +50,7 @@ function RaydiumOpenPositionForm({
   ...props
 }: React.ComponentProps<typeof Form> & Pick<RaydiumOpenPositionProps, "pool">) {
   const trpc = useTRPC();
+  const analytics = useAnalytics();
   const { connection } = useConnection();
   const nativeMint = NATIVE_MINT.toBase58();
   const { isAuthenticated, user, signIn } = useAuth();
@@ -66,7 +68,6 @@ function RaydiumOpenPositionForm({
     queryFn: () => getPoolState(connection, new PublicKey(pool.address)),
   });
 
-  const analytic = useMemo(() => getAnalytics(), []);
   const curves = useMemo(() => [{ label: "Spot", value: "Spot" }], []);
   const balance = useMemo(
     () => (rawBalance ? rawBalance / Math.pow(10, 9) : 0),
@@ -133,12 +134,12 @@ function RaydiumOpenPositionForm({
         pair: pool.address,
       };
       const { bundleId } = await mutateAsync(createPositionValue);
-
-      logEvent(analytic, "position_opened", {
-        bundleId,
-        dex: "raydium",
-        ...createPositionValue,
-      });
+      if (analytics)
+        logEvent(analytics, "position_opened", {
+          bundleId,
+          dex: "raydium",
+          ...createPositionValue,
+        });
       toast.success("🎉 Position opened successfully");
     },
   });

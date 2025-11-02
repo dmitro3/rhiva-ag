@@ -6,11 +6,11 @@ import { PublicKey } from "@solana/web3.js";
 import { useCallback, useMemo } from "react";
 import type { Pair } from "@rhiva-ag/dex-api";
 import { IoArrowBack } from "react-icons/io5";
+import { logEvent } from "firebase/analytics";
 import { NATIVE_MINT } from "@solana/spl-token";
 import { POSITION_FEE } from "@meteora-ag/dlmm";
 import { Form, FormikContext, useFormik } from "formik";
 import { useConnection } from "@solana/wallet-adapter-react";
-import { getAnalytics, logEvent } from "firebase/analytics";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogBackdrop, DialogPanel } from "@headlessui/react";
 
@@ -20,6 +20,7 @@ import Image from "@/components/Image";
 import { useTRPC } from "@/trpc.client";
 import { useAuth } from "@/hooks/useAuth";
 import PriceRangeInput from "./PriceRangeInput";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import { getActiveBin } from "@/lib/web3/meteora-patch";
 
 type MeteoraOpenPositionProps = {
@@ -50,6 +51,7 @@ function MeteoraOpenPositionForm({
   ...props
 }: React.ComponentProps<typeof Form> & Pick<MeteoraOpenPositionProps, "pool">) {
   const trpc = useTRPC();
+  const analytics = useAnalytics();
   const { connection } = useConnection();
   const nativeMint = NATIVE_MINT.toBase58();
   const { user, isAuthenticated, signIn } = useAuth();
@@ -74,7 +76,6 @@ function MeteoraOpenPositionForm({
       ),
   });
 
-  const analytic = useMemo(() => getAnalytics(), []);
   const curves = useMemo(
     () => [
       { label: "Spot", value: "Spot" },
@@ -155,12 +156,12 @@ function MeteoraOpenPositionForm({
         slippage: user.settings.slippage * 100,
       };
       const { bundleId } = await mutateAsync(createPositionValue);
-
-      logEvent(analytic, "position_opened", {
-        bundleId,
-        dex: "meteora",
-        ...createPositionValue,
-      });
+      if (analytics)
+        logEvent(analytics, "position_opened", {
+          bundleId,
+          dex: "meteora",
+          ...createPositionValue,
+        });
       toast.success("🎉 Position opened successfully");
     },
   });

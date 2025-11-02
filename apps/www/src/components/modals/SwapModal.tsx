@@ -2,10 +2,10 @@
 import clsx from "clsx";
 import { toast } from "react-toastify";
 import { useMemo, useState } from "react";
+import { logEvent } from "firebase/analytics";
 import { useMutation } from "@tanstack/react-query";
 import { MdClose, MdSwapVert } from "react-icons/md";
 import { Form, FormikContext, useFormik } from "formik";
-import { getAnalytics, logEvent } from "firebase/analytics";
 import {
   Dialog,
   DialogBackdrop,
@@ -19,6 +19,7 @@ import { useAuth } from "@/hooks/useAuth";
 import type { Token } from "./SelectTokenModal";
 import SelectTokenModal from "./SelectTokenModal";
 import { DefaultToken } from "@/constants/tokens";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 type SwapModalProps = {
   modal?: boolean;
@@ -52,12 +53,12 @@ function SwapForm({
   ...props
 }: React.ComponentProps<typeof Form> & Pick<SwapModalProps, "tokens">) {
   const trpc = useTRPC();
+  const analytics = useAnalytics();
   const { isAuthenticated, signIn, user } = useAuth();
   const [showSelectInputTokenModal, setShowSelectInputTokenModal] =
     useState(false);
   const [showSelectOutputTokenModal, setShowSelectOutputTokenModal] =
     useState(false);
-  const analytics = useMemo(() => getAnalytics(), []);
 
   const { mutateAsync } = useMutation(trpc.token.swap.mutationOptions({}));
 
@@ -79,7 +80,8 @@ function SwapForm({
         outputDecimals: values.outputToken.decimals,
       };
       const bundleId = await mutateAsync(swapValue);
-      logEvent(analytics, "swap_transaction", { bundleId, ...swapValue });
+      if (analytics)
+        logEvent(analytics, "swap_transaction", { bundleId, ...swapValue });
 
       toast.success("🎉 Token swapped successfully.");
     },

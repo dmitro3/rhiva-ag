@@ -70,8 +70,9 @@ export default function TokenCard({
             </span>
             <Decimal
               value={
-                token.stats24h.buyOrganicVolume +
-                token.stats24h.sellOrganicVolume
+                token.stats24h.buyOrganicVolume ||
+                token.stats24h.sellOrganicVolume ||
+                0
               }
               intlArgs={compactCurrencyIntlArgs}
             />

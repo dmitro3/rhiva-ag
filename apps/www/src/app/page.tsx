@@ -14,7 +14,7 @@ export default async function Home() {
     queryKey: ["token", "toptrending"],
     queryFn: () =>
       dexApi.jup.token.list({
-        limit: 4,
+        limit: 8,
         timestamp: "1h",
         category: "toptrending",
       }),

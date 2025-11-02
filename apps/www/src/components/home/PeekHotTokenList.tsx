@@ -17,7 +17,7 @@ export default function PeekHotTokenList(props: PeekHotTokenList) {
     queryKey: ["token", "toptrending"],
     queryFn: () =>
       dexApi.jup.token.list({
-        limit: 4,
+        limit: 8,
         timestamp: "1h",
         category: "toptrending",
       }),
@@ -44,12 +44,19 @@ export default function PeekHotTokenList(props: PeekHotTokenList) {
         </Link>
       </div>
       <div className="grid grid-cols-1 gap-y-2 md:grid-cols-2 md:gap-4">
-        {data?.slice(0, 8).map((data) => (
-          <TokenCard
-            key={data.id}
-            token={data}
-          />
-        ))}
+        {data
+          ?.filter(
+            (token) =>
+              token.stats24h.buyOrganicVolume ||
+              token.stats24h.sellOrganicVolume,
+          )
+          .slice(0, 6)
+          .map((data) => (
+            <TokenCard
+              key={data.id}
+              token={data}
+            />
+          ))}
       </div>
     </section>
   );

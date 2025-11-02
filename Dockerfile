@@ -50,7 +50,7 @@ WORKDIR /usr/src/app
 CMD sh -c "cd packages/datasource && \
   npx drizzle-kit migrate && \
   cd ../../servers && \
-  npx pm2-runtime start ecosystem.config.js"
+  bun x pm2-runtime start ecosystem.config.js"
 
 FROM runtime as trpc 
 WORKDIR /usr/src/app/servers/trpc

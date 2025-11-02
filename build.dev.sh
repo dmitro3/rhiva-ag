@@ -10,8 +10,8 @@ services:
       - "8000:8000"
       - "8001:8001"
     restart: on-failure
-    depends_on:
-      - alloy
+    # depends_on:
+    #   - alloy
     networks:
       - webnet
     env_file: 
@@ -37,6 +37,6 @@ networks:
     driver: bridge
 EOF
 
-git pull
-sudo docker compose build
+git pull && \
+sudo docker compose build && \
 sudo docker compose up -d --remove-orphans

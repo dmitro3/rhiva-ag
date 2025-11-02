@@ -48,7 +48,7 @@ ENV NODE_ENV=production
 FROM runtime as dev
 WORKDIR /usr/src/app
 CMD sh -c "cd packages/datasource && \
-  npx drizzle-kit migrate && \
+  bun x drizzle-kit migrate && \
   cd ../../servers && \
   bun x pm2-runtime start ecosystem.config.js"
 

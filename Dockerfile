@@ -50,10 +50,10 @@ WORKDIR /usr/src/app
 RUN cd packages/datasource && \
   bun x drizzle-kit migrate
 WORKDIR /usr/src/app/servers
-CMD sh -c " bun trpc/src/index.ts & \
-  bun mcp/src/index.ts & \
-  bun cron/src/schedules/index.ts & \
-  bun cron/src/workers/index.ts && \
+CMD sh -c " bun ./trpc/src/index.ts & \
+  bun ./mcp/src/index.ts & \
+  bun ./cron/src/schedules/index.ts & \
+  bun ./cron/src/workers/index.ts && \
   wait"
 
 FROM runtime as trpc

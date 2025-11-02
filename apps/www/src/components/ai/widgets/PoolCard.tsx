@@ -17,7 +17,7 @@ type PoolCardProps = {
 
 export function PoolCard({ pool }: PoolCardProps) {
   const currencyIntl = useMemo(
-    () => new Intl.NumberFormat("us-US", currencyIntlArgs),
+    () => new Intl.NumberFormat("en-US", currencyIntlArgs),
     [],
   );
   const percentageIntl = useMemo(

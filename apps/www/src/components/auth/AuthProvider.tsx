@@ -97,7 +97,7 @@ export default withCookieProvider(function AuthProvider({
 
   const fetchServerUser = useCallback(async (user: FirebaseUser) => {
     const token = await user.getIdToken();
-    const { data } = await xior.post<User>("/api/auth/session", { token });
+    const { data } = await xior.post<User>("/api/auth/firebase/", { token });
     setUser(data);
     setIsAuthenticated(true);
 
@@ -118,7 +118,10 @@ export default withCookieProvider(function AuthProvider({
         .then(async ({ user }) => {
           fetchServerUser(user);
         })
-        .catch(console.error);
+        .catch((error) => {
+          console.error(error);
+          return Promise.reject(error);
+        });
     }
   }, [cookies.email, auth, fetchServerUser]);
 

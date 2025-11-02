@@ -5,23 +5,34 @@ import Image from "next/image";
 import { useMemo } from "react";
 import { object, string } from "yup";
 import { toast } from "react-toastify";
+import { FcGoogle } from "react-icons/fc";
 import { useCookies } from "react-cookie";
 import { Field, Form, Formik } from "formik";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { MdArrowForward, MdClose } from "react-icons/md";
 import type { safeAuthUserSchema } from "@rhiva-ag/trpc";
 import type { ActionCodeSettings } from "firebase/auth";
+import { BsFacebook, BsGithub, BsApple, BsXSquareFill } from "react-icons/bs";
 import { Dialog, DialogBackdrop, DialogPanel } from "@headlessui/react";
 import {
   getAuth,
   sendSignInLinkToEmail,
   signInWithPopup,
+  OAuthProvider,
+  TwitterAuthProvider,
+  GoogleAuthProvider,
+  FacebookAuthProvider,
+  GithubAuthProvider,
   type User,
-  type GoogleAuthProvider,
-  type FacebookAuthProvider,
 } from "firebase/auth";
 
 import Logo from "@/assets/logo-sm.png";
+
+class AppleAuthProvider extends OAuthProvider {
+  constructor() {
+    super("apple.com");
+  }
+}
 
 export type AuthModalProps = {
   onSignIn(user: User): Promise<z.infer<typeof safeAuthUserSchema>>;
@@ -30,7 +41,13 @@ export type AuthModalProps = {
 type AuthConnector = {
   name: string;
   icon: React.ElementType;
-  provider: typeof FacebookAuthProvider | typeof GoogleAuthProvider;
+  provider:
+    | typeof FacebookAuthProvider
+    | typeof GoogleAuthProvider
+    | typeof AppleAuthProvider
+    | typeof FacebookAuthProvider
+    | typeof TwitterAuthProvider
+    | typeof GithubAuthProvider;
 };
 
 export default function AuthModal({ onSignIn, ...props }: AuthModalProps) {
@@ -39,7 +56,41 @@ export default function AuthModal({ onSignIn, ...props }: AuthModalProps) {
   const [cookies, setCookie] = useCookies<"email", { email: string }>([
     "email",
   ]);
-  const authConnectors: AuthConnector[] = useMemo(() => [], []);
+  const authConnectors: AuthConnector[] = useMemo(
+    () => [
+      {
+        name: "Google",
+        icon: FcGoogle,
+        provider: GoogleAuthProvider,
+      },
+      {
+        name: "Apple",
+        icon: BsApple,
+        provider: AppleAuthProvider,
+      },
+      {
+        name: "Facebook",
+        icon: (props: React.ComponentProps<typeof BsFacebook>) => (
+          <BsFacebook
+            {...props}
+            color="#1877F2"
+          />
+        ),
+        provider: FacebookAuthProvider,
+      },
+      {
+        name: "X",
+        icon: BsXSquareFill,
+        provider: TwitterAuthProvider,
+      },
+      {
+        name: "Github",
+        icon: BsGithub,
+        provider: GithubAuthProvider,
+      },
+    ],
+    [],
+  );
 
   return (
     <Dialog
@@ -135,7 +186,6 @@ export default function AuthModal({ onSignIn, ...props }: AuthModalProps) {
                 </Form>
               )}
             </Formik>
-
             <div className="grid grid-cols-1 gap-2">
               {authConnectors.map((authConnector) => (
                 <button
@@ -144,6 +194,9 @@ export default function AuthModal({ onSignIn, ...props }: AuthModalProps) {
                   className="flex items-center space-x-2 border border-white/10 p-2 rounded-md"
                   onClick={async () => {
                     const provider = new authConnector.provider();
+                    provider.addScope("email");
+                    provider.addScope("name");
+
                     return signInWithPopup(auth, provider).then(({ user }) =>
                       onSignIn(user),
                     );
@@ -159,7 +212,7 @@ export default function AuthModal({ onSignIn, ...props }: AuthModalProps) {
                 <button
                   key={wallet.adapter.name}
                   type="button"
-                  className="flex items-center space-x-2 border border-white/10 p-2 rounded-md"
+                  className="flex items-center space-x-2 border border-white/10 p-2 rounded-md !hidden"
                   onClick={() => select(wallet.adapter.name)}
                 >
                   <Image

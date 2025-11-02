@@ -4,11 +4,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 type CopyButtonProps = {
   content: string;
+  copyIconAttrs?: React.ComponentProps<typeof MdContentCopy>;
 } & React.ComponentProps<"button">;
 
 export default function CopyButton({
   content,
   children,
+  copyIconAttrs,
   ...props
 }: React.PropsWithChildren<CopyButtonProps>) {
   const [copied, setCopied] = useState(false);
@@ -36,7 +38,10 @@ export default function CopyButton({
           });
         }}
       >
-        <MdContentCopy size={16} />
+        <MdContentCopy
+          size={16}
+          {...copyIconAttrs}
+        />
         {children}
       </button>
       {copied && (

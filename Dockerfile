@@ -50,15 +50,23 @@ WORKDIR /usr/src/app
 CMD sh -c "cd packages/datasource && \
   bun x drizzle-kit migrate && \
   cd ../../servers && \
-  bun trpc/src/index.ts & bun mcp/src/index.ts & bun cron/src/schedules/index.ts & bun cron/src/workers/index.ts"
+  bun trpc/src/index.ts & \
+  bun mcp/src/index.ts & \
+  bun cron/src/schedules/index.ts & \ 
+  bun cron/src/workers/index.ts && \
+  wait"
 
 FROM runtime as trpc 
 WORKDIR /usr/src/app/servers/trpc
 CMD ["bun", "src/index.ts"]
 
-FROM runtime as cron 
+FROM runtime as schedules 
 WORKDIR /usr/src/app/servers/cron
-CMD sh -c "bun src/schedules/index.ts & bun src/workers/index.ts"
+CMD sh -c "bun src/schedules/index.ts"
+
+FROM runtime as workers 
+WORKDIR /usr/src/app/servers/cron
+CMD sh -c "bun src/workers/index.ts"
 
 FROM runtime as mcp
 WORKDIR /usr/src/app/servers/mcp

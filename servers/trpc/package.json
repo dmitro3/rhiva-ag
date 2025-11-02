@@ -17,6 +17,9 @@
     "codegen": "bun x @rhiva-ag/env",
     "dev": "cp ../mcp/src/schema/agent.schema.ts ./src/routers/ai/messages/agent.schema-patch.ts && bun run --watch src/index.ts"
   },
+  "peerDependencies": {
+    "ajv": "^8.12.0"
+  },
   "dependencies": {
     "@coingecko/coingecko-typescript": "^2.2.0",
     "@fastify/cookie": "^11.0.2",

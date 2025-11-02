@@ -8,6 +8,7 @@ import { MdArrowBack, MdMenu } from "react-icons/md";
 import SideNav from "./SideNav";
 import HeaderAction from "./HeaderAction";
 import LogoSmall from "@/assets/logo-sm.png";
+import Link from "next/link";
 
 type HeaderProps = {
   canBack?: boolean;
@@ -41,13 +42,15 @@ export default function Header({ canBack, title, ...props }: HeaderProps) {
             <h1 className="uppercase text-lg font-bold">{title}</h1>
           ) : (
             <>
-              <Image
-                src={LogoSmall}
-                width={20}
-                height={20}
-                alt="Rhiva"
-                className="sm:hidden m-auto"
-              />
+              <Link href="/">
+                <Image
+                  src={LogoSmall}
+                  width={20}
+                  height={20}
+                  alt="Rhiva"
+                  className="sm:hidden m-auto"
+                />
+              </Link>
               <button
                 type="button"
                 className="sm:hidden"

@@ -56,7 +56,8 @@ export default function NavBar(props: React.ComponentProps<"div">) {
       )}
       onMouseLeave={() => toggleExpanded(false)}
     >
-      <div
+      <Link
+        href="/"
         className={clsx(
           "lt-xl:py-4 lt-sm:hidden xl:h-14",
           expanded ? "xl:pb-4" : "xl:py-4",
@@ -76,7 +77,7 @@ export default function NavBar(props: React.ComponentProps<"div">) {
           alt="Rhiva"
           className={clsx("lt-sm:hidden m-auto", expanded && "xl:hidden")}
         />
-      </div>
+      </Link>
 
       <nav className={clsx(props.className, "flex-1 flex sm:flex-col")}>
         <ul className="flex-1 flex sm:flex-col sm:space-y-4 sm:p-4">

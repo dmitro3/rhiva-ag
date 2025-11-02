@@ -20,6 +20,7 @@ export default function LegalModal() {
   const [, setCookie] = useCookies(["legal"]);
   const showLegalDialog = useMemo(
     () => searchParams.get("show_legal_dialog") != null,
+    [searchParams],
   );
 
   return (

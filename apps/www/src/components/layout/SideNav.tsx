@@ -79,14 +79,17 @@ export default function SideNav({
             "flex-1 flex flex-col lt-sm:space-y-12  lt-sm:bg-dark-secondary lt-sm:max-w-5/10",
           )}
         >
-          <div className="py-4 sm:hidden">
+          <Link
+            href="/"
+            className="py-4 sm:hidden"
+          >
             <Image
               src={Logo}
               width={156}
               height={61}
               alt="Rhiva"
             />
-          </div>
+          </Link>
 
           <nav className={clsx(props.className, "flex-1 flex flex-col")}>
             <ul className="flex-1 flex flex-col space-y-4 p-4 sm:items-center xl:items-start">

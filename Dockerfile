@@ -32,7 +32,7 @@ WORKDIR /usr/src/app
 
 COPY --from=codegen /usr/src/app/out/json .
 RUN --mount=type=cache,target=/root/.bun/cache\
-    bun install --frozen-lockfine
+    bun install --frozen-lockfile
 
 COPY --from=codegen /usr/src/app/out/full . 
 COPY --from=codegen /usr/src/app/servers/ecosystem.config.js servers/ecosystem.config.js
@@ -47,7 +47,10 @@ ENV NODE_ENV=production
 
 FROM runtime as dev
 WORKDIR /usr/src/app/servers
-CMD sh -c "bun x pm2-runtime start ecosystem.config.js"
+CMD sh -c "cd packages/datasource && \
+  bun x drizzle-kit migrate && \
+  cd ../../servers && \
+  bun x pm2-runtime start ecosystem.config.js"
 
 FROM runtime as trpc 
 WORKDIR /usr/src/app/servers/trpc

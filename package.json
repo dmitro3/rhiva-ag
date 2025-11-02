@@ -20,11 +20,7 @@
     "tsup": "^8.5.0",
     "turbo": "^2.6.0"
   },
-  "overrides": {
-    "commander": "^9.5.0"
-  },
   "resolutions": {
-    "commander": "^9.5.0",
     "@solana/kit": "^2.3.0"
   },
   "peerDependencies": {

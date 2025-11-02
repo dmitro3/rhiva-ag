@@ -294,7 +294,9 @@ export async function GET(request: NextRequest) {
                     >
                       Base Fee
                     </Text>
-                    <Text style={{ fontWeight: "bold" }}>{pool.baseFee}</Text>
+                    <Text style={{ fontWeight: "bold" }}>
+                      {percentageIntl.format(pool.baseFee)}
+                    </Text>
                   </div>
                   <div
                     style={{
@@ -309,7 +311,9 @@ export async function GET(request: NextRequest) {
                     >
                       Max Fee
                     </Text>
-                    <Text style={{ fontWeight: "bold" }}>{pool.maxFee}</Text>
+                    <Text style={{ fontWeight: "bold" }}>
+                      {percentageIntl.format(pool.maxFee)}
+                    </Text>
                   </div>
                 </div>
               </div>

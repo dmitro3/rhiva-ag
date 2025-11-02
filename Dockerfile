@@ -46,13 +46,10 @@ ENV NODE_ENV=production
 
 FROM runtime as dev
 WORKDIR /usr/src/app
-
-WORKDIR /usr/src/app/servers
-CMD sh -c " bun ./trpc/src/index.ts & \
-  bun ./mcp/src/index.ts & \
-  bun ./cron/src/schedules/index.ts & \
-  bun ./cron/src/workers/index.ts && \
-  wait"
+CMD sh -c "cd packages/datasource && \
+  bun x drizzle-kit migrate && \
+  cd ../../servers && \
+  bun x pm2-runtime start ecosystem.config.js"
 
 FROM runtime as trpc
 WORKDIR /usr/src/app/servers/trpc

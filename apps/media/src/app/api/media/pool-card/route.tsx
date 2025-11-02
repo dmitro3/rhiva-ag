@@ -82,6 +82,11 @@ export async function GET(request: NextRequest) {
     ...percentageIntlArgs,
     maximumFractionDigits: 4,
   });
+  const percentageWithoutSignIntl = Intl.NumberFormat("en-US", {
+    ...percentageIntlArgs,
+    signDisplay: "never",
+    maximumFractionDigits: 4,
+  });
   const currencyIntl = Intl.NumberFormat("en-US", {
     ...compactCurrencyIntlArgs,
     maximumFractionDigits: 2,
@@ -295,7 +300,7 @@ export async function GET(request: NextRequest) {
                       Base Fee
                     </Text>
                     <Text style={{ fontWeight: "bold" }}>
-                      {percentageIntl.format(pool.baseFee)}
+                      {percentageWithoutSignIntl.format(pool.baseFee)}
                     </Text>
                   </div>
                   <div
@@ -312,7 +317,7 @@ export async function GET(request: NextRequest) {
                       Max Fee
                     </Text>
                     <Text style={{ fontWeight: "bold" }}>
-                      {percentageIntl.format(pool.maxFee)}
+                      {percentageWithoutSignIntl.format(pool.maxFee)}
                     </Text>
                   </div>
                 </div>

@@ -29,8 +29,6 @@ RUN bun install turbo --global && \
 
 FROM base as builder
 WORKDIR /usr/src/app
-ARG DATABASE_URL
-ENV DATABASE_URL=${DATABASE_URL}
 
 COPY --from=codegen /usr/src/app/out/json .
 RUN --mount=type=cache,target=/root/.bun/cache\
@@ -48,11 +46,8 @@ ENV HOST="0.0.0.0"
 ENV NODE_ENV=production
 
 FROM runtime as dev
-WORKDIR /usr/src/app
-CMD sh -c "cd packages/datasource && \
-  bun x drizzle-kit migrate && \
-  cd ../../servers && \
-  bun x pm2-runtime start ecosystem.config.js"
+WORKDIR /usr/src/app/servers
+CMD sh -c "bun x pm2-runtime start ecosystem.config.js"
 
 FROM runtime as trpc 
 WORKDIR /usr/src/app/servers/trpc

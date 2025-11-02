@@ -351,7 +351,7 @@ export async function GET(request: NextRequest) {
                   boxShadow: "0 0 0 4px black, 0 0 0 5px #39FF14",
                 }}
               >
-                <Text as="span">Trade on Rhiva</Text>
+                <Text as="span">LP on Rhiva</Text>
                 <img
                   width={16}
                   height={16}

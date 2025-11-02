@@ -48,7 +48,7 @@ ENV NODE_ENV=production
 FROM runtime as dev
 WORKDIR /usr/src/app
 ARG DATABASE_URL
-ENV DATABASE_URL=${DATABASE_URL}
+ENV DATABASE_URL=${APP_DATABASE_URL}
 RUN cd packages/datasource && \
   bun x drizzle-kit migrate
 WORKDIR /usr/src/app/servers

@@ -29,7 +29,7 @@ export class DLMM {
         },
       }),
     );
-    this.meteora = new MeteoraDLMM();
     this.raydium = new RaydiumCLMM(raydium);
+    this.meteora = new MeteoraDLMM(connection);
   }
 }

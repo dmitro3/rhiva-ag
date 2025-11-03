@@ -1,9 +1,13 @@
 import BN from "bn.js";
 import Decimal from "decimal.js";
 import type { z } from "zod/mini";
-import DLMM from "@meteora-ag/dlmm";
 import type Dex from "@rhiva-ag/dex";
+import DLMM, { StrategyType } from "@meteora-ag/dlmm";
 import { getAssociatedTokenAddressSync, NATIVE_MINT } from "@solana/spl-token";
+import type {
+  positionSelectSchema,
+  settingsSelectSchema,
+} from "@rhiva-ag/datasource";
 import {
   getPreTokenBalanceForAccounts,
   getTokenBalanceChangesFromBatchSimulation,
@@ -15,7 +19,7 @@ import {
 } from "@rhiva-ag/shared";
 import {
   Keypair,
-  type PublicKey,
+  PublicKey,
   TransactionMessage,
   VersionedTransaction,
 } from "@solana/web3.js";
@@ -388,6 +392,49 @@ export const closePosition = async (
     transactions,
     swapV0Transactions,
     closePositionV0Transactions,
+    bundleSimulationResponse,
+    async execute() {
+      const { result } = await sender.sendBundle(transactions);
+      return result;
+    },
+  };
+};
+
+export const rebalancePosition = async ({
+  dex,
+  owner,
+  sender,
+  settings,
+  position: offchainPosition,
+}: {
+  dex: Dex;
+  owner: Keypair;
+  sender: SendTransaction;
+  position: z.infer<typeof positionSelectSchema>;
+  settings: z.infer<typeof settingsSelectSchema>;
+}) => {
+  const pool = await DLMM.create(
+    dex.connection,
+    new PublicKey(offchainPosition.pool.id),
+  );
+  const position = await pool.getPosition(new PublicKey(offchainPosition.id));
+
+  const transactions = await dex.dlmm.meteora.buildRebalancePosition({
+    pool,
+    owner,
+    position,
+    slippage: settings.slippage,
+    strategyType: StrategyType.Spot,
+  });
+
+  const bundleSimulationResponse = await sender.simulateBundle({
+    transactions,
+    skipSigVerify: true,
+    replaceRecentBlockhash: true,
+  });
+
+  return {
+    transactions,
     bundleSimulationResponse,
     async execute() {
       const { result } = await sender.sendBundle(transactions);

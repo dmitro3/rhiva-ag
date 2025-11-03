@@ -54,6 +54,11 @@ export const transactionWorkSchema = z
       type: z.literal("close-position"),
       dex: z.enum(["orca", "meteora", "raydium-clmm"]),
     }),
+    z.object({
+      bundleId: z.string(),
+      type: z.literal("rebalance-position"),
+      dex: z.enum(["orca", "meteora", "raydium-clmm"]),
+    }),
   ])
   .and(
     z.object({
@@ -76,7 +81,11 @@ export const createTransactionPipeline = ({
   connection: Connection;
   positionNftMint?: string;
   wallet: Pick<z.infer<typeof walletSelectSchema>, "id" | "user">;
-  type?: "closed-position" | "create-position" | "claim-reward";
+  type?:
+    | "closed-position"
+    | "create-position"
+    | "claim-reward"
+    | "rebalance-position";
 }) =>
   new Pipeline([
     new MeteoraProgramEventProcessor(connection).addConsumer((events, extra) =>

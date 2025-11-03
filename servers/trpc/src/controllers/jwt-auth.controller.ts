@@ -20,6 +20,7 @@ export class JWTAuthMiddleware extends AuthMiddleware {
         where: eq(users.id, decodedUser.user),
         with: {
           wallet: true,
+          settings: true,
         },
       });
 

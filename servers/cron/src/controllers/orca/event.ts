@@ -31,9 +31,15 @@ export const syncOrcaPositionStateFromEvent = async ({
   extra: { signature: string };
   events: ProgramEventType<Whirlpool>[];
   wallet: Pick<z.infer<typeof walletSelectSchema>, "id" | "user">;
-  type?: "closed-position" | "create-position" | "claim-reward";
+  type?:
+    | "closed-position"
+    | "create-position"
+    | "claim-reward"
+    | "rebalance-position";
 }) => {
   const results = [];
+  const isClosed =
+    type && ["closed-position", "rebalance-position"].includes(type);
 
   for (const event of events) {
     if (event.name === "liquidityIncreased" && type === "create-position") {
@@ -128,10 +134,7 @@ export const syncOrcaPositionStateFromEvent = async ({
 
         results.push(position);
       }
-    } else if (
-      event.name === "liquidityDecreased" &&
-      type === "closed-position"
-    ) {
+    } else if (isClosed && event.name === "liquidityDecreased") {
       const data = event.data;
       const positionId = data.position.toBase58();
       const position = await getPositionById(db, positionId);

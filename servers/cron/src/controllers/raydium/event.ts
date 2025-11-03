@@ -34,9 +34,15 @@ export const syncRaydiumPositionStateFromEvent = async ({
   events: ProgramEventType<AmmV3>[];
   positionNftMint: string | undefined;
   wallet: Pick<z.infer<typeof walletSelectSchema>, "id" | "user">;
-  type?: "closed-position" | "create-position" | "claim-reward";
+  type?:
+    | "closed-position"
+    | "create-position"
+    | "claim-reward"
+    | "rebalance-position";
 }) => {
   const results = [];
+  const isClosed =
+    type && ["closed-position", "rebalance-position"].includes(type);
 
   for (const event of events) {
     if (event.name === "createPersonalPositionEvent") {
@@ -131,10 +137,7 @@ export const syncRaydiumPositionStateFromEvent = async ({
 
         results.push(position);
       }
-    } else if (
-      event.name === "decreaseLiquidityEvent" &&
-      type === "closed-position"
-    ) {
+    } else if (isClosed && event.name === "decreaseLiquidityEvent") {
       const data = event.data;
       const positionId = data.positionNftMint.toBase58();
       const position = await getPositionById(db, positionId);

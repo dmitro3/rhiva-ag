@@ -1,5 +1,5 @@
-import type { SwapApi, SwapResponse } from "@jup-ag/api";
 import { mapFilter } from "@rhiva-ag/shared";
+import type { QuoteResponse, SwapApi } from "@jup-ag/api";
 import {
   AccountLayout,
   getAssociatedTokenAddressSync,
@@ -22,18 +22,18 @@ type SwapArgs = {
 
 export class Jupiter {
   constructor(
-    private readonly jupiter: SwapApi,
+    readonly jupiter: SwapApi,
     private readonly connection: Connection,
   ) {}
 
   buildSwap(args: SwapArgs & { skipSimulation?: false }): Promise<{
     transaction: VersionedTransaction;
     quote: { [k: string]: bigint };
-    swapResponse: SwapResponse;
+    quoteResponse: QuoteResponse;
   }>;
   buildSwap(args: SwapArgs & { skipSimulation: true }): Promise<{
     transaction: VersionedTransaction;
-    swapResponse: SwapResponse;
+    quoteResponse: QuoteResponse;
   }>;
   async buildSwap({
     owner,
@@ -70,7 +70,8 @@ export class Jupiter {
       Buffer.from(swapResponse.swapTransaction, "base64"),
     );
 
-    if (skipSimulation) return { transaction: swapV0Transaction, swapResponse };
+    if (skipSimulation)
+      return { transaction: swapV0Transaction, quoteResponse };
 
     const atas = [inputMintAta, outputMintAta];
     const preAccountInfos = await this.connection.getMultipleAccountsInfo(atas);
@@ -102,7 +103,7 @@ export class Jupiter {
     );
 
     return {
-      swapResponse,
+      quoteResponse,
       quote: tokenBalanceChanges,
       transaction: swapV0Transaction,
     };

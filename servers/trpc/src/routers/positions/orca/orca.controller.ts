@@ -1,9 +1,15 @@
 import Decimal from "decimal.js";
 import type { z } from "zod/mini";
 import type Dex from "@rhiva-ag/dex";
-import { fetchWhirlpool } from "@orca-so/whirlpools-client";
+import { tickIndexToPrice } from "@orca-so/whirlpools-core";
+import { openPositionInstructions } from "@orca-so/whirlpools";
+import { fetchPosition, fetchWhirlpool } from "@orca-so/whirlpools-client";
 import { fromLegacyPublicKey, fromVersionedTransaction } from "@solana/compat";
 import { getAssociatedTokenAddressSync, NATIVE_MINT } from "@solana/spl-token";
+import type {
+  positionSelectSchema,
+  settingsSelectSchema,
+} from "@rhiva-ag/datasource";
 import { isNative, mapFilter, type SendTransaction } from "@rhiva-ag/shared";
 import {
   getPreTokenBalanceForAccounts,
@@ -15,6 +21,7 @@ import {
   type VersionedTransaction,
 } from "@solana/web3.js";
 import {
+  address,
   appendTransactionMessageInstructions,
   createKeyPairSignerFromBytes,
   createTransactionMessage,
@@ -394,9 +401,161 @@ export const closePosition = async (
   });
 
   return {
+    pool,
     transactions,
     swapV0Transactions,
     closePositionV0Transaction,
+    bundleSimulationResponse,
+    async execute() {
+      const { result } = await sender.sendBundle(
+        transactions.map(getBase64EncodedWireTransaction),
+      );
+      return result;
+    },
+  };
+};
+
+export const rebalancePosition = async ({
+  dex,
+  owner,
+  sender,
+  settings,
+  position: offchainPosition,
+}: {
+  dex: Dex;
+  owner: Keypair;
+  sender: SendTransaction;
+  position: z.infer<typeof positionSelectSchema>;
+  settings: z.infer<typeof settingsSelectSchema>;
+}) => {
+  const signer = await createKeyPairSignerFromBytes(owner.secretKey);
+
+  const position = await fetchPosition(
+    dex.dlmm.rpc,
+    address(offchainPosition.id),
+  );
+
+  const { pool, swapV0Transactions, closePositionV0Transaction } =
+    await closePosition(dex, sender, owner, {
+      slippage: settings.slippage,
+      position: address(offchainPosition.id),
+      pair: address(offchainPosition.pool.id),
+
+      jitoConfig: { type: "dynamic", priorityFeePercentile: "75" },
+      tokenA: {
+        mint: address(offchainPosition.pool.baseToken.id),
+        owner: address(offchainPosition.pool.baseToken.tokenProgram),
+        decimals: offchainPosition.pool.baseToken.decimals,
+      },
+      tokenB: {
+        mint: address(offchainPosition.pool.quoteToken.id),
+        owner: address(offchainPosition.pool.quoteToken.tokenProgram),
+        decimals: offchainPosition.pool.quoteToken.decimals,
+      },
+    });
+  const transactions = [closePositionV0Transaction, ...swapV0Transactions];
+
+  const tokenAAta = getAssociatedTokenAddressSync(
+    new PublicKey(offchainPosition.pool.baseToken.id),
+    owner.publicKey,
+    false,
+    new PublicKey(offchainPosition.pool.baseToken.tokenProgram),
+  );
+  const tokenBAta = getAssociatedTokenAddressSync(
+    new PublicKey(offchainPosition.pool.quoteToken.id),
+    owner.publicKey,
+    false,
+    new PublicKey(offchainPosition.pool.quoteToken.tokenProgram),
+  );
+
+  const preTokenBalanceChanges = await getPreTokenBalanceForAccounts(
+    dex.connection,
+    [
+      isNative(offchainPosition.pool.baseToken.id)
+        ? owner.publicKey
+        : tokenAAta,
+      isNative(offchainPosition.pool.quoteToken.id)
+        ? owner.publicKey
+        : tokenBAta,
+    ],
+  );
+
+  const simulationResponse = await dex.dlmm.rpc
+    .simulateTransaction(
+      getBase64EncodedWireTransaction(closePositionV0Transaction),
+      {
+        encoding: "base64",
+        sigVerify: false,
+        replaceRecentBlockhash: true,
+        accounts: {
+          addresses: [
+            fromLegacyPublicKey(tokenAAta),
+            fromLegacyPublicKey(tokenBAta),
+          ],
+          encoding: "base64",
+        },
+      },
+    )
+    .send();
+
+  const tokenBalanceChanges = getTokenBalanceChangesFromSimulation(
+    simulationResponse.value as unknown as RpcSimulateTransactionResult,
+    preTokenBalanceChanges,
+  );
+  const tokenA =
+    tokenBalanceChanges[offchainPosition.pool.baseToken.id] || BigInt(0);
+  const tokenB =
+    tokenBalanceChanges[offchainPosition.pool.quoteToken.id] || BigInt(0);
+
+  const tickDelta = Math.ceil(
+    Math.abs(position.data.tickUpperIndex - position.data.tickLowerIndex),
+  );
+  const lowerPrice = tickIndexToPrice(
+    pool.data.tickCurrentIndex - tickDelta,
+    offchainPosition.pool.baseToken.decimals,
+    offchainPosition.pool.quoteToken.decimals,
+  );
+  const upperPrice = tickIndexToPrice(
+    pool.data.tickCurrentIndex + tickDelta,
+    offchainPosition.pool.baseToken.decimals,
+    offchainPosition.pool.quoteToken.decimals,
+  );
+
+  const { instructions } = await openPositionInstructions(
+    dex.dlmm.rpc,
+    address(offchainPosition.pool.id),
+    { tokenA, tokenB },
+    lowerPrice,
+    upperPrice,
+    settings.slippage,
+    signer,
+  );
+
+  const { value: recentBlockhash } = await dex.dlmm.rpc
+    .getLatestBlockhash()
+    .send();
+
+  const createPositionV0Message = pipe(
+    createTransactionMessage({ version: 0 }),
+    (tx) =>
+      setTransactionMessageFeePayer(fromLegacyPublicKey(owner.publicKey), tx),
+    (tx) => setTransactionMessageLifetimeUsingBlockhash(recentBlockhash, tx),
+    (tx) => appendTransactionMessageInstructions(instructions, tx),
+  );
+
+  const transaction: Transaction = await signTransactionMessageWithSigners(
+    createPositionV0Message,
+  );
+  transactions.push(transaction);
+
+  const bundleSimulationResponse = await sender.simulateBundle({
+    skipSigVerify: true,
+    replaceRecentBlockhash: true,
+    transactions: transactions.map(getBase64EncodedWireTransaction),
+  });
+
+  return {
+    transactions,
     bundleSimulationResponse,
     async execute() {
       const { result } = await sender.sendBundle(

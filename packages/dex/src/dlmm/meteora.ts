@@ -15,6 +15,8 @@ import {
 } from "@solana/web3.js";
 
 export class MeteoraDLMM {
+  constructor(private readonly connection: Connection) {}
+
   readonly buildCreatePosition = async ({
     priceChanges,
     position,
@@ -140,7 +142,6 @@ export class MeteoraDLMM {
     pool,
     owner,
     position,
-    connection,
     strategyType,
     slippage,
   }: {
@@ -148,7 +149,6 @@ export class MeteoraDLMM {
     owner: Keypair;
     slippage: number;
     position: LbPosition;
-    connection: Connection;
     strategyType: StrategyType;
   }) => {
     const simulationResponse =
@@ -170,7 +170,7 @@ export class MeteoraDLMM {
       );
     const transactions = [];
     const { blockhash: recentBlockhash } =
-      await connection.getLatestBlockhash();
+      await this.connection.getLatestBlockhash();
 
     if (initBinArrayInstructions.length > 0)
       transactions.push(

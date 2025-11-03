@@ -2,6 +2,7 @@ import type z from "zod";
 import type {
   userSelectSchema,
   walletSelectSchema,
+  settingsSelectSchema,
 } from "@rhiva-ag/datasource";
 
 export type User = Omit<
@@ -14,4 +15,7 @@ export type User = Omit<
   | "todayXp"
   | "totalUsers"
   | "rank"
-> & { wallet: z.infer<typeof walletSelectSchema> };
+> & {
+  wallet: z.infer<typeof walletSelectSchema>;
+  settings: z.infer<typeof settingsSelectSchema>;
+};

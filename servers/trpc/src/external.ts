@@ -26,10 +26,17 @@ export {
 } from "./routers/positions/raydium/raydium.schema";
 
 export {
-  createPosition as createOrcaPosition,
+  closePosition as closeMeteoraPosition,
+  createPosition as createMeteoraPosition,
+  rebalancePosition as rebalanceMeteoraPosition,
+} from "./routers/positions/meteora/meteora.controller";
+export {
   closePosition as closeOrcaPosition,
+  createPosition as createOrcaPosition,
+  rebalancePosition as rebalanceOrcaPosition,
 } from "./routers/positions/orca/orca.controller";
 export {
-  createPosition as createRaydiumPosition,
   closePosition as closeRaydiumPosition,
+  createPosition as createRaydiumPosition,
+  rebalancePosition as rabalanceRaydiumPosition,
 } from "./routers/positions/raydium/raydium.controller";

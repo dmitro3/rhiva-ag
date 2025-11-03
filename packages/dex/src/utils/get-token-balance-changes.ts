@@ -1,5 +1,10 @@
 import { getTokenDecoder } from "@solana-program/token";
-import { isSystemProgram, isTokenProgram, mapFilter } from "@rhiva-ag/shared";
+import {
+  isNative,
+  isSystemProgram,
+  isTokenProgram,
+  mapFilter,
+} from "@rhiva-ag/shared";
 import { AccountLayout, NATIVE_MINT, type RawAccount } from "@solana/spl-token";
 import type {
   Address,
@@ -9,7 +14,7 @@ import type {
 } from "@solana/kit";
 import {
   Connection,
-  type PublicKey,
+  PublicKey,
   type SimulatedTransactionResponse,
 } from "@solana/web3.js";
 
@@ -100,10 +105,15 @@ export async function getPreTokenBalanceForAccounts(
       accounts as PublicKey[],
     );
     return Object.fromEntries(
-      mapFilter(accountInfos, (accountInfo) => {
+      mapFilter(accountInfos, (accountInfo, index) => {
+        const pubkey = accounts[index];
         if (accountInfo) {
-          const account = AccountLayout.decode(accountInfo.data);
-          return [account.mint.toBase58(), account.amount];
+          if (pubkey && isNative(accountInfo.owner))
+            return [new PublicKey(pubkey).toBase58(), accountInfo.lamports];
+          else {
+            const account = AccountLayout.decode(accountInfo.data);
+            return [account.mint.toBase58(), account.amount];
+          }
         }
 
         return null;

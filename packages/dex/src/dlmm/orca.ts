@@ -2,9 +2,9 @@ import { tickIndexToPrice } from "@orca-so/whirlpools-core";
 import type { Whirlpool } from "@orca-so/whirlpools-client";
 import {
   closePositionInstructions,
+  openPositionInstructions,
   harvestPositionInstructions,
   openFullRangePositionInstructions,
-  openPositionInstructions,
 } from "@orca-so/whirlpools";
 import type {
   Account,

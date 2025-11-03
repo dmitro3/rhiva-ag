@@ -3,28 +3,34 @@ import assert from "assert";
 import Decimal from "decimal.js";
 import type { z } from "zod/mini";
 import type Dex from "@rhiva-ag/dex";
+import { getAssociatedTokenAddressSync, NATIVE_MINT } from "@solana/spl-token";
+import type {
+  positionSelectSchema,
+  settingsSelectSchema,
+} from "@rhiva-ag/datasource";
 import {
   batchSimulateTransactions,
   isNative,
   type SendTransaction,
 } from "@rhiva-ag/shared";
-import { getAssociatedTokenAddressSync, NATIVE_MINT } from "@solana/spl-token";
 import {
-  CLMM_PROGRAM_ID,
-  getPdaPersonalPositionAddress,
-  PositionInfoLayout,
-  type ApiV3PoolInfoConcentratedItem,
-} from "@raydium-io/raydium-sdk-v2";
+  PublicKey,
+  type Keypair,
+  type VersionedTransaction,
+} from "@solana/web3.js";
 import {
   getPreTokenBalanceForAccounts,
   getTokenBalanceChangesFromBatchSimulation,
   getTokenBalanceChangesFromSimulation,
 } from "@rhiva-ag/dex";
 import {
-  type Keypair,
-  PublicKey,
-  type VersionedTransaction,
-} from "@solana/web3.js";
+  CLMM_PROGRAM_ID,
+  getPdaPersonalPositionAddress,
+  PositionInfoLayout,
+  TickUtils,
+  TxVersion,
+  type ApiV3PoolInfoConcentratedItem,
+} from "@raydium-io/raydium-sdk-v2";
 
 import type {
   raydiumClaimRewardSchema,
@@ -273,9 +279,9 @@ export const closePosition = async (
   assert(accountInfo, "position not found.");
 
   const position = PositionInfoLayout.decode(accountInfo.data);
-  const [poolInfo] = await dex.dlmm.raydium.raydium.api.fetchPoolById({
+  const [poolInfo] = (await dex.dlmm.raydium.raydium.api.fetchPoolById({
     ids: pair.toBase58(),
-  });
+  })) as ApiV3PoolInfoConcentratedItem[];
 
   assert(poolInfo, "pool not found.");
 
@@ -294,6 +300,7 @@ export const closePosition = async (
   const { transaction: closePositionV0Transaction } = await builder.buildV0();
 
   const swapV0Transactions = [];
+  let nativeAmount = new BN(0);
 
   if (swapToNative) {
     const tokenAAta = getAssociatedTokenAddressSync(
@@ -339,14 +346,20 @@ export const closePosition = async (
       if (!isNative(token.address)) {
         const quoteAmount = tokenBalanceChanges[token.address] ?? BigInt(0);
         if (quoteAmount > BigInt(0)) {
-          const { transaction } = await dex.swap.jupiter.buildSwap({
-            slippage,
-            skipSimulation: true,
-            owner: owner.publicKey,
-            outputMint: NATIVE_MINT,
-            amount: quoteAmount.toString(),
-            inputMint: new PublicKey(token.address),
-          });
+          const { transaction, quoteResponse } =
+            await dex.swap.jupiter.buildSwap({
+              slippage,
+              skipSimulation: true,
+              owner: owner.publicKey,
+              outputMint: NATIVE_MINT,
+              amount: quoteAmount.toString(),
+              inputMint: new PublicKey(token.address),
+            });
+          nativeAmount = nativeAmount.add(new BN(quoteResponse.outAmount));
+          if (quoteResponse.platformFee?.amount)
+            nativeAmount = nativeAmount.sub(
+              new BN(quoteResponse.platformFee.amount),
+            );
 
           swapV0Transactions.push(transaction);
         }
@@ -364,9 +377,123 @@ export const closePosition = async (
   });
 
   return {
+    position,
+    poolInfo,
     transactions,
+    nativeAmount,
     closePositionV0Transaction,
     swapV0Transactions,
+    bundleSimulationResponse,
+    async execute() {
+      const { result } = await sender.sendBundle(transactions);
+      return result;
+    },
+  };
+};
+
+export const rebalancePosition = async ({
+  dex,
+  sender,
+  owner,
+  settings,
+  position: offchainPosition,
+}: {
+  dex: Dex;
+  owner: Keypair;
+  sender: SendTransaction;
+  position: z.infer<typeof positionSelectSchema>;
+  settings: z.infer<typeof settingsSelectSchema>;
+}) => {
+  const { poolInfo, swapV0Transactions, closePositionV0Transaction, position } =
+    await closePosition(dex, owner, sender, {
+      position: new PublicKey(offchainPosition.id),
+      pair: new PublicKey(offchainPosition.pool.id),
+      slippage: settings.slippage,
+      jitoConfig: { type: "dynamic", priorityFeePercentile: "75" },
+    });
+  const transactions = [closePositionV0Transaction, ...swapV0Transactions];
+
+  const tokenAAta = getAssociatedTokenAddressSync(
+    new PublicKey(poolInfo.mintA.address),
+    owner.publicKey,
+    false,
+    new PublicKey(poolInfo.mintA.programId),
+  );
+  const tokenBAta = getAssociatedTokenAddressSync(
+    new PublicKey(poolInfo.mintB.address),
+    owner.publicKey,
+    false,
+    new PublicKey(poolInfo.mintB.programId),
+  );
+
+  const preTokenBalanceChanges = await getPreTokenBalanceForAccounts(
+    dex.connection,
+    [
+      isNative(poolInfo.mintA.address) ? owner.publicKey : tokenAAta,
+      isNative(poolInfo.mintB.address) ? owner.publicKey : tokenBAta,
+    ],
+  );
+
+  const simulateResponse = await dex.connection.simulateTransaction(
+    closePositionV0Transaction,
+    {
+      sigVerify: false,
+      accounts: {
+        encoding: "base64",
+        addresses: [tokenAAta.toBase58(), tokenBAta.toBase58()],
+      },
+    },
+  );
+
+  const tokenBalanceChanges = getTokenBalanceChangesFromSimulation(
+    simulateResponse.value,
+    preTokenBalanceChanges,
+  );
+  const amountMaxA = new BN(
+    tokenBalanceChanges[poolInfo.mintA.address] || BigInt(0),
+  );
+  const amountMaxB = new BN(
+    tokenBalanceChanges[poolInfo.mintB.address] || BigInt(0),
+  );
+  const rpcData = await dex.dlmm.raydium.raydium.clmm.getRpcClmmPoolInfo({
+    poolId: poolInfo.id,
+  });
+  poolInfo.price = rpcData.currentPrice;
+  const { tick: currentTick } = TickUtils.getPriceAndTick({
+    poolInfo,
+    baseIn: true,
+    price: new Decimal(poolInfo.price),
+  });
+  const tickDelta = Math.ceil(
+    Math.abs(position.tickUpper - position.tickLower),
+  );
+  const tickUpper = currentTick - tickDelta;
+  const tickLower = currentTick + tickDelta;
+
+  const { transaction, signers } =
+    await dex.dlmm.raydium.raydium.clmm.openPositionFromBase({
+      poolInfo,
+      tickLower,
+      tickUpper,
+      base: "MintA",
+      baseAmount: amountMaxA,
+      otherAmountMax: amountMaxB,
+      ownerInfo: {
+        useSOLBalance: true,
+      },
+      txVersion: TxVersion.V0,
+    });
+
+  transaction.sign(signers);
+  transactions.push(transaction);
+
+  const bundleSimulationResponse = await sender.simulateBundle({
+    transactions,
+    skipSigVerify: true,
+  });
+
+  return {
+    transactions,
     bundleSimulationResponse,
     async execute() {
       const { result } = await sender.sendBundle(transactions);

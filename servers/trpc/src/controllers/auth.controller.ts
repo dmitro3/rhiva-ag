@@ -117,6 +117,7 @@ export abstract class AuthMiddleware {
       return drizzle.query.users.findFirst({
         with: {
           wallet: true,
+          settings: true,
         },
         where: eq(users.uid, values.uid),
       });

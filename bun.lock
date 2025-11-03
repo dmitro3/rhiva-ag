@@ -286,7 +286,9 @@
         "@fastify/websocket": "^11.2.0",
         "@meteora-ag/dlmm": "^1.7.5",
         "@openai/agents": "^0.1.11",
+        "@orca-so/whirlpools": "^4.0.0",
         "@orca-so/whirlpools-client": "^4.0.1",
+        "@orca-so/whirlpools-core": "^2.0.0",
         "@raydium-io/raydium-sdk-v2": "^0.2.30-alpha",
         "@rhiva-ag/cron": "*",
         "@rhiva-ag/datasource": "*",
@@ -6042,6 +6044,8 @@
     "@node-minify/core/glob/path-scurry": ["path-scurry@1.11.1", "", { "dependencies": { "lru-cache": "^10.2.0", "minipass": "^5.0.0 || ^6.0.2 || ^7.0.0" } }, "sha512-Xa4Nw17FS9ApQFJ9umLiJS4orGjm7ZzwUrwamcGQuHSzDyth9boKDaycYdDcZDuqYATXw4HFXgaqWTctW/v1HA=="],
 
     "@node-minify/terser/terser/acorn": ["acorn@8.15.0", "", { "bin": { "acorn": "bin/acorn" } }, "sha512-NZyJarBfL7nWwIq+FDL6Zp/yHEhePMNnnJ0y3qfieCrmNvYct8uvtiV41UvlSe6apAfk0fY1FbWx+NwfmpvtTg=="],
+
+    "@openai/agents-core/openai/zod": ["zod@3.25.40", "", {}, "sha512-AiNHzYhEjwg7HcjCSskJVBzdsioZkqXjlxfI6ygzM52P8LcQnXRvMzzFxQWdPP9c1bHYQqOcAqepHPGfF2hvJQ=="],
 
     "@openai/agents-realtime/@types/ws/@types/node": ["@types/node@22.18.13", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-Bo45YKIjnmFtv6I1TuC8AaHBbqXtIo+Om5fE4QiU1Tj8QR/qt+8O3BAtOimG5IFmwaWiPmB3Mv3jtYzBA4Us2A=="],
 

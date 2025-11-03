@@ -31,7 +31,11 @@ export const syncMeteoraPositionStateFromEvent = async ({
   extra: { signature: string };
   events: ProgramEventType<LbClmm>[];
   wallet: Pick<z.infer<typeof walletSelectSchema>, "id" | "user">;
-  type?: "closed-position" | "create-position" | "claim-reward";
+  type?:
+    | "closed-position"
+    | "create-position"
+    | "claim-reward"
+    | "rebalance-position";
 }) => {
   const results = [];
   const newPosition =

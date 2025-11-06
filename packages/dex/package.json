@@ -13,6 +13,7 @@
     }
   },
   "dependencies": {
+    "@coral-xyz/anchor": "^0.32.1",
     "@jup-ag/api": "^6.0.44",
     "@meteora-ag/dlmm": "^1.7.5",
     "@orca-so/common-sdk": "^0.6.11",

@@ -1,7 +1,7 @@
 import { z } from "zod/v3";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
-import { getPools, getWalletPositions } from "../../trpc/src/external"; // careful: importing via package.json result in cyclic dependency
+import { getPools, getWalletPositions } from "../../trpc/src/index.node"; // careful: importing via package.json result in cyclic dependency
 import {
   tokenOutputSchema,
   tokenInputSchema,

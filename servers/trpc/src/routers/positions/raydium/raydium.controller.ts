@@ -2,7 +2,6 @@ import { BN } from "bn.js";
 import assert from "assert";
 import Decimal from "decimal.js";
 import type { z } from "zod/mini";
-import type Dex from "@rhiva-ag/dex";
 import { PublicKey, type VersionedTransaction } from "@solana/web3.js";
 import { getAssociatedTokenAddressSync, NATIVE_MINT } from "@solana/spl-token";
 import type {
@@ -19,7 +18,7 @@ import {
   getPreTokenBalanceForAccounts,
   getTokenBalanceChangesFromBatchSimulation,
   getTokenBalanceChangesFromSimulation,
-} from "@rhiva-ag/dex";
+} from "@rhiva-ag/dex/utils";
 import {
   CLMM_PROGRAM_ID,
   getPdaPersonalPositionAddress,
@@ -34,6 +33,10 @@ import type {
   raydiumClosePositionSchema,
   raydiumCreatePositionSchema,
 } from "./raydium.schema";
+
+type Dex =
+  | import("@rhiva-ag/dex").default
+  | import("@rhiva-ag/dex/browser").default;
 
 export const createPosition = async (
   dex: Dex,

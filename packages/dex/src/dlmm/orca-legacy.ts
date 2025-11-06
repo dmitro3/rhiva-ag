@@ -1,7 +1,6 @@
 import Decimal from "decimal.js";
 import { mapFilter } from "@rhiva-ag/shared";
 import { Percentage } from "@orca-so/common-sdk";
-import { tickIndexToPrice } from "@orca-so/whirlpools-core";
 import { Transaction, type PublicKey } from "@solana/web3.js";
 import {
   toTx,
@@ -60,11 +59,11 @@ export class OrcaLegacyDLMM {
     if (args.strategyType === "custom") {
       const [lowerPriceChange, upperPriceChange] = args.priceChanges;
 
-      const currentPrice = tickIndexToPrice(
+      const currentPrice = PriceMath.tickIndexToPrice(
         poolData.tickCurrentIndex,
         poolTokenAInfo.decimals,
         poolTokenBInfo.decimals,
-      );
+      ).toNumber();
 
       lowerTick = TickUtil.getInitializableTickIndex(
         PriceMath.priceToTickIndex(

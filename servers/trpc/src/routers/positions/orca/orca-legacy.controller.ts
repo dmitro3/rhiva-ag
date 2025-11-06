@@ -1,7 +1,7 @@
 import Decimal from "decimal.js";
 import type { z } from "zod/mini";
-import type Dex from "@rhiva-ag/dex";
 import { address } from "@solana/kit";
+import { TickUtil } from "@orca-so/whirlpools-sdk";
 import { fetchWhirlpool } from "@orca-so/whirlpools-client";
 import { getAssociatedTokenAddressSync, NATIVE_MINT } from "@solana/spl-token";
 import type {
@@ -11,7 +11,7 @@ import type {
 import {
   getPreTokenBalanceForAccounts,
   getTokenBalanceChangesFromBatchSimulation,
-} from "@rhiva-ag/dex";
+} from "@rhiva-ag/dex/utils";
 import {
   batchSimulateTransactions,
   isNative,
@@ -29,7 +29,10 @@ import type {
   orcaClosePositionSchema,
   orcaCreatePositionSchema,
 } from "./orca.schema";
-import { TickUtil } from "@orca-so/whirlpools-sdk";
+
+type Dex =
+  | import("@rhiva-ag/dex").default
+  | import("@rhiva-ag/dex/browser").default;
 
 export const createPosition = async (
   dex: Dex,

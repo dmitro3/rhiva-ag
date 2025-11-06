@@ -96,7 +96,7 @@ export const poolRoute = router({
         fees:
           parseFloat(orcaStat.revenue24hUsdc) + meteoraStat.daily_fee + 0 + 0,
       };
-      ctx.redis.setex(cacheKey, JSON.stringify(result), 60_000);
+      ctx.redis.setex(cacheKey, 60, JSON.stringify(result));
       return result;
     }),
 });

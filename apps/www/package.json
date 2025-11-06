@@ -17,7 +17,6 @@
     "@headlessui/react": "^2.2.9",
     "@meteora-ag/dlmm": "^1.7.5",
     "@opennextjs/cloudflare": "^1.11.0",
-    "@orca-so/whirlpools-core": "^2.0.0",
     "@raydium-io/raydium-sdk-v2": "^0.2.30-alpha",
     "@rhiva-ag/datasource": "*",
     "@rhiva-ag/dex-api": "*",
@@ -62,15 +61,16 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
-    "wrangler": "^4.45.3",
-    "@types/ms": "^2.1.0",
+    "@next/bundle-analyzer": "^16.0.1",
     "@types/lodash.debounce": "^4.0.9",
+    "@types/ms": "^2.1.0",
     "@types/node": "^20.19.23",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "@unocss/postcss": "^66.5.4",
     "@unocss/reset": "^66.5.4",
     "typescript": "^5.9.3",
-    "unocss": "^66.5.4"
+    "unocss": "^66.5.4",
+    "wrangler": "^4.45.3"
   }
 }

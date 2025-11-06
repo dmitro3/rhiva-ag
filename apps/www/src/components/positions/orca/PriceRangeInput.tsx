@@ -1,6 +1,8 @@
+import Decimal from "decimal.js";
 import { Chart, Tooltip } from "chart.js";
 import type { Pair } from "@rhiva-ag/dex-api";
-import { use, useCallback, useMemo } from "react";
+import { useCallback, useMemo } from "react";
+import { PriceMath } from "@orca-so/whirlpools-sdk";
 import type { Account, Address } from "@solana/kit";
 import type { Whirlpool } from "@orca-so/whirlpools-client";
 import { BarElement, CategoryScale, LinearScale } from "chart.js";
@@ -26,30 +28,25 @@ export default function OrcaPriceRangeInput({
   whirlpool,
   ...props
 }: PriceRangeInputProps) {
-  const { tickIndexToPrice, priceToTickIndex } = use(
-    import(
-      "@orca-so/whirlpools-core/dist/browser/orca_whirlpools_core_js_bindings"
-    ),
-  );
   const currentPrice = useMemo(
     () =>
-      tickIndexToPrice(
+      PriceMath.tickIndexToPrice(
         whirlpool.data.tickCurrentIndex,
         pool.baseToken.decimals,
         pool.quoteToken.decimals,
-      ),
-    [whirlpool, pool, tickIndexToPrice],
+      ).toNumber(),
+    [whirlpool, pool],
   );
 
   const priceToIndex = useCallback(
     (price: number, decimal0: number, decimal1: number) =>
-      priceToTickIndex(price, decimal0, decimal1),
-    [priceToTickIndex],
+      PriceMath.priceToTickIndex(new Decimal(price), decimal0, decimal1),
+    [],
   );
   const indexToPrice = useCallback(
     (tick: number, decimal0: number, decimal1: number) =>
-      tickIndexToPrice(tick, decimal0, decimal1),
-    [tickIndexToPrice],
+      PriceMath.tickIndexToPrice(tick, decimal0, decimal1).toNumber(),
+    [],
   );
 
   return (

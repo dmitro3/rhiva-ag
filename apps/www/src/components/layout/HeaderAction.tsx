@@ -10,8 +10,10 @@ import { Popover, PopoverButton, PopoverPanel } from "@headlessui/react";
 import Image from "../Image";
 import { truncateString } from "@/lib";
 import { useAuth } from "@/hooks/useAuth";
+import { useMounted } from "@/hooks/useMounted";
 
 export default function HeaderAction(props: React.ComponentProps<"div">) {
+  const mounted = useMounted();
   const { wallet } = useWallet();
   const { user, setUser, signIn, signOut } = useAuth();
 
@@ -41,23 +43,24 @@ export default function HeaderAction(props: React.ComponentProps<"div">) {
             </button>
             <Popover className="relative">
               <PopoverButton className="flex items-center space-x-2 bg-primary/10 px-2 py-1 rounded-md outline-none">
-                {wallet ? (
-                  <Image
-                    src={wallet.adapter.icon}
-                    width={16}
-                    height={16}
-                    alt={wallet.adapter.name}
-                    className="rounded-md"
-                  />
-                ) : (
-                  <Image
-                    src="/favicon.ico"
-                    width={16}
-                    height={16}
-                    alt="Rhiva"
-                    className="rounded-md"
-                  />
-                )}
+                {mounted &&
+                  (wallet ? (
+                    <Image
+                      src={wallet.adapter.icon}
+                      width={16}
+                      height={16}
+                      alt={wallet.adapter.name}
+                      className="rounded-md"
+                    />
+                  ) : (
+                    <Image
+                      src="/favicon.ico"
+                      width={16}
+                      height={16}
+                      alt="Rhiva"
+                      className="rounded-md"
+                    />
+                  ))}
                 <span className="text-light">
                   {truncateString(user.wallet.id)}
                 </span>

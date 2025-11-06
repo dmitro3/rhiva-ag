@@ -15,7 +15,10 @@ import { fetchWhirlpool } from "@orca-so/whirlpools-client";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { Dialog, DialogBackdrop, DialogPanel } from "@headlessui/react";
-import { orcaCreatePositionSchema, createOrcaPosition } from "@rhiva-ag/trpc";
+import {
+  orcaCreatePositionSchema,
+  createOrcaPosition,
+} from "@rhiva-ag/trpc/browser";
 
 import { useTRPC } from "@/trpc.client";
 import { useDex } from "@/hooks/useDex";
@@ -65,6 +68,8 @@ function OrcaOpenPositionForm({
 
   const { data: rawBalance } = useQuery({
     initialData: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
     refetchInterval: 60_000,
     enabled: isAuthenticated,
     queryKey: ["balance", nativeMint, user?.wallet?.id],

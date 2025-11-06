@@ -17,7 +17,7 @@ import { Dialog, DialogBackdrop, DialogPanel } from "@headlessui/react";
 import {
   createRaydiumPosition,
   raydiumCreatePositionSchema,
-} from "@rhiva-ag/trpc";
+} from "@rhiva-ag/trpc/browser";
 
 import { useTRPC } from "@/trpc.client";
 import { useDex } from "@/hooks/useDex";
@@ -67,6 +67,8 @@ function RaydiumOpenPositionForm({
 
   const { data: rawBalance } = useQuery({
     initialData: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
     refetchInterval: 60_000,
     enabled: isAuthenticated,
     queryKey: ["balance", nativeMint, user?.wallet?.id],

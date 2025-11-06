@@ -1,7 +1,6 @@
 import BN from "bn.js";
 import Decimal from "decimal.js";
 import type { z } from "zod/mini";
-import type Dex from "@rhiva-ag/dex";
 import DLMM, { StrategyType } from "@meteora-ag/dlmm";
 import { getAssociatedTokenAddressSync, NATIVE_MINT } from "@solana/spl-token";
 import type {
@@ -11,7 +10,7 @@ import type {
 import {
   getPreTokenBalanceForAccounts,
   getTokenBalanceChangesFromBatchSimulation,
-} from "@rhiva-ag/dex";
+} from "@rhiva-ag/dex/utils";
 import {
   batchSimulateTransactions,
   isNative,
@@ -25,12 +24,16 @@ import {
   VersionedTransaction,
 } from "@solana/web3.js";
 
+import type { jitoTipConfigSchema } from "../position.schema";
 import type {
   meteoraClaimRewardSchema,
   meteoraClosePositionSchema,
   meteoraCreatePositionSchema,
 } from "./meteora.schema";
-import type { jitoTipConfigSchema } from "../position.schema";
+
+type Dex =
+  | import("@rhiva-ag/dex").default
+  | import("@rhiva-ag/dex/browser").default;
 
 export const createPosition = async (
   dex: Dex,

@@ -1,3 +1,4 @@
+export type { AppRouter } from "./routers";
 export {
   meteoraCreatePositionSchema,
   meteoraClosePositionSchema,

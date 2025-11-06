@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import Dex from "@rhiva-ag/dex";
+import Dex from "@rhiva-ag/dex/browser";
 import { useQuery } from "@tanstack/react-query";
 import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { useConnection } from "@solana/wallet-adapter-react";

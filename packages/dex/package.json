@@ -1,6 +1,7 @@
 {
   "name": "@rhiva-ag/dex",
   "version": "0.0.0",
+  "sideEffects": false,
   "scripts": {
     "codegen": "bun x @rhiva-ag/env --out tests/env.ts"
   },
@@ -8,8 +9,17 @@
     ".": {
       "types": "./src/index.ts",
       "import": "./src/index.ts",
+      "browser": "./src/index.browser.ts",
       "require": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./browser": {
+      "types": "./src/index.browser.ts",
+      "default": "./src/index.browser.ts"
+    },
+    "./utils": {
+      "types": "./src/utils/index.ts",
+      "default": "./src/utils/index.ts"
     }
   },
   "dependencies": {

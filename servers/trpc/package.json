@@ -1,5 +1,6 @@
 {
   "name": "@rhiva-ag/trpc",
+  "sideEffects": false,
   "version": "0.0.0",
   "type": "module",
   "private": true,
@@ -7,8 +8,8 @@
   "exports": {
     ".": {
       "types": "./src/index.node.ts",
-      "import": "./src/index.browser.ts",
       "node": "./src/index.node.ts",
+      "import": "./src/index.node.ts",
       "browser": "./src/index.browser.ts"
     },
     "./browser": {

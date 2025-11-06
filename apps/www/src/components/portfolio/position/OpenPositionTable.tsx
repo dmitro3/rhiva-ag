@@ -23,7 +23,7 @@ import {
   raydiumClosePositionSchema,
   meteoraClaimRewardSchema,
   type AppRouter,
-} from "@rhiva-ag/trpc";
+} from "@rhiva-ag/trpc/browser";
 
 import Image from "@/components/Image";
 import Pagination from "../Pagination";

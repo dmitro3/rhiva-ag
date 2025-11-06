@@ -20,7 +20,7 @@ import { Dialog, DialogBackdrop, DialogPanel } from "@headlessui/react";
 import {
   createMeteoraPosition,
   meteoraCreatePositionSchema,
-} from "@rhiva-ag/trpc";
+} from "@rhiva-ag/trpc/browser";
 
 import TokenInput from "./TokenInput";
 import RatioInput from "./RatioInput";
@@ -68,6 +68,8 @@ function MeteoraOpenPositionForm({
 
   const { data: rawBalance } = useQuery({
     initialData: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
     refetchInterval: 60_000,
     enabled: isAuthenticated,
     queryKey: ["balance", nativeMint, user?.wallet?.id],

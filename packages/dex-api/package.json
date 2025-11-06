@@ -2,6 +2,7 @@
   "name": "@rhiva-ag/dex-api",
   "version": "0.0.0",
   "private": true,
+  "sideEffects": false,
   "type": "module",
   "types": "./src/index.ts",
   "main": "./src/index.ts",

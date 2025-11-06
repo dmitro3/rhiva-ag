@@ -20,7 +20,17 @@ import {
 
 export * from "./zod-custom";
 
-export const walletSelectSchema = createSelectSchema(wallets);
+export const walletSchema = createSelectSchema(wallets).extend({
+  external: z.boolean(),
+});
+export const walletSelectSchema = walletSchema
+  .extend({ external: z.literal(false) })
+  .or(
+    walletSchema
+      .omit({ wrappedDek: true, key: true })
+      .extend({ external: z.literal(true) }),
+  );
+
 export const settingsInsertSchema = createInsertSchema(settings);
 export const settingsUpdateSchema = createUpdateSchema(settings);
 export const settingsSelectSchema = createSelectSchema(settings);
@@ -35,7 +45,7 @@ export const userSelectSchema = createSelectSchema(users).extend({
   todayXp: z.number(),
   totalRefer: z.number(),
   settings: settingsSelectSchema.omit({ user: true }),
-  wallet: walletSelectSchema.omit({ user: true, key: true }),
+  wallet: walletSchema.omit({ user: true, key: true, wrappedDek: true }),
 });
 
 export const poolFilterInsertSchema = createInsertSchema(poolFilters);

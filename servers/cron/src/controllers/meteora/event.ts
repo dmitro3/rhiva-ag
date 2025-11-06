@@ -15,6 +15,7 @@ import {
 import { upsertPool } from "./shared";
 import { getPositionById } from "../shared";
 import { sendNotification } from "../send-notification";
+import type { transactionWorkSchema } from "../../workers/transaction.worker";
 
 export const syncMeteoraPositionStateFromEvent = async ({
   db,
@@ -30,12 +31,8 @@ export const syncMeteoraPositionStateFromEvent = async ({
   connection: Connection;
   extra: { signature: string };
   events: ProgramEventType<LbClmm>[];
+  type?: z.infer<typeof transactionWorkSchema>["type"];
   wallet: Pick<z.infer<typeof walletSelectSchema>, "id" | "user">;
-  type?:
-    | "closed-position"
-    | "create-position"
-    | "claim-reward"
-    | "rebalance-position";
 }) => {
   const results = [];
   const newPosition =
@@ -208,6 +205,24 @@ export const syncMeteoraPositionStateFromEvent = async ({
       ]);
 
       results.push(updatedPosition);
+    } else if (event.name === "rebalancing") {
+      const data = event.data;
+      const offchainPosition = await getPositionById(
+        db,
+        data.position.toBase58(),
+      );
+
+      if (offchainPosition) {
+        const [updatedPosition] = await db
+          .update(positions)
+          .set({
+            state: "rebalanced",
+          })
+          .where(eq(positions.id, offchainPosition.id))
+          .returning();
+
+        results.push(updatedPosition);
+      }
     }
   }
 

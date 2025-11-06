@@ -16,6 +16,7 @@ import {
 import { upsertPool } from "./shared";
 import { getPositionById } from "../shared";
 import { sendNotification } from "../send-notification";
+import type { transactionWorkSchema } from "../../workers/transaction.worker";
 
 export const syncRaydiumPositionStateFromEvent = async ({
   db,
@@ -33,16 +34,12 @@ export const syncRaydiumPositionStateFromEvent = async ({
   extra: { signature: string };
   events: ProgramEventType<AmmV3>[];
   positionNftMint: string | undefined;
+  type?: z.infer<typeof transactionWorkSchema>["type"];
   wallet: Pick<z.infer<typeof walletSelectSchema>, "id" | "user">;
-  type?:
-    | "closed-position"
-    | "create-position"
-    | "claim-reward"
-    | "rebalance-position";
 }) => {
   const results = [];
   const isClosed =
-    type && ["closed-position", "rebalance-position"].includes(type);
+    type && ["closed-position", "rebalanced-position"].includes(type);
 
   for (const event of events) {
     if (event.name === "createPersonalPositionEvent") {
@@ -96,6 +93,7 @@ export const syncRaydiumPositionStateFromEvent = async ({
             },
           },
         };
+        const isRebalanced = type === "rebalanced-position";
 
         const [position] = await Promise.all([
           db
@@ -113,10 +111,13 @@ export const syncRaydiumPositionStateFromEvent = async ({
           sendNotification(db, {
             user: wallet.user,
             type: "transactions",
-            title: { external: true, text: "position.created" },
+            title: {
+              external: true,
+              text: isRebalanced ? "position.repositioned" : "position.created",
+            },
             detail: {
               external: true,
-              text: "position.created",
+              text: isRebalanced ? "position.repositioned" : "position.created",
               params: {
                 signature,
                 position: positionId,

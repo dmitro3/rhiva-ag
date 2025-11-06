@@ -9,7 +9,6 @@ import {
 import {
   TransactionMessage,
   VersionedTransaction,
-  type Keypair,
   type Connection,
   type PublicKey,
 } from "@solana/web3.js";
@@ -146,7 +145,7 @@ export class MeteoraDLMM {
     slippage,
   }: {
     pool: DLMM;
-    owner: Keypair;
+    owner: PublicKey;
     slippage: number;
     position: LbPosition;
     strategyType: StrategyType;
@@ -165,7 +164,7 @@ export class MeteoraDLMM {
       await pool.rebalancePosition(
         simulationResponse,
         new BN(slippage),
-        owner.publicKey,
+        owner,
         slippage,
       );
     const transactions = [];
@@ -177,7 +176,7 @@ export class MeteoraDLMM {
         new VersionedTransaction(
           new TransactionMessage({
             recentBlockhash,
-            payerKey: owner.publicKey,
+            payerKey: owner,
             instructions: initBinArrayInstructions,
           }).compileToV0Message(),
         ),
@@ -187,7 +186,7 @@ export class MeteoraDLMM {
         new VersionedTransaction(
           new TransactionMessage({
             recentBlockhash,
-            payerKey: owner.publicKey,
+            payerKey: owner,
             instructions: rebalancePositionInstruction,
           }).compileToV0Message(),
         ),

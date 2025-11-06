@@ -76,6 +76,7 @@ export const getUserById = async (
       settings: getTableColumns(settings),
     })
     .from(users)
+    .limit(1)
     .where(eq(users.id, userId))
     .leftJoin(qRanks, eq(qRanks.id, users.id))
     .innerJoin(settings, eq(settings.user, users.id))

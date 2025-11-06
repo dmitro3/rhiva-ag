@@ -15,6 +15,7 @@ import {
 import { upsertPool } from "./shared";
 import { getPositionById } from "../shared";
 import { sendNotification } from "../send-notification";
+import type { transactionWorkSchema } from "../../workers/transaction.worker";
 
 export const syncOrcaPositionStateFromEvent = async ({
   db,
@@ -30,16 +31,11 @@ export const syncOrcaPositionStateFromEvent = async ({
   coingecko: Coingecko;
   extra: { signature: string };
   events: ProgramEventType<Whirlpool>[];
+  type?: z.infer<typeof transactionWorkSchema>["type"];
   wallet: Pick<z.infer<typeof walletSelectSchema>, "id" | "user">;
-  type?:
-    | "closed-position"
-    | "create-position"
-    | "claim-reward"
-    | "rebalance-position";
 }) => {
   const results = [];
-  const isClosed =
-    type && ["closed-position", "rebalance-position"].includes(type);
+  const isClosed = type && ["closed-position", "repositioned"].includes(type);
 
   for (const event of events) {
     if (event.name === "liquidityIncreased" && type === "create-position") {

@@ -4,14 +4,15 @@ import { Worker } from "bullmq";
 import type { Logger } from "pino";
 import { Pipeline } from "@rhiva-ag/decoder";
 import type { Connection } from "@solana/web3.js";
+import type Coingecko from "@coingecko/coingecko-typescript";
+import { mapFilter, type SendTransaction } from "@rhiva-ag/shared";
 import { createSolanaRpc, type Rpc, type SolanaRpcApi } from "@solana/kit";
 import {
   address,
-  walletSelectSchema,
+  walletSchema,
+  type walletSelectSchema,
   type Database,
 } from "@rhiva-ag/datasource";
-import type Coingecko from "@coingecko/coingecko-typescript";
-import { mapFilter, type SendTransaction } from "@rhiva-ag/shared";
 import {
   RaydiumProgramEventProcessor,
   RaydiumProgramInstructionEventProcessor,
@@ -45,24 +46,18 @@ export const transactionWorkSchema = z
       ])
       .and(
         z.object({
-          bundleId: z.string(),
           type: z.literal("create-position"),
         }),
       ),
     z.object({
-      bundleId: z.string(),
-      type: z.literal("close-position"),
-      dex: z.enum(["orca", "meteora", "raydium-clmm"]),
-    }),
-    z.object({
-      bundleId: z.string(),
-      type: z.literal("rebalance-position"),
+      type: z.enum(["closed-position", "rebalanced-position", "repositioned"]),
       dex: z.enum(["orca", "meteora", "raydium-clmm"]),
     }),
   ])
   .and(
     z.object({
-      wallet: walletSelectSchema.pick({ id: true, user: true }),
+      bundleId: z.string(),
+      wallet: walletSchema.pick({ id: true, user: true }),
     }),
   );
 
@@ -80,12 +75,8 @@ export const createTransactionPipeline = ({
   rpc: Rpc<SolanaRpcApi>;
   connection: Connection;
   positionNftMint?: string;
+  type?: z.infer<typeof transactionWorkSchema>["type"];
   wallet: Pick<z.infer<typeof walletSelectSchema>, "id" | "user">;
-  type?:
-    | "closed-position"
-    | "create-position"
-    | "claim-reward"
-    | "rebalance-position";
 }) =>
   new Pipeline([
     new MeteoraProgramEventProcessor(connection).addConsumer((events, extra) =>

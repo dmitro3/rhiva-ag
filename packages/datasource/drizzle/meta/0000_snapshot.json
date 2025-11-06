@@ -1,5 +1,5 @@
 {
-  "id": "94906e68-88ac-4e8b-af5c-ef3e6d18fbb1",
+  "id": "3c7b798a-71b8-40c3-ac3a-ba8df712ab08",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -456,13 +456,19 @@
           "name": "key",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "wrappedDek": {
           "name": "wrappedDek",
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "external": {
+          "name": "external",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
         },
         "user": {
           "name": "user",

@@ -15,7 +15,7 @@ export const statRoute = router({
       message: "fear greed not found.",
     });
   }),
-  hookIndex: publicProcedure.output(honkIndexSchema).query(async ({ ctx }) => {
+  honkIndex: publicProcedure.output(honkIndexSchema).query(async ({ ctx }) => {
     const honkIndex = await ctx.redis.get("hook_index");
 
     if (honkIndex) return JSON.parse(honkIndex);

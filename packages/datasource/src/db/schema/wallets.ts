@@ -1,10 +1,12 @@
-import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { boolean, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+
 import { users } from "./users";
 
 export const wallets = pgTable("wallets", {
   id: text().primaryKey(),
-  key: text().notNull(),
+  key: text(),
   wrappedDek: text(),
+  external: boolean().notNull(),
   user: uuid()
     .references(() => users.id, { onDelete: "cascade" })
     .unique()

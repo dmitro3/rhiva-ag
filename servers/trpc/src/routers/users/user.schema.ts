@@ -1,7 +1,7 @@
 import {
   settingsSelectSchema,
   userSelectSchema,
-  walletSelectSchema,
+  walletSchema,
 } from "@rhiva-ag/datasource";
 
 export const extendedUserSelectSchema = userSelectSchema
@@ -10,7 +10,7 @@ export const extendedUserSelectSchema = userSelectSchema
     settings: settingsSelectSchema
       .omit({ user: true })
       .omit({ updatedAt: true }),
-    wallet: walletSelectSchema.omit({
+    wallet: walletSchema.omit({
       key: true,
       user: true,
       wrappedDek: true,

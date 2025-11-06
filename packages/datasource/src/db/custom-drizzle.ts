@@ -27,7 +27,8 @@ export const coalesce = <T extends Column | SQL.Aliased | SQL<unknown>>(
 
 export const day = <T extends Column>(column: T) => sql`DATE(${column})`;
 
-export const date = <T extends Column>(column: T) => sql`DATE(${column})`;
+export const date = <T extends Column | SQL<unknown>>(column: T) =>
+  sql`DATE(${column})`;
 
 export const rank = <T extends Column | SQL<unknown> | SQL.Aliased>(
   column: T,

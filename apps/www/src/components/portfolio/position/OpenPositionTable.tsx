@@ -113,78 +113,62 @@ export default function OpenPositionTable({
 
   const closePosition = useCallback(
     async (position: Position) => {
-      switch (position.pool.dex) {
-        case "meteora": {
-          return trpcClient.position.meteora.close.mutate({
-            pair: position.pool.id,
-            position: position.id,
-            slippage: user.settings.slippage * 100,
-          });
-        }
-        case "raydium-clmm": {
-          return trpcClient.position.raydium.close.mutate({
-            pair: position.pool.id,
-            position: position.id,
-            slippage: user.settings.slippage * 100,
-          });
-        }
-        case "orca": {
-          return trpcClient.position.orca.close.mutate({
-            pair: position.pool.id,
-            position: position.id,
-            slippage: user.settings.slippage * 100,
-            tokenA: {
-              mint: position.pool.baseToken.id,
-              owner: position.pool.baseToken.tokenProgram,
-              decimals: position.pool.baseToken.decimals,
-            },
-            tokenB: {
-              mint: position.pool.quoteToken.id,
-              owner: position.pool.quoteToken.tokenProgram,
-              decimals: position.pool.quoteToken.decimals,
-            },
-          });
-        }
-      }
+      const data = {
+        pair: position.pool.id,
+        position: position.id,
+        slippage: user.settings.slippage * 100,
+        tokenA: {
+          mint: position.pool.baseToken.id,
+          owner: position.pool.baseToken.tokenProgram,
+          decimals: position.pool.baseToken.decimals,
+        },
+        tokenB: {
+          mint: position.pool.quoteToken.id,
+          owner: position.pool.quoteToken.tokenProgram,
+          decimals: position.pool.quoteToken.decimals,
+        },
+      };
+
+      const mapFunc = {
+        "saros-dlmm": undefined,
+        orca: trpcClient.position.meteora.close.mutate,
+        meteora: trpcClient.position.meteora.close.mutate,
+        "raydium-clmm": trpcClient.position.meteora.close.mutate,
+      };
+
+      const func = mapFunc[position.pool.dex];
+      if (func) return func(data);
     },
     [trpcClient, user],
   );
 
   const claimRewards = useCallback(
     async (position: Position) => {
-      switch (position.pool.dex) {
-        case "meteora": {
-          return trpcClient.position.meteora.claim.mutate({
-            pair: position.pool.id,
-            position: position.id,
-            slippage: user.settings.slippage * 100,
-          });
-        }
-        case "raydium-clmm": {
-          return trpcClient.position.raydium.claim.mutate({
-            pair: position.pool.id,
-            position: position.id,
-            slippage: user.settings.slippage * 100,
-          });
-        }
-        case "orca": {
-          return trpcClient.position.orca.claim.mutate({
-            pair: position.pool.id,
-            position: position.id,
-            slippage: user.settings.slippage * 100,
-            tokenA: {
-              mint: position.pool.baseToken.id,
-              owner: position.pool.baseToken.tokenProgram,
-              decimals: position.pool.baseToken.decimals,
-            },
-            tokenB: {
-              mint: position.pool.quoteToken.id,
-              owner: position.pool.quoteToken.tokenProgram,
-              decimals: position.pool.quoteToken.decimals,
-            },
-          });
-        }
-      }
+      const data = {
+        pair: position.pool.id,
+        position: position.id,
+        slippage: user.settings.slippage * 100,
+        tokenA: {
+          mint: position.pool.baseToken.id,
+          owner: position.pool.baseToken.tokenProgram,
+          decimals: position.pool.baseToken.decimals,
+        },
+        tokenB: {
+          mint: position.pool.quoteToken.id,
+          owner: position.pool.quoteToken.tokenProgram,
+          decimals: position.pool.quoteToken.decimals,
+        },
+      };
+
+      const mapFunc = {
+        "saros-dlmm": undefined,
+        orca: trpcClient.position.meteora.claim.mutate,
+        meteora: trpcClient.position.meteora.claim.mutate,
+        "raydium-clmm": trpcClient.position.meteora.claim.mutate,
+      };
+
+      const func = mapFunc[position.pool.dex];
+      if (func) return func(data);
     },
     [trpcClient, user],
   );

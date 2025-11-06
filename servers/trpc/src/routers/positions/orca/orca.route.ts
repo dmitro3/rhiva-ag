@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { Work } from "@rhiva-ag/cron";
 import { TRPCError } from "@trpc/server";
 import { loadWallet } from "@rhiva-ag/shared";
+import { createKeyPairSignerFromBytes } from "@solana/kit";
 import {
   mints,
   positions,
@@ -30,6 +31,12 @@ export const orcaRoute = router({
   create: privateProcedure
     .input(orcaCreatePositionSchema)
     .mutation(async ({ ctx, input }) => {
+      if (ctx.user.wallet.external)
+        throw new TRPCError({
+          code: "NOT_IMPLEMENTED",
+          message: "external wallet not supported",
+        });
+
       if (input.tokens)
         await ctx.drizzle
           .insert(mints)
@@ -41,11 +48,12 @@ export const orcaRoute = router({
 
       const dex = new Dex(ctx.connection);
       const owner = await loadWallet(ctx.user.wallet, ctx.secret);
+      const signer = await createKeyPairSignerFromBytes(owner.secretKey);
 
       const { execute } = await createPosition(
         dex,
         ctx.sendTransaction,
-        owner,
+        signer,
         input,
       );
 
@@ -69,12 +77,20 @@ export const orcaRoute = router({
   claim: privateProcedure
     .input(orcaClaimRewardSchema)
     .mutation(async ({ ctx, input }) => {
+      if (ctx.user.wallet.external)
+        throw new TRPCError({
+          code: "NOT_IMPLEMENTED",
+          message: "external wallet not supported",
+        });
+
       const dex = new Dex(ctx.connection);
       const owner = await loadWallet(ctx.user.wallet, ctx.secret);
+      const signer = await createKeyPairSignerFromBytes(owner.secretKey);
+
       const { execute } = await claimReward(
         dex,
         ctx.sendTransaction,
-        owner,
+        signer,
         input,
       );
 
@@ -88,12 +104,19 @@ export const orcaRoute = router({
   close: privateProcedure
     .input(orcaClosePositionSchema)
     .mutation(async ({ ctx, input }) => {
+      if (ctx.user.wallet.external)
+        throw new TRPCError({
+          code: "NOT_IMPLEMENTED",
+          message: "external wallet not supported",
+        });
+
       const dex = new Dex(ctx.connection);
       const owner = await loadWallet(ctx.user.wallet, ctx.secret);
+      const signer = await createKeyPairSignerFromBytes(owner.secretKey);
       const { execute } = await closePosition(
         dex,
         ctx.sendTransaction,
-        owner,
+        signer,
         input,
       );
 
@@ -103,7 +126,7 @@ export const orcaRoute = router({
         {
           bundleId,
           dex: "orca",
-          type: "close-position",
+          type: "closed-position",
           wallet: ctx.user.wallet,
         },
         { jobId: bundleId },
@@ -117,6 +140,12 @@ export const orcaRoute = router({
   rebalance: privateProcedure
     .input(positionSelectSchema.pick({ id: true }))
     .mutation(async ({ ctx, input }) => {
+      if (ctx.user.wallet.external)
+        throw new TRPCError({
+          code: "NOT_IMPLEMENTED",
+          message: "external wallet not supported",
+        });
+
       const position = await ctx.drizzle.query.positions.findFirst({
         with: {
           pool: {
@@ -131,10 +160,10 @@ export const orcaRoute = router({
       if (position) {
         const dex = new Dex(ctx.connection);
         const owner = await loadWallet(ctx.user.wallet, ctx.secret);
-
+        const signer = await createKeyPairSignerFromBytes(owner.secretKey);
         const { execute } = await rebalancePosition({
           dex,
-          owner,
+          signer,
           position,
           sender: ctx.sendTransaction,
           settings: ctx.user.settings,
@@ -146,7 +175,7 @@ export const orcaRoute = router({
           {
             bundleId,
             dex: "raydium-clmm",
-            type: "rebalance-position",
+            type: "repositioned",
             wallet: ctx.user.wallet,
           },
           { jobId: bundleId },

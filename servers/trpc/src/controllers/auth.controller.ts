@@ -4,6 +4,7 @@ import { format } from "util";
 import type Redis from "ioredis";
 import { eq } from "drizzle-orm";
 import { Keypair } from "@solana/web3.js";
+import { assertIsAddress } from "@solana/kit";
 import type { FastifyRequest } from "fastify";
 import { KMSSecret, type Secret } from "@rhiva-ag/shared";
 import {
@@ -35,6 +36,9 @@ export abstract class AuthMiddleware {
     drizzle: Database,
     secret: KMSSecret | Secret,
     values: z.infer<typeof userInsertSchema>,
+    opts?: {
+      externalWallet?: boolean;
+    },
   ) {
     let user = await drizzle.query.users.findFirst({
       where: eq(users.uid, values.uid),
@@ -47,26 +51,41 @@ export abstract class AuthMiddleware {
       });
 
       if (!wallet) {
-        const keypair = Keypair.generate();
-        let wrappedDek: string | undefined, encryptedText: string;
+        let values: typeof wallets.$inferInsert;
+        console.log(opts);
+        if (opts?.externalWallet) {
+          assertIsAddress(user.uid);
+          values = {
+            user: user.id,
+            id: user.uid,
+            external: true,
+          };
+        } else {
+          const keypair = Keypair.generate();
+          let wrappedDek: string | undefined, encryptedText: string | undefined;
 
-        if (secret instanceof KMSSecret) {
-          const { wrappedDek: dek, encryptedText: key } = await secret.encrypt(
-            keypair.secretKey.toBase64(),
-          );
-          wrappedDek = dek;
-          encryptedText = key;
-        } else encryptedText = secret.encrypt(keypair.secretKey.toBase64());
+          if (secret instanceof KMSSecret) {
+            const keypair = Keypair.generate();
+
+            const { wrappedDek: dek, encryptedText: key } =
+              await secret.encrypt(keypair.secretKey.toBase64());
+            wrappedDek = dek;
+            encryptedText = key;
+          } else encryptedText = secret.encrypt(keypair.secretKey.toBase64());
+
+          values = {
+            wrappedDek,
+            user: user.id,
+            external: false,
+            key: encryptedText,
+            id: keypair.publicKey.toBase58(),
+          };
+        }
 
         promises.push(
           drizzle
             .insert(wallets)
-            .values({
-              wrappedDek,
-              key: encryptedText,
-              user: user.id,
-              id: keypair.publicKey.toBase58(),
-            })
+            .values(values)
             .onConflictDoNothing({ target: [wallets.user] }),
         );
       }

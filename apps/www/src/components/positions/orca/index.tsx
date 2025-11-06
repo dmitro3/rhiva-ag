@@ -10,14 +10,23 @@ import { logEvent } from "firebase/analytics";
 import { NATIVE_MINT } from "@solana/spl-token";
 import { address, createSolanaRpc } from "@solana/kit";
 import { Form, FormikContext, useFormik } from "formik";
-import { useConnection } from "@solana/wallet-adapter-react";
 import { fetchWhirlpool } from "@orca-so/whirlpools-client";
+import { useConnection } from "@solana/wallet-adapter-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogBackdrop, DialogPanel } from "@headlessui/react";
+import { useWalletAccountTransactionSendingSigner } from "@solana/react";
+import { orcaCreatePositionSchema, createOrcaPosition } from "@rhiva-ag/trpc";
+import {
+  getUiWalletAccountStorageKey,
+  type UiWalletAccount,
+  useWallets,
+} from "@wallet-standard/react";
 
 import { useTRPC } from "@/trpc.client";
+import { useDex } from "@/hooks/useDex";
 import { useAuth } from "@/hooks/useAuth";
 import DepositInput from "../DepositInput";
+import { sendTransaction } from "@/instances";
 import PriceRangeInput from "./PriceRangeInput";
 import PositionOverview from "../PositionOverview";
 import { useAnalytics } from "@/hooks/useAnalytics";
@@ -50,11 +59,15 @@ function OrcaOpenPositionForm({
   pool,
   ...props
 }: React.ComponentProps<typeof Form> & Pick<OrcaOpenPositionProps, "pool">) {
+  const dex = useDex();
   const trpc = useTRPC();
+  const wallets = useWallets();
   const analytics = useAnalytics();
   const { connection } = useConnection();
   const nativeMint = NATIVE_MINT.toBase58();
   const { user, isAuthenticated, signIn } = useAuth();
+  console.log(wallets);
+  const transactionSigner = useWalletAccountTransactionSendingSigner();
 
   const { data: rawBalance } = useQuery({
     initialData: 0,
@@ -139,6 +152,7 @@ function OrcaOpenPositionForm({
     onSubmit: async (values) => {
       if (!isAuthenticated) await signIn();
 
+      let bundleId: string;
       const createPositionValue = {
         ...values,
         slippage: 50,
@@ -146,7 +160,21 @@ function OrcaOpenPositionForm({
         tokenADecimals: pool.baseToken.decimals,
         tokenBDecimals: pool.quoteToken.decimals,
       };
-      const { bundleId } = await mutateAsync(createPositionValue);
+
+      if (user.wallet.external) {
+        const { execute } = await createOrcaPosition(
+          dex,
+          sendTransaction,
+          transactionSigner,
+          orcaCreatePositionSchema.parse(createPositionValue),
+        );
+
+        bundleId = await execute();
+      } else
+        bundleId = await mutateAsync(createPositionValue).then(
+          ({ bundleId }) => bundleId,
+        );
+
       if (analytics)
         logEvent(analytics, "position_opened", {
           bundleId,

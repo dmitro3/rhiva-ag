@@ -4,18 +4,25 @@ import { useMemo } from "react";
 import { number, object } from "yup";
 import { toast } from "react-toastify";
 import { PublicKey } from "@solana/web3.js";
-import { logEvent } from "firebase/analytics";
-import { NATIVE_MINT } from "@solana/spl-token";
 import { IoArrowBack } from "react-icons/io5";
 import type { Pair } from "@rhiva-ag/dex-api";
+import { logEvent } from "firebase/analytics";
+import { NATIVE_MINT } from "@solana/spl-token";
+import { fromWebWalletAdapter } from "@rhiva-ag/shared";
 import { Form, FormikContext, useFormik } from "formik";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useConnection } from "@solana/wallet-adapter-react";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { Dialog, DialogBackdrop, DialogPanel } from "@headlessui/react";
+import {
+  createRaydiumPosition,
+  raydiumCreatePositionSchema,
+} from "@rhiva-ag/trpc";
 
 import { useTRPC } from "@/trpc.client";
+import { useDex } from "@/hooks/useDex";
 import { useAuth } from "@/hooks/useAuth";
 import DepositInput from "../DepositInput";
+import { sendTransaction } from "@/instances";
 import PriceRangeInput from "./PriceRangeInput";
 import PositionOverview from "../PositionOverview";
 import { useAnalytics } from "@/hooks/useAnalytics";
@@ -49,7 +56,9 @@ function RaydiumOpenPositionForm({
   pool,
   ...props
 }: React.ComponentProps<typeof Form> & Pick<RaydiumOpenPositionProps, "pool">) {
+  const dex = useDex();
   const trpc = useTRPC();
+  const wallet = useWallet();
   const analytics = useAnalytics();
   const { connection } = useConnection();
   const nativeMint = NATIVE_MINT.toBase58();
@@ -128,12 +137,30 @@ function RaydiumOpenPositionForm({
     onSubmit: async (values) => {
       if (!isAuthenticated) await signIn();
 
+      let bundleId: string;
       const createPositionValue = {
         ...values,
         slippage: 50,
         pair: pool.address,
       };
-      const { bundleId } = await mutateAsync(createPositionValue);
+
+      if (user.wallet.external) {
+        if (wallet.publicKey) {
+          const { execute } = await createRaydiumPosition(
+            dex,
+            sendTransaction,
+            fromWebWalletAdapter(wallet),
+            raydiumCreatePositionSchema.parse(createPositionValue),
+          );
+          bundleId = await execute();
+        }
+
+        return;
+      } else
+        bundleId = await mutateAsync(createPositionValue).then(
+          ({ bundleId }) => bundleId,
+        );
+
       if (analytics)
         logEvent(analytics, "position_opened", {
           bundleId,

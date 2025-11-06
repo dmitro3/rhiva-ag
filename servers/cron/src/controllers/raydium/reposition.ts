@@ -7,7 +7,7 @@ import type {
   walletSelectSchema,
 } from "@rhiva-ag/datasource";
 
-export const rabalanceOrcaPosition = async (_args: {
+export const repositionRaydiumPosition = async (_args: {
   dex: Dex;
   secret: KMSSecret;
   sender: SendTransaction;

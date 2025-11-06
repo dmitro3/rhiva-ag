@@ -2,8 +2,8 @@ import Dex from "@rhiva-ag/dex";
 import { eq } from "drizzle-orm";
 import { Work } from "@rhiva-ag/cron";
 import { TRPCError } from "@trpc/server";
-import { loadWallet } from "@rhiva-ag/shared";
 import { fromLegacyPublicKey } from "@solana/compat";
+import { fromKeyPairToWalletAdapter, loadWallet } from "@rhiva-ag/shared";
 import {
   mints,
   positions,
@@ -31,6 +31,12 @@ export const raydiumRoute = router({
   create: privateProcedure
     .input(raydiumCreatePositionSchema)
     .mutation(async ({ ctx, input }) => {
+      if (ctx.user.wallet.external)
+        throw new TRPCError({
+          code: "NOT_IMPLEMENTED",
+          message: "external wallet not supported",
+        });
+
       if (input.tokens)
         await ctx.drizzle
           .insert(mints)
@@ -41,11 +47,11 @@ export const raydiumRoute = router({
           });
       const dex = new Dex(ctx.connection);
       const owner = await loadWallet(ctx.user.wallet, ctx.secret);
-
+      const wallet = fromKeyPairToWalletAdapter(owner);
       const { positionNftMint, execute } = await createPosition(
         dex,
         ctx.sendTransaction,
-        owner,
+        wallet,
         input,
       );
 
@@ -70,12 +76,25 @@ export const raydiumRoute = router({
   claim: privateProcedure
     .input(raydiumClaimRewardSchema)
     .mutation(async ({ ctx, input }) => {
+      if (ctx.user.wallet.external)
+        throw new TRPCError({
+          code: "NOT_IMPLEMENTED",
+          message: "external wallet not supported",
+        });
+
+      if (ctx.user.wallet.external)
+        throw new TRPCError({
+          code: "NOT_IMPLEMENTED",
+          message: "external wallet not supported",
+        });
+
       const dex = new Dex(ctx.connection);
       const owner = await loadWallet(ctx.user.wallet, ctx.secret);
+      const wallet = fromKeyPairToWalletAdapter(owner);
       const { execute } = await claimReward(
         dex,
         ctx.sendTransaction,
-        owner,
+        wallet,
         input,
       );
 
@@ -88,11 +107,18 @@ export const raydiumRoute = router({
   close: privateProcedure
     .input(raydiumClosePositionSchema)
     .mutation(async ({ ctx, input }) => {
+      if (ctx.user.wallet.external)
+        throw new TRPCError({
+          code: "NOT_IMPLEMENTED",
+          message: "external wallet not supported",
+        });
+
       const dex = new Dex(ctx.connection);
       const owner = await loadWallet(ctx.user.wallet, ctx.secret);
+      const wallet = fromKeyPairToWalletAdapter(owner);
       const { execute } = await closePosition(
         dex,
-        owner,
+        wallet,
         ctx.sendTransaction,
         input,
       );
@@ -103,7 +129,7 @@ export const raydiumRoute = router({
         {
           bundleId,
           dex: "raydium-clmm",
-          type: "close-position",
+          type: "closed-position",
           wallet: ctx.user.wallet,
         },
         { jobId: bundleId },
@@ -117,6 +143,12 @@ export const raydiumRoute = router({
   rebalance: privateProcedure
     .input(positionSelectSchema.pick({ id: true }))
     .mutation(async ({ ctx, input }) => {
+      if (ctx.user.wallet.external)
+        throw new TRPCError({
+          code: "NOT_IMPLEMENTED",
+          message: "external wallet not supported",
+        });
+
       const position = await ctx.drizzle.query.positions.findFirst({
         with: {
           pool: {
@@ -131,10 +163,10 @@ export const raydiumRoute = router({
       if (position) {
         const dex = new Dex(ctx.connection);
         const owner = await loadWallet(ctx.user.wallet, ctx.secret);
-
+        const wallet = fromKeyPairToWalletAdapter(owner);
         const { execute } = await rebalancePosition({
           dex,
-          owner,
+          wallet,
           position,
           sender: ctx.sendTransaction,
           settings: ctx.user.settings,
@@ -146,7 +178,7 @@ export const raydiumRoute = router({
           {
             bundleId,
             dex: "raydium-clmm",
-            type: "rebalance-position",
+            type: "repositioned",
             wallet: ctx.user.wallet,
           },
           { jobId: bundleId },

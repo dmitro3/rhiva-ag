@@ -212,7 +212,7 @@ export default function AuthModal({ onSignIn, ...props }: AuthModalProps) {
                 <button
                   key={wallet.adapter.name}
                   type="button"
-                  className="flex items-center space-x-2 border border-white/10 p-2 rounded-md !hidden"
+                  className="flex items-center space-x-2 border border-white/10 p-2 rounded-md"
                   onClick={() => select(wallet.adapter.name)}
                 >
                   <Image

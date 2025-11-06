@@ -1,4 +1,5 @@
 import z from "zod";
+import { extendedUserSelectSchema } from "../../routers/users/user.schema";
 
 export const walletAuthSchema = z.object({
   message: z.object({
@@ -11,5 +12,9 @@ export const walletAuthSchema = z.object({
 });
 
 export const firebaseTokenAuthSchema = z.object({
+  token: z.string(),
+});
+
+export const safeAuthUserSchema = extendedUserSelectSchema.extend({
   token: z.string(),
 });

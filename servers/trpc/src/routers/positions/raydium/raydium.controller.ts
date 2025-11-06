@@ -12,12 +12,9 @@ import {
   batchSimulateTransactions,
   isNative,
   type SendTransaction,
+  type WalletAdapter,
 } from "@rhiva-ag/shared";
-import {
-  PublicKey,
-  type Keypair,
-  type VersionedTransaction,
-} from "@solana/web3.js";
+import { PublicKey, type VersionedTransaction } from "@solana/web3.js";
 import {
   getPreTokenBalanceForAccounts,
   getTokenBalanceChangesFromBatchSimulation,
@@ -41,7 +38,7 @@ import type {
 export const createPosition = async (
   dex: Dex,
   sender: SendTransaction,
-  owner: Keypair,
+  wallet: WalletAdapter,
   {
     pair,
     inputAmount,
@@ -78,7 +75,7 @@ export const createPosition = async (
           slippage,
           inputMint,
           amount: bigAmount,
-          owner: owner.publicKey,
+          owner: wallet.publicKey,
           outputMint: new PublicKey(token),
         });
 
@@ -109,7 +106,7 @@ export const createPosition = async (
     });
 
   const jitoTipInstruction = await sender.getJitoTipInstruction(
-    owner.publicKey,
+    wallet.publicKey,
     jitoConfig,
   );
 
@@ -118,10 +115,12 @@ export const createPosition = async (
 
   const { transaction: createPositionV0Transaction } = await builder.buildV0();
 
-  createPositionV0Transaction.sign([owner, ...signers]);
-  for (const transaction of swapV0Transactions) transaction.sign([owner]);
-
-  const transactions = [...swapV0Transactions, createPositionV0Transaction];
+  const transactions = (
+    await Promise.all([
+      wallet.signTransaction(createPositionV0Transaction, signers),
+      wallet.signAllTransactions(swapV0Transactions),
+    ])
+  ).flat();
 
   const bundleSimulationResponse = await sender.simulateBundle({
     transactions,
@@ -143,7 +142,7 @@ export const createPosition = async (
 export const claimReward = async (
   dex: Dex,
   sender: SendTransaction,
-  owner: Keypair,
+  wallet: WalletAdapter,
   {
     position: positionPubkey,
     pair,
@@ -168,7 +167,7 @@ export const claimReward = async (
     poolInfo: poolInfo as ApiV3PoolInfoConcentratedItem,
   });
   const jitoTipInstruction = await sender.getJitoTipInstruction(
-    owner.publicKey,
+    wallet.publicKey,
     jitoConfig,
   );
 
@@ -180,13 +179,13 @@ export const claimReward = async (
 
   const tokenAAta = getAssociatedTokenAddressSync(
     new PublicKey(poolInfo.mintA.address),
-    owner.publicKey,
+    wallet.publicKey,
     false,
     new PublicKey(poolInfo.mintA.programId),
   );
   const tokenBAta = getAssociatedTokenAddressSync(
     new PublicKey(poolInfo.mintB.address),
-    owner.publicKey,
+    wallet.publicKey,
     false,
     new PublicKey(poolInfo.mintB.programId),
   );
@@ -227,7 +226,7 @@ export const claimReward = async (
         const { transaction } = await dex.swap.jupiter.buildSwap({
           slippage,
           skipSimulation: true,
-          owner: owner.publicKey,
+          owner: wallet.publicKey,
           outputMint: NATIVE_MINT,
           amount: quoteAmount.toString(),
           inputMint: new PublicKey(token.address),
@@ -238,11 +237,10 @@ export const claimReward = async (
     }
   }
 
-  for (const transaction of swapV0Transactions) transaction.sign([owner]);
-  for (const transaction of claimRewardV0Transactions)
-    transaction.sign([owner]);
-
-  const transactions = [...claimRewardV0Transactions, ...swapV0Transactions];
+  const transactions = await wallet.signAllTransactions([
+    ...claimRewardV0Transactions,
+    ...swapV0Transactions,
+  ]);
 
   const bundleSimulationResponse = await sender.simulateBundle({
     transactions,
@@ -263,7 +261,7 @@ export const claimReward = async (
 
 export const closePosition = async (
   dex: Dex,
-  owner: Keypair,
+  wallet: WalletAdapter,
   sender: SendTransaction,
   {
     pair,
@@ -290,7 +288,7 @@ export const closePosition = async (
     poolInfo: poolInfo as ApiV3PoolInfoConcentratedItem,
   });
   const jitoTipInstruction = await sender.getJitoTipInstruction(
-    owner.publicKey,
+    wallet.publicKey,
     jitoConfig,
   );
 
@@ -305,13 +303,13 @@ export const closePosition = async (
   if (swapToNative) {
     const tokenAAta = getAssociatedTokenAddressSync(
       new PublicKey(poolInfo.mintA.address),
-      owner.publicKey,
+      wallet.publicKey,
       false,
       new PublicKey(poolInfo.mintA.programId),
     );
     const tokenBAta = getAssociatedTokenAddressSync(
       new PublicKey(poolInfo.mintB.address),
-      owner.publicKey,
+      wallet.publicKey,
       false,
       new PublicKey(poolInfo.mintB.programId),
     );
@@ -350,7 +348,7 @@ export const closePosition = async (
             await dex.swap.jupiter.buildSwap({
               slippage,
               skipSimulation: true,
-              owner: owner.publicKey,
+              owner: wallet.publicKey,
               outputMint: NATIVE_MINT,
               amount: quoteAmount.toString(),
               inputMint: new PublicKey(token.address),
@@ -367,9 +365,13 @@ export const closePosition = async (
     }
   }
 
-  closePositionV0Transaction.sign([owner]);
-  for (const transaction of swapV0Transactions) transaction.sign([owner]);
-  const transactions = [closePositionV0Transaction, ...swapV0Transactions];
+  const transactions = (
+    await Promise.all([
+      wallet.signTransaction(closePositionV0Transaction),
+      wallet.signAllTransactions(swapV0Transactions),
+    ])
+  ).flat();
+
   const bundleSimulationResponse = await sender.simulateBundle({
     transactions,
     skipSigVerify: true,
@@ -394,18 +396,18 @@ export const closePosition = async (
 export const rebalancePosition = async ({
   dex,
   sender,
-  owner,
+  wallet,
   settings,
   position: offchainPosition,
 }: {
   dex: Dex;
-  owner: Keypair;
+  wallet: WalletAdapter;
   sender: SendTransaction;
   position: z.infer<typeof positionSelectSchema>;
   settings: z.infer<typeof settingsSelectSchema>;
 }) => {
   const { poolInfo, swapV0Transactions, closePositionV0Transaction, position } =
-    await closePosition(dex, owner, sender, {
+    await closePosition(dex, wallet, sender, {
       position: new PublicKey(offchainPosition.id),
       pair: new PublicKey(offchainPosition.pool.id),
       slippage: settings.slippage,
@@ -415,13 +417,13 @@ export const rebalancePosition = async ({
 
   const tokenAAta = getAssociatedTokenAddressSync(
     new PublicKey(poolInfo.mintA.address),
-    owner.publicKey,
+    wallet.publicKey,
     false,
     new PublicKey(poolInfo.mintA.programId),
   );
   const tokenBAta = getAssociatedTokenAddressSync(
     new PublicKey(poolInfo.mintB.address),
-    owner.publicKey,
+    wallet.publicKey,
     false,
     new PublicKey(poolInfo.mintB.programId),
   );
@@ -429,8 +431,8 @@ export const rebalancePosition = async ({
   const preTokenBalanceChanges = await getPreTokenBalanceForAccounts(
     dex.connection,
     [
-      isNative(poolInfo.mintA.address) ? owner.publicKey : tokenAAta,
-      isNative(poolInfo.mintB.address) ? owner.publicKey : tokenBAta,
+      isNative(poolInfo.mintA.address) ? wallet.publicKey : tokenAAta,
+      isNative(poolInfo.mintB.address) ? wallet.publicKey : tokenBAta,
     ],
   );
 
@@ -484,8 +486,7 @@ export const rebalancePosition = async ({
       txVersion: TxVersion.V0,
     });
 
-  transaction.sign(signers);
-  transactions.push(transaction);
+  transactions.push(await wallet.signTransaction(transaction, signers));
 
   const bundleSimulationResponse = await sender.simulateBundle({
     transactions,

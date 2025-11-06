@@ -15,15 +15,10 @@ import {
   getPreTokenBalanceForAccounts,
   getTokenBalanceChangesFromSimulation,
 } from "@rhiva-ag/dex";
-import {
-  type Keypair,
-  PublicKey,
-  type VersionedTransaction,
-} from "@solana/web3.js";
+import { PublicKey, type VersionedTransaction } from "@solana/web3.js";
 import {
   address,
   appendTransactionMessageInstructions,
-  createKeyPairSignerFromBytes,
   createTransactionMessage,
   getBase64EncodedWireTransaction,
   pipe,
@@ -32,6 +27,7 @@ import {
   signTransactionMessageWithSigners,
   type RpcSimulateTransactionResult,
   type Transaction,
+  type TransactionSigner,
 } from "@solana/kit";
 
 import type {
@@ -43,11 +39,9 @@ import type {
 export const createPosition = async (
   dex: Dex,
   sender: SendTransaction,
-  owner: Keypair,
+  signer: TransactionSigner,
   args: z.infer<typeof orcaCreatePositionSchema>,
 ) => {
-  const signer = await createKeyPairSignerFromBytes(owner.secretKey);
-
   const { pair, inputAmount, inputMint, slippage, jitoConfig } = args;
   const pool = await fetchWhirlpool(dex.dlmm.rpc, pair);
 
@@ -158,7 +152,7 @@ export const createPosition = async (
 export const claimReward = async (
   dex: Dex,
   sender: SendTransaction,
-  owner: Keypair,
+  signer: TransactionSigner,
   {
     pair,
     tokenA,
@@ -168,7 +162,6 @@ export const claimReward = async (
     jitoConfig,
   }: z.infer<typeof orcaClaimRewardSchema>,
 ) => {
-  const signer = await createKeyPairSignerFromBytes(owner.secretKey);
   const pool = await fetchWhirlpool(dex.dlmm.rpc, pair);
   const { instructions } = await dex.dlmm.orca.buildClaimReward({
     position,
@@ -285,7 +278,7 @@ export const claimReward = async (
 export const closePosition = async (
   dex: Dex,
   sender: SendTransaction,
-  owner: Keypair,
+  signer: TransactionSigner,
   {
     slippage,
     position,
@@ -296,7 +289,6 @@ export const closePosition = async (
     swapToNative,
   }: z.infer<typeof orcaClosePositionSchema>,
 ) => {
-  const signer = await createKeyPairSignerFromBytes(owner.secretKey);
   const pool = await fetchWhirlpool(dex.dlmm.rpc, pair);
   const { instructions } = await dex.dlmm.orca.buildClosePosition({
     position,
@@ -418,18 +410,16 @@ export const closePosition = async (
 export const rebalancePosition = async ({
   dex,
   owner,
-  sender,
+  signer,
   settings,
   position: offchainPosition,
 }: {
   dex: Dex;
-  owner: Keypair;
+  signer: TransactionSigner;
   sender: SendTransaction;
   position: z.infer<typeof positionSelectSchema>;
   settings: z.infer<typeof settingsSelectSchema>;
 }) => {
-  const signer = await createKeyPairSignerFromBytes(owner.secretKey);
-
   const position = await fetchPosition(
     dex.dlmm.rpc,
     address(offchainPosition.id),

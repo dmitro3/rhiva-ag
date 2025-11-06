@@ -22,13 +22,13 @@ export default function HeaderAction(props: React.ComponentProps<"div">) {
   return (
     <div
       {...props}
-      className={clsx("flex items-center space-x-8", props.className)}
+      className={clsx("flex items-center sm:space-x-8", props.className)}
     >
       <Link
         href="?show_legal_dialog=true"
-        className="text-light underline decoration-dashed"
+        className="text-light underline decoration-dashed lt-sm:hidden"
       >
-        Privacy Policy
+        Legal
       </Link>
       <div className="flex items-center space-x-2">
         {user ? (

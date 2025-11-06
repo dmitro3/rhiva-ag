@@ -16,6 +16,7 @@ import {
   batchSimulateTransactions,
   isNative,
   type SendTransaction,
+  type WalletAdapter,
 } from "@rhiva-ag/shared";
 import {
   Keypair,
@@ -33,7 +34,7 @@ import type {
 export const createPosition = async (
   dex: Dex,
   sender: SendTransaction,
-  owner: Keypair,
+  wallet: WalletAdapter,
   {
     pair,
     inputAmount,
@@ -71,7 +72,7 @@ export const createPosition = async (
           slippage,
           inputMint,
           outputMint: side,
-          owner: owner.publicKey,
+          owner: wallet.publicKey,
           amount: BigInt(bigAmount.toString()),
         });
 
@@ -101,12 +102,12 @@ export const createPosition = async (
     totalXAmount,
     totalYAmount,
     priceChanges,
-    owner: owner.publicKey,
+    owner: wallet.publicKey,
     position: position.publicKey,
   });
 
   createPositionInstructions = await sender.processJitoTipFromTxMessage(
-    owner.publicKey,
+    wallet.publicKey,
     createPositionInstructions,
     jitoConfig,
   );
@@ -116,7 +117,7 @@ export const createPosition = async (
 
   const createPositionV0Message = new TransactionMessage({
     recentBlockhash,
-    payerKey: owner.publicKey,
+    payerKey: wallet.publicKey,
     instructions: createPositionInstructions,
   }).compileToV0Message();
 
@@ -124,10 +125,12 @@ export const createPosition = async (
     createPositionV0Message,
   );
 
-  createPositionV0Transaction.sign([owner, position]);
-  for (const transaction of swapV0Transactions) transaction.sign([owner]);
-
-  const transactions = [...swapV0Transactions, createPositionV0Transaction];
+  const transactions = (
+    await Promise.all([
+      await wallet.signAllTransactions(swapV0Transactions),
+      await wallet.signTransaction(createPositionV0Transaction, [position]),
+    ])
+  ).flat();
   const bundleSimulationResponse = await sender.simulateBundle({
     transactions,
     skipSigVerify: true,
@@ -147,7 +150,7 @@ export const createPosition = async (
 export const claimReward = async (
   dex: Dex,
   sender: SendTransaction,
-  owner: Keypair,
+  wallet: WalletAdapter,
   {
     pair,
     slippage,
@@ -160,7 +163,7 @@ export const claimReward = async (
   const claimRewardTransactions = await dex.dlmm.meteora.buildClaimReward({
     pool,
     position,
-    owner: owner.publicKey,
+    owner: wallet.publicKey,
   });
 
   const { blockhash: recentBlockhash } =
@@ -169,13 +172,13 @@ export const claimReward = async (
     claimRewardTransactions.map(async (transaction, index) => {
       if (index === 0)
         transaction = await sender.processJitoTipFromTxMessage(
-          owner.publicKey,
+          wallet.publicKey,
           transaction,
           jitoConfig,
         );
       const v0Message = new TransactionMessage({
         recentBlockhash,
-        payerKey: owner.publicKey,
+        payerKey: wallet.publicKey,
         instructions: transaction.instructions,
       }).compileToV0Message();
 
@@ -185,13 +188,13 @@ export const claimReward = async (
 
   const tokenAAta = getAssociatedTokenAddressSync(
     pool.tokenX.mint.address,
-    owner.publicKey,
+    wallet.publicKey,
     false,
     pool.tokenX.owner,
   );
   const tokenBAta = getAssociatedTokenAddressSync(
     pool.tokenY.mint.address,
-    owner.publicKey,
+    wallet.publicKey,
     false,
     pool.tokenY.owner,
   );
@@ -236,7 +239,7 @@ export const claimReward = async (
           slippage,
           inputMint: mint,
           skipSimulation: true,
-          owner: owner.publicKey,
+          owner: wallet.publicKey,
           outputMint: NATIVE_MINT,
           amount: quoteAmount.toString(),
         });
@@ -246,11 +249,10 @@ export const claimReward = async (
     }
   }
 
-  for (const transaction of swapV0Transactions) transaction.sign([owner]);
-  for (const transaction of claimRewardV0Transactions)
-    transaction.sign([owner]);
-
-  const transactions = [...claimRewardV0Transactions, ...swapV0Transactions];
+  const transactions = await wallet.signAllTransactions([
+    ...claimRewardV0Transactions,
+    ...swapV0Transactions,
+  ]);
 
   const bundleSimulationResponse = await sender.simulateBundle({
     transactions,
@@ -271,7 +273,7 @@ export const claimReward = async (
 export const closePosition = async (
   dex: Dex,
   sender: SendTransaction,
-  owner: Keypair,
+  wallet: WalletAdapter,
   {
     pair,
     slippage,
@@ -285,7 +287,7 @@ export const closePosition = async (
   const closePositionTransactions = await dex.dlmm.meteora.buildClosePosition({
     pool,
     position,
-    owner: owner.publicKey,
+    owner: wallet.publicKey,
   });
 
   const { blockhash: recentBlockhash } =
@@ -294,13 +296,13 @@ export const closePosition = async (
     closePositionTransactions.map(async (transaction, index) => {
       if (index === 0)
         transaction = await sender.processJitoTipFromTxMessage(
-          owner.publicKey,
+          wallet.publicKey,
           transaction,
           jitoConfig,
         );
       const v0Message = new TransactionMessage({
         recentBlockhash,
-        payerKey: owner.publicKey,
+        payerKey: wallet.publicKey,
         instructions: transaction.instructions,
       }).compileToV0Message();
 
@@ -313,13 +315,13 @@ export const closePosition = async (
   if (swapToNative) {
     const tokenAAta = getAssociatedTokenAddressSync(
       pool.tokenX.mint.address,
-      owner.publicKey,
+      wallet.publicKey,
       false,
       pool.tokenX.owner,
     );
     const tokenBAta = getAssociatedTokenAddressSync(
       pool.tokenY.mint.address,
-      owner.publicKey,
+      wallet.publicKey,
       false,
       pool.tokenY.owner,
     );
@@ -366,7 +368,7 @@ export const closePosition = async (
             slippage,
             inputMint: mint,
             skipSimulation: true,
-            owner: owner.publicKey,
+            owner: wallet.publicKey,
             outputMint: NATIVE_MINT,
             amount: quoteAmount.toString(),
           });
@@ -377,11 +379,12 @@ export const closePosition = async (
     }
   }
 
-  for (const transaction of swapV0Transactions) transaction.sign([owner]);
-  for (const transaction of closePositionV0Transactions)
-    transaction.sign([owner]);
-
-  const transactions = [...closePositionV0Transactions, ...swapV0Transactions];
+  const transactions = (
+    await Promise.all([
+      wallet.signAllTransactions(closePositionV0Transactions),
+      wallet.signAllTransactions(swapV0Transactions),
+    ])
+  ).flat();
   const bundleSimulationResponse = await sender.simulateBundle({
     transactions,
     skipSigVerify: true,
@@ -402,13 +405,13 @@ export const closePosition = async (
 
 export const rebalancePosition = async ({
   dex,
-  owner,
+  wallet,
   sender,
   settings,
   position: offchainPosition,
 }: {
   dex: Dex;
-  owner: Keypair;
+  wallet: WalletAdapter;
   sender: SendTransaction;
   position: z.infer<typeof positionSelectSchema>;
   settings: z.infer<typeof settingsSelectSchema>;
@@ -419,13 +422,19 @@ export const rebalancePosition = async ({
   );
   const position = await pool.getPosition(new PublicKey(offchainPosition.id));
 
-  const transactions = await dex.dlmm.meteora.buildRebalancePosition({
-    pool,
-    owner,
-    position,
-    slippage: settings.slippage,
-    strategyType: StrategyType.Spot,
-  });
+  const rebalanceV0Transactions = await dex.dlmm.meteora.buildRebalancePosition(
+    {
+      pool,
+      position,
+      owner: wallet.publicKey,
+      slippage: settings.slippage,
+      strategyType: StrategyType.Spot,
+    },
+  );
+
+  const transactions = await wallet.signAllTransactions(
+    rebalanceV0Transactions,
+  );
 
   const bundleSimulationResponse = await sender.simulateBundle({
     transactions,

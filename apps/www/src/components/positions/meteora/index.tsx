@@ -2,17 +2,24 @@ import clsx from "clsx";
 import { format } from "util";
 import { object, number } from "yup";
 import { toast } from "react-toastify";
+import { useDex } from "@/hooks/useDex";
 import { PublicKey } from "@solana/web3.js";
 import { useCallback, useMemo } from "react";
+import { sendTransaction } from "@/instances";
 import type { Pair } from "@rhiva-ag/dex-api";
 import { IoArrowBack } from "react-icons/io5";
 import { logEvent } from "firebase/analytics";
 import { NATIVE_MINT } from "@solana/spl-token";
 import { POSITION_FEE } from "@meteora-ag/dlmm";
+import { fromWebWalletAdapter } from "@rhiva-ag/shared";
 import { Form, FormikContext, useFormik } from "formik";
-import { useConnection } from "@solana/wallet-adapter-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { Dialog, DialogBackdrop, DialogPanel } from "@headlessui/react";
+import {
+  createMeteoraPosition,
+  meteoraCreatePositionSchema,
+} from "@rhiva-ag/trpc";
 
 import TokenInput from "./TokenInput";
 import RatioInput from "./RatioInput";
@@ -50,7 +57,9 @@ function MeteoraOpenPositionForm({
   pool,
   ...props
 }: React.ComponentProps<typeof Form> & Pick<MeteoraOpenPositionProps, "pool">) {
+  const dex = useDex();
   const trpc = useTRPC();
+  const wallet = useWallet();
   const analytics = useAnalytics();
   const { connection } = useConnection();
   const nativeMint = NATIVE_MINT.toBase58();
@@ -150,12 +159,30 @@ function MeteoraOpenPositionForm({
     onSubmit: async (values) => {
       if (!isAuthenticated) await signIn();
 
+      let bundleId: string;
       const createPositionValue = {
         ...values,
         pair: pool.address,
         slippage: user.settings.slippage * 100,
       };
-      const { bundleId } = await mutateAsync(createPositionValue);
+
+      if (user.wallet.external) {
+        if (wallet.publicKey) {
+          const { execute } = await createMeteoraPosition(
+            dex,
+            sendTransaction,
+            fromWebWalletAdapter(wallet),
+            meteoraCreatePositionSchema.parse(createPositionValue),
+          );
+          bundleId = await execute();
+        }
+
+        return;
+      } else
+        bundleId = await mutateAsync(createPositionValue).then(
+          ({ bundleId }) => bundleId,
+        );
+
       if (analytics)
         logEvent(analytics, "position_opened", {
           bundleId,

@@ -3,7 +3,7 @@ import bs58 from "bs58";
 import xior from "xior";
 import type z from "zod";
 import { toast } from "react-toastify";
-import { SigninMessage } from "@rhiva-ag/shared";
+import { SignMessage } from "@rhiva-ag/shared";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { CookiesProvider, useCookies } from "react-cookie";
 import type {
@@ -142,7 +142,7 @@ export default withCookieProvider(function AuthProvider({
       publicKey: wallet.publicKey!.toBase58(),
       statement: "Login to Rhiva by signing this message",
     };
-    const signMessage = new SigninMessage(message);
+    const signMessage = new SignMessage(message);
     const data = new TextEncoder().encode(signMessage.prepare());
     if (wallet.signMessage) {
       const signature = await wallet.signMessage(data);

@@ -2,9 +2,9 @@ import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { users, userUpdateSchema } from "@rhiva-ag/datasource";
 
-import { getUserById } from "./user.controller";
 import { privateProcedure, router } from "../../trpc";
 import { extendedUserSelectSchema } from "./user.schema";
+import { getUserById } from "./user.controller";
 
 export const userRoute = router({
   me: privateProcedure
@@ -21,10 +21,10 @@ export const userRoute = router({
         .omit({
           id: true,
           uid: true,
-          referralCode: true,
           email: true,
-          currentStreak: true,
           lastLogin: true,
+          referralCode: true,
+          currentStreak: true,
         })
         .partial(),
     )

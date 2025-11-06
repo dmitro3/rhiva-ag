@@ -22,6 +22,7 @@ import {
 
 import { mapFilter } from "../collection";
 import { KMSSecret, Secret } from "../secret";
+import assert from "assert";
 
 export const isNative = (value: string | PublicKey | Address) => {
   const pubkey = new PublicKey(value);
@@ -81,21 +82,25 @@ export const batchSimulateTransactions = (
   );
 
 export async function loadWallet(
-  wallet: { key: string; wrappedDek: string | null },
+  wallet: { key: string | null; wrappedDek: string | null },
   secret: KMSSecret,
 ): Promise<Keypair>;
 export async function loadWallet(
-  wallet: { key: string; wrappedDex?: string },
+  wallet: { key: string | null; wrappedDex?: string },
   secret: Secret,
 ): Promise<Keypair>;
 export async function loadWallet(
-  wallet: { key: string; wrappedDex?: string },
+  wallet: { key: string | null; wrappedDex?: string },
   secret: Secret | KMSSecret,
 ): Promise<Keypair>;
 export async function loadWallet(
-  wallet: { key: string } | { key: string; wrappedDek?: string | null },
+  wallet:
+    | { key: string | null }
+    | { key: string | null; wrappedDek?: string | null },
   secret: KMSSecret | Secret,
 ) {
+  assert(wallet.key, "expected key not to be null");
+
   let privateKey: string | undefined;
   if (
     secret instanceof KMSSecret &&

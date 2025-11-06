@@ -1,7 +1,7 @@
 import { createSolanaRpc } from "@solana/kit";
-import type { Wallet } from "@coral-xyz/anchor";
 import type { Connection } from "@solana/web3.js";
 import type { Raydium } from "@raydium-io/raydium-sdk-v2";
+import { AnchorProvider, type Wallet } from "@coral-xyz/anchor";
 import { LiquidityBookServices, MODE } from "@saros-finance/dlmm-sdk";
 
 import { OrcaDLMM } from "./orca";
@@ -39,13 +39,10 @@ export class DLMM {
     );
     this.meteora = new MeteoraDLMM();
     this.raydium = new RaydiumCLMM(raydium);
+    const provider = new AnchorProvider(connection, {} as Wallet, {});
     this.orcaLegacy = new OrcaLegacyDLMM(
       buildWhirlpoolClient(
-        WhirlpoolContext.from(
-          connection,
-          {} as Wallet,
-          ORCA_WHIRLPOOL_PROGRAM_ID,
-        ),
+        WhirlpoolContext.withProvider(provider, ORCA_WHIRLPOOL_PROGRAM_ID),
       ),
     );
   }

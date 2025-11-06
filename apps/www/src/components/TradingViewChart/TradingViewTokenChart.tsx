@@ -1,19 +1,20 @@
 "use client";
+import dynamic from "next/dynamic";
 import { useCallback, useMemo, useState } from "react";
 import type { Token } from "@rhiva-ag/dex-api/jup/types";
 
-import TradingViewChart from ".";
+import { dexApi } from "@/instances";
 import { useTRPCClient } from "@/trpc.client";
 import { transformOHLCVToBar } from "./utils";
 import type { SearchResultItem } from "./types";
 import type { CreateDataFeedArgs } from "./datafeed-trpc";
 import type { ResolutionString } from "../../../public/static/charting_library/charting_library";
-import { dexApi } from "@/instances";
 
 export type TradingViewtokenChartProps = {
   token: Token;
 };
 
+const Chart = dynamic(() => import("."));
 export default function TradingViewtokenChart({
   token,
 }: TradingViewtokenChartProps) {
@@ -97,7 +98,7 @@ export default function TradingViewtokenChart({
   );
 
   return (
-    <TradingViewChart
+    <Chart
       symbol={token.name}
       datafeedArgs={{
         getBars,

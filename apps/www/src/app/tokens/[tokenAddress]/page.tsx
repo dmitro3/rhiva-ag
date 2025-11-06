@@ -55,7 +55,7 @@ export async function generateMetadata(
       sellOrganicVolume: token.stats24h.sellOrganicVolume,
     },
     stats5m: {
-      priceChange: token.stats5m.priceChange,
+      priceChange: token.stats5m?.priceChange,
     },
     mcap: token.mcap,
   };

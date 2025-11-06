@@ -20,31 +20,22 @@ export default function TokenTab({ data, ...props }: TokenSortProps) {
   const searchParams = useSearchParams();
   const timeframe = searchParams.get("timeframe");
 
-  const tabs = useMemo(
-    () => [
-      {
-        title: "5M",
-        value: "stats5m",
-        priceChange: data.stats5m.priceChange,
-      },
-      {
-        title: "1H",
-        value: "stats1h",
-        priceChange: data.stats1h.priceChange,
-      },
-      {
-        title: "6H",
-        value: "stats6h",
-        priceChange: data.stats6h.priceChange,
-      },
-      {
-        title: "24H",
-        value: null,
-        priceChange: data.stats24h.priceChange,
-      },
-    ],
-    [data],
-  );
+  const tabs = useMemo(() => {
+    const tabConfigs = [
+      { title: "5M", value: "stats5m", stat: data.stats5m },
+      { title: "1H", value: "stats1h", stat: data.stats1h },
+      { title: "6H", value: "stats6h", stat: data.stats6h },
+      { title: "24H", value: null, stat: data.stats24h },
+    ];
+
+    return tabConfigs
+      .filter(({ stat }) => stat?.priceChange !== undefined)
+      .map(({ title, value, stat }) => ({
+        title,
+        value,
+        priceChange: stat.priceChange,
+      }));
+  }, [data]);
 
   return (
     <div

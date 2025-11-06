@@ -1,8 +1,8 @@
 "use client";
+import dynamic from "next/dynamic";
 import type { Pair } from "@rhiva-ag/dex-api";
 import { useCallback, useMemo, useState } from "react";
 
-import TradingViewChart from ".";
 import { useTRPCClient } from "@/trpc.client";
 import { transformOHLCVToBar } from "./utils";
 import type { SearchResultItem } from "./types";
@@ -12,6 +12,8 @@ import type { ResolutionString } from "../../../public/static/charting_library/c
 export type TradingViewPoolChartProps = {
   pool: Pair;
 };
+
+const Chart = dynamic(() => import("."));
 
 export default function TradingViewPoolChart({
   pool,
@@ -112,7 +114,7 @@ export default function TradingViewPoolChart({
   );
 
   return (
-    <TradingViewChart
+    <Chart
       symbol={pool.name}
       datafeedArgs={{
         getBars,

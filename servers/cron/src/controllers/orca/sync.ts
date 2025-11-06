@@ -5,41 +5,41 @@ import { and, eq, inArray, not } from "drizzle-orm";
 import { fromLegacyPublicKey } from "@solana/compat";
 import type Coingecko from "@coingecko/coingecko-typescript";
 import {
-  chunkFetchMultipleAccounts,
   collectionToMap,
   promiseMapFilter,
+  chunkFetchMultipleAccounts,
 } from "@rhiva-ag/shared";
 import {
-  buildConflictUpdateColumns,
   pnls,
   pools,
   positions,
-  type walletSelectSchema,
+  buildConflictUpdateColumns,
   type Database,
+  type walletSchema,
 } from "@rhiva-ag/datasource";
 import {
+  tickIndexToPrice,
+  getTickIndexInArray,
   collectRewardsQuote,
   decreaseLiquidityQuote,
   getTickArrayStartTickIndex,
-  getTickIndexInArray,
-  tickIndexToPrice,
 } from "@orca-so/whirlpools-core";
 import {
-  fetchAllPositionWithFilter,
+  positionMintFilter,
   getTickArrayAddress,
   getTickArrayDecoder,
   getWhirlpoolDecoder,
-  positionMintFilter,
+  fetchAllPositionWithFilter,
 } from "@orca-so/whirlpools-client";
 import {
   address,
+  type Rpc,
   type Address,
   type GetEpochInfoApi,
   type GetMultipleAccountsApi,
   type GetProgramAccountsApi,
   type GetTokenAccountsByOwnerApi,
   type ProgramDerivedAddress,
-  type Rpc,
 } from "@solana/kit";
 
 export const syncOrcaPositionsForWallet = async (
@@ -51,7 +51,7 @@ export const syncOrcaPositionsForWallet = async (
   >,
   coingecko: Coingecko,
   db: Database,
-  wallet: Pick<z.infer<typeof walletSelectSchema>, "id" | "key">,
+  wallet: Pick<z.infer<typeof walletSchema>, "id">,
 ) => {
   const walletPositions = await db.query.positions.findMany({
     columns: {

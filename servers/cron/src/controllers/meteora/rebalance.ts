@@ -4,7 +4,7 @@ import type { KMSSecret, SendTransaction } from "@rhiva-ag/shared";
 import type {
   positionSelectSchema,
   settingsSelectSchema,
-  walletSelectSchema,
+  walletSchema,
 } from "@rhiva-ag/datasource";
 
 export const rabalanceMeteoraPosition = async (_args: {
@@ -13,5 +13,5 @@ export const rabalanceMeteoraPosition = async (_args: {
   sender: SendTransaction;
   position: z.infer<typeof positionSelectSchema>;
   settings: z.infer<typeof settingsSelectSchema>;
-  wallet: Pick<z.infer<typeof walletSelectSchema>, "id" | "key">;
+  wallet: Pick<z.infer<typeof walletSchema>, "id" | "key" | "wrappedDek">;
 }) => {};

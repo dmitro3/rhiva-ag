@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import type z from "zod";
 import { format } from "util";
 import { useMemo } from "react";
 import { number, object } from "yup";
@@ -137,29 +138,36 @@ function RaydiumOpenPositionForm({
     onSubmit: async (values) => {
       if (!isAuthenticated) await signIn();
 
-      let bundleId: string;
       const createPositionValue = {
         ...values,
         slippage: 50,
         pair: pool.address,
       };
+      let data: typeof createPositionValue | { transactions: string[] } =
+        createPositionValue;
 
       if (user.wallet.external) {
         if (wallet.publicKey) {
-          const { execute } = await createRaydiumPosition(
+          const { transactions } = await createRaydiumPosition(
             dex,
             sendTransaction,
             fromWebWalletAdapter(wallet),
-            raydiumCreatePositionSchema.parse(createPositionValue),
+            raydiumCreatePositionSchema.parse(createPositionValue) as Exclude<
+              z.infer<typeof raydiumCreatePositionSchema>,
+              { transactions: string[] }
+            >,
           );
-          bundleId = await execute();
+
+          data = {
+            transactions: transactions.map((transaction) =>
+              transaction.serialize().toBase64(),
+            ),
+          };
         }
 
         return;
-      } else
-        bundleId = await mutateAsync(createPositionValue).then(
-          ({ bundleId }) => bundleId,
-        );
+      }
+      const bundleId = await mutateAsync(data).then(({ bundleId }) => bundleId);
 
       if (analytics)
         logEvent(analytics, "position_opened", {

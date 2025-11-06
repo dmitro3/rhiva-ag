@@ -1,18 +1,36 @@
 import ms from "ms";
+import type z from "zod";
 import { toast } from "react-toastify";
 import { MdMoreVert } from "react-icons/md";
-import { mapFilter } from "@rhiva-ag/shared";
 import { logEvent } from "firebase/analytics";
-import type { AppRouter } from "@rhiva-ag/trpc";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { useCallback, useMemo, useRef, useState } from "react";
+import { fromWebWalletAdapter, mapFilter } from "@rhiva-ag/shared";
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
+import {
+  claimMeteoraReward,
+  claimOrcaReward,
+  claimRaydiumReward,
+  closeMeteoraPosition,
+  closeOrcaPosition,
+  closeRaydiumPosition,
+  meteoraClosePositionSchema,
+  orcaClaimRewardSchema,
+  orcaClosePositionSchema,
+  raydiumClaimRewardSchema,
+  raydiumClosePositionSchema,
+  meteoraClaimRewardSchema,
+  type AppRouter,
+} from "@rhiva-ag/trpc";
 
 import Image from "@/components/Image";
 import Pagination from "../Pagination";
+import { useDex } from "@/hooks/useDex";
 import PnLCardModal from "./PnLCardModal";
 import { useAuth } from "@/hooks/useAuth";
+import { sendTransaction } from "@/instances";
 import CopyButton from "@/components/CopyButton";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useTRPC, useTRPCClient } from "@/trpc.client";
@@ -24,7 +42,7 @@ type OpenPositionTableProps = {
   nativePrice: number;
 };
 
-type Position = Awaited<
+export type Position = Awaited<
   ReturnType<AppRouter["position"]["list"]>
 >["items"][number];
 
@@ -34,8 +52,10 @@ export default function OpenPositionTable({
 }: OpenPositionTableProps) {
   const trpc = useTRPC();
   const { user } = useAuth();
+  const wallet = useWallet();
   const analytics = useAnalytics();
   const trpcClient = useTRPCClient();
+  const dexInstance = useDex();
 
   const itemsPerPage = useRef(5);
   const searchParams = useSearchParams();
@@ -113,7 +133,7 @@ export default function OpenPositionTable({
 
   const closePosition = useCallback(
     async (position: Position) => {
-      const data = {
+      const closePositionValue = {
         pair: position.pool.id,
         position: position.id,
         slippage: user.settings.slippage * 100,
@@ -136,15 +156,78 @@ export default function OpenPositionTable({
         "raydium-clmm": trpcClient.position.meteora.close.mutate,
       };
 
+      let data: typeof closePositionValue | { transactions: string[] } =
+        closePositionValue;
+      if (user.wallet.external) {
+        if (wallet.publicKey) {
+          switch (position.pool.dex) {
+            case "orca": {
+              const { transactions } = await closeOrcaPosition(
+                dexInstance,
+                sendTransaction,
+                fromWebWalletAdapter(wallet),
+                orcaClosePositionSchema.parse(closePositionValue) as Exclude<
+                  z.infer<typeof orcaClosePositionSchema>,
+                  { transactions: string[] }
+                >,
+              );
+
+              data = {
+                transactions: transactions.map((transaction) =>
+                  transaction.serialize().toBase64(),
+                ),
+              };
+              break;
+            }
+            case "raydium-clmm": {
+              const { transactions } = await closeRaydiumPosition(
+                dexInstance,
+                fromWebWalletAdapter(wallet),
+                sendTransaction,
+                raydiumClosePositionSchema.parse(closePositionValue) as Exclude<
+                  z.infer<typeof raydiumClosePositionSchema>,
+                  { transactions: string[] }
+                >,
+              );
+
+              data = {
+                transactions: transactions.map((transaction) =>
+                  transaction.serialize().toBase64(),
+                ),
+              };
+              break;
+            }
+            case "meteora": {
+              const { transactions } = await closeMeteoraPosition(
+                dexInstance,
+                sendTransaction,
+                fromWebWalletAdapter(wallet),
+                meteoraClosePositionSchema.parse(closePositionValue) as Exclude<
+                  z.infer<typeof meteoraClosePositionSchema>,
+                  { transactions: string[] }
+                >,
+              );
+
+              data = {
+                transactions: transactions.map((transaction) =>
+                  transaction.serialize().toBase64(),
+                ),
+              };
+              break;
+            }
+          }
+        } else return;
+      }
+
       const func = mapFunc[position.pool.dex];
       if (func) return func(data);
     },
-    [trpcClient, user],
+    [trpcClient, dexInstance, user, wallet],
   );
 
   const claimRewards = useCallback(
     async (position: Position) => {
-      const data = {
+      const claimRewardValue = {
         pair: position.pool.id,
         position: position.id,
         slippage: user.settings.slippage * 100,
@@ -167,10 +250,73 @@ export default function OpenPositionTable({
         "raydium-clmm": trpcClient.position.meteora.claim.mutate,
       };
 
+      let data: typeof claimRewardValue | { transactions: string[] } =
+        claimRewardValue;
+      if (user.wallet.external) {
+        if (wallet.publicKey) {
+          switch (position.pool.dex) {
+            case "orca": {
+              const { transactions } = await claimOrcaReward(
+                dexInstance,
+                sendTransaction,
+                fromWebWalletAdapter(wallet),
+                orcaClaimRewardSchema.parse(claimRewardValue) as Exclude<
+                  z.infer<typeof orcaClaimRewardSchema>,
+                  { transactions: string[] }
+                >,
+              );
+
+              data = {
+                transactions: transactions.map((transaction) =>
+                  transaction.serialize().toBase64(),
+                ),
+              };
+              break;
+            }
+            case "raydium-clmm": {
+              const { transactions } = await claimRaydiumReward(
+                dexInstance,
+                sendTransaction,
+                fromWebWalletAdapter(wallet),
+                raydiumClaimRewardSchema.parse(claimRewardValue) as Exclude<
+                  z.infer<typeof raydiumClaimRewardSchema>,
+                  { transactions: string[] }
+                >,
+              );
+
+              data = {
+                transactions: transactions.map((transaction) =>
+                  transaction.serialize().toBase64(),
+                ),
+              };
+              break;
+            }
+            case "meteora": {
+              const { transactions } = await claimMeteoraReward(
+                dexInstance,
+                sendTransaction,
+                fromWebWalletAdapter(wallet),
+                meteoraClaimRewardSchema.parse(claimRewardValue) as Exclude<
+                  z.infer<typeof meteoraClaimRewardSchema>,
+                  { transactions: string[] }
+                >,
+              );
+
+              data = {
+                transactions: transactions.map((transaction) =>
+                  transaction.serialize().toBase64(),
+                ),
+              };
+              break;
+            }
+          }
+        } else return;
+      }
+
       const func = mapFunc[position.pool.dex];
       if (func) return func(data);
     },
-    [trpcClient, user],
+    [trpcClient, user, wallet, dexInstance],
   );
 
   const onClosePosition = useCallback(
@@ -194,9 +340,9 @@ export default function OpenPositionTable({
   const onClaimRewards = useCallback(
     async (position: Position) => {
       const result = await toast.promise(claimRewards(position), {
+        error: "Oops! Transaction failed.",
         pending: "Sending claim reward transaction...",
         success: "Transaction bundle sent successfully.",
-        error: "Oops! Transaction failed.",
       });
       if (result) {
         const { bundleId } = result;

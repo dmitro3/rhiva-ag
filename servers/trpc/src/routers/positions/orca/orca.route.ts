@@ -3,16 +3,15 @@ import { eq } from "drizzle-orm";
 import { Work } from "@rhiva-ag/cron";
 import { TRPCError } from "@trpc/server";
 import { loadWallet } from "@rhiva-ag/shared";
-import { createKeyPairSignerFromBytes } from "@solana/kit";
 import {
   mints,
   positions,
-  positionSelectSchema,
   buildConflictUpdateColumns,
 } from "@rhiva-ag/datasource";
 
 import { createQueue } from "../shared";
 import { privateProcedure, router } from "../../../trpc";
+import { positionRebalanceSchema } from "../position.schema";
 import {
   claimReward,
   closePosition,
@@ -31,12 +30,6 @@ export const orcaRoute = router({
   create: privateProcedure
     .input(orcaCreatePositionSchema)
     .mutation(async ({ ctx, input }) => {
-      if (ctx.user.wallet.external)
-        throw new TRPCError({
-          code: "NOT_IMPLEMENTED",
-          message: "external wallet not supported",
-        });
-
       if (input.tokens)
         await ctx.drizzle
           .insert(mints)
@@ -46,18 +39,29 @@ export const orcaRoute = router({
             set: buildConflictUpdateColumns(mints, ["name", "symbol", "image"]),
           });
 
-      const dex = new Dex(ctx.connection);
-      const owner = await loadWallet(ctx.user.wallet, ctx.secret);
-      const signer = await createKeyPairSignerFromBytes(owner.secretKey);
+      let bundleId: string;
+      if ("transactions" in input) {
+        bundleId = await ctx.sendTransaction
+          .sendBundle(input.transactions)
+          .then(({ result }) => result);
+      } else {
+        if (ctx.user.wallet.external)
+          throw new TRPCError({
+            code: "NOT_IMPLEMENTED",
+            message: "external wallet not supported",
+          });
 
-      const { execute } = await createPosition(
-        dex,
-        ctx.sendTransaction,
-        signer,
-        input,
-      );
+        const dex = new Dex(ctx.connection);
+        const owner = await loadWallet(ctx.user.wallet, ctx.secret);
+        const { execute } = await createPosition(
+          dex,
+          ctx.sendTransaction,
+          owner,
+          input,
+        );
 
-      const bundleId = await execute();
+        bundleId = await execute();
+      }
       const response = await queue.add(
         Work.syncTransaction,
         {
@@ -77,24 +81,29 @@ export const orcaRoute = router({
   claim: privateProcedure
     .input(orcaClaimRewardSchema)
     .mutation(async ({ ctx, input }) => {
-      if (ctx.user.wallet.external)
-        throw new TRPCError({
-          code: "NOT_IMPLEMENTED",
-          message: "external wallet not supported",
-        });
+      let bundleId: string;
+      if ("transactions" in input) {
+        bundleId = await ctx.sendTransaction
+          .sendBundle(input.transactions)
+          .then(({ result }) => result);
+      } else {
+        if (ctx.user.wallet.external)
+          throw new TRPCError({
+            code: "NOT_IMPLEMENTED",
+            message: "external wallet not supported",
+          });
 
-      const dex = new Dex(ctx.connection);
-      const owner = await loadWallet(ctx.user.wallet, ctx.secret);
-      const signer = await createKeyPairSignerFromBytes(owner.secretKey);
+        const dex = new Dex(ctx.connection);
+        const owner = await loadWallet(ctx.user.wallet, ctx.secret);
+        const { execute } = await claimReward(
+          dex,
+          ctx.sendTransaction,
+          owner,
+          input,
+        );
 
-      const { execute } = await claimReward(
-        dex,
-        ctx.sendTransaction,
-        signer,
-        input,
-      );
-
-      const bundleId = await execute();
+        bundleId = await execute();
+      }
 
       return {
         bundleId,
@@ -104,23 +113,30 @@ export const orcaRoute = router({
   close: privateProcedure
     .input(orcaClosePositionSchema)
     .mutation(async ({ ctx, input }) => {
-      if (ctx.user.wallet.external)
-        throw new TRPCError({
-          code: "NOT_IMPLEMENTED",
-          message: "external wallet not supported",
-        });
+      let bundleId: string;
+      if ("transactions" in input) {
+        bundleId = await ctx.sendTransaction
+          .sendBundle(input.transactions)
+          .then(({ result }) => result);
+      } else {
+        if (ctx.user.wallet.external)
+          throw new TRPCError({
+            code: "NOT_IMPLEMENTED",
+            message: "external wallet not supported",
+          });
 
-      const dex = new Dex(ctx.connection);
-      const owner = await loadWallet(ctx.user.wallet, ctx.secret);
-      const signer = await createKeyPairSignerFromBytes(owner.secretKey);
-      const { execute } = await closePosition(
-        dex,
-        ctx.sendTransaction,
-        signer,
-        input,
-      );
+        const dex = new Dex(ctx.connection);
+        const owner = await loadWallet(ctx.user.wallet, ctx.secret);
+        const { execute } = await closePosition(
+          dex,
+          ctx.sendTransaction,
+          owner,
+          input,
+        );
 
-      const bundleId = await execute();
+        bundleId = await execute();
+      }
+
       const response = await queue.add(
         Work.syncTransaction,
         {
@@ -138,14 +154,8 @@ export const orcaRoute = router({
       };
     }),
   rebalance: privateProcedure
-    .input(positionSelectSchema.pick({ id: true }))
+    .input(positionRebalanceSchema)
     .mutation(async ({ ctx, input }) => {
-      if (ctx.user.wallet.external)
-        throw new TRPCError({
-          code: "NOT_IMPLEMENTED",
-          message: "external wallet not supported",
-        });
-
       const position = await ctx.drizzle.query.positions.findFirst({
         with: {
           pool: {
@@ -158,18 +168,29 @@ export const orcaRoute = router({
         where: eq(positions.id, input.id),
       });
       if (position) {
-        const dex = new Dex(ctx.connection);
-        const owner = await loadWallet(ctx.user.wallet, ctx.secret);
-        const signer = await createKeyPairSignerFromBytes(owner.secretKey);
-        const { execute } = await rebalancePosition({
-          dex,
-          signer,
-          position,
-          sender: ctx.sendTransaction,
-          settings: ctx.user.settings,
-        });
+        let bundleId: string;
+        if ("transactions" in input) {
+          bundleId = await ctx.sendTransaction
+            .sendBundle(input.transactions)
+            .then(({ result }) => result);
+        } else {
+          if (ctx.user.wallet.external)
+            throw new TRPCError({
+              code: "NOT_IMPLEMENTED",
+              message: "external wallet not supported",
+            });
+          const dex = new Dex(ctx.connection);
+          const owner = await loadWallet(ctx.user.wallet, ctx.secret);
+          const { execute } = await rebalancePosition({
+            dex,
+            owner,
+            position,
+            sender: ctx.sendTransaction,
+            settings: ctx.user.settings,
+          });
 
-        const bundleId = await execute();
+          bundleId = await execute();
+        }
         const response = await queue.add(
           Work.syncTransaction,
           {

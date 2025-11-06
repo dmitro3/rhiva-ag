@@ -58,18 +58,23 @@ export default function PorfolioTokenTab() {
                 </div>
               </div>
               <div className="flex items-center space-x-4 [&_button]:flex-1 [&_button]:min-w-32 [&_button]:bg-white/3 [&_button]:py-2 [&_button]:border [&_button]:border-white/10 [&_button]:rounded">
-                <button
-                  type="button"
-                  onClick={() => setShowSendModal(true)}
-                >
-                  Send
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowReceiveModal(true)}
-                >
-                  Receive
-                </button>
+                {!user.wallet.external && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setShowSendModal(true)}
+                    >
+                      Send
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowReceiveModal(true)}
+                    >
+                      Receive
+                    </button>
+                  </>
+                )}
+
                 <button
                   type="button"
                   className="!bg-primary border-none text-black"

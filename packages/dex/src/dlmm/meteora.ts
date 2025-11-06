@@ -1,21 +1,14 @@
 import BN from "bn.js";
 import Decimal from "decimal.js";
 import type DLMM from "@meteora-ag/dlmm";
+import { Transaction, type PublicKey } from "@solana/web3.js";
 import {
   MAX_BINS_PER_POSITION,
   type LbPosition,
   type StrategyType,
 } from "@meteora-ag/dlmm";
-import {
-  TransactionMessage,
-  VersionedTransaction,
-  type Connection,
-  type PublicKey,
-} from "@solana/web3.js";
 
 export class MeteoraDLMM {
-  constructor(private readonly connection: Connection) {}
-
   readonly buildCreatePosition = async ({
     priceChanges,
     position,
@@ -167,30 +160,12 @@ export class MeteoraDLMM {
         owner,
         slippage,
       );
-    const transactions = [];
-    const { blockhash: recentBlockhash } =
-      await this.connection.getLatestBlockhash();
+    const transactions: Transaction[] = [];
 
     if (initBinArrayInstructions.length > 0)
-      transactions.push(
-        new VersionedTransaction(
-          new TransactionMessage({
-            recentBlockhash,
-            payerKey: owner,
-            instructions: initBinArrayInstructions,
-          }).compileToV0Message(),
-        ),
-      );
+      transactions.push(new Transaction().add(...initBinArrayInstructions));
     if (rebalancePositionInstruction.length > 0)
-      transactions.push(
-        new VersionedTransaction(
-          new TransactionMessage({
-            recentBlockhash,
-            payerKey: owner,
-            instructions: rebalancePositionInstruction,
-          }).compileToV0Message(),
-        ),
-      );
+      transactions.push(new Transaction().add(...rebalancePositionInstruction));
 
     return transactions;
   };

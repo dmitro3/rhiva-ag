@@ -3,10 +3,10 @@
   "version": "0.0.0",
   "type": "module",
   "private": true,
-  "types": "./src/external.ts",
+  "types": "./src/index.node.ts",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
+      "types": "./src/index.node.ts",
       "import": "./src/index.browser.ts",
       "node": "./src/index.node.ts",
       "browser": "./src/index.browser.ts"
@@ -34,8 +34,8 @@
     "@orca-so/whirlpools": "^4.0.0",
     "@orca-so/whirlpools-client": "^4.0.1",
     "@orca-so/whirlpools-core": "^2.0.0",
+    "@orca-so/whirlpools-sdk": "^0.16.0",
     "@raydium-io/raydium-sdk-v2": "^0.2.30-alpha",
-
     "@solana-tracker/data-api": "^0.1.4",
     "@solana/compat": "^4.0.0",
     "@solana/kit": "^2.3.0",

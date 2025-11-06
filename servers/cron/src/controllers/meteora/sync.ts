@@ -9,9 +9,9 @@ import {
   pnls,
   pools,
   positions,
-  type Database,
-  type walletSelectSchema,
   buildConflictUpdateColumns,
+  type Database,
+  type walletSchema,
 } from "@rhiva-ag/datasource";
 
 import { fromPricePerLamport } from "./shared";
@@ -20,7 +20,7 @@ export const syncMeteoraPositionsForWallet = async (
   db: Database,
   connection: Connection,
   coingecko: Coingecko,
-  wallet: Pick<z.infer<typeof walletSelectSchema>, "id" | "key">,
+  wallet: Pick<z.infer<typeof walletSchema>, "id">,
 ) => {
   const walletPositions = await db.query.positions.findMany({
     columns: {

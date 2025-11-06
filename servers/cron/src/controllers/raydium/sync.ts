@@ -14,9 +14,9 @@ import {
   pnls,
   pools,
   positions,
-  type Database,
-  type walletSelectSchema,
   buildConflictUpdateColumns,
+  type Database,
+  type walletSchema,
 } from "@rhiva-ag/datasource";
 import {
   PoolInfoLayout,
@@ -34,7 +34,7 @@ export const syncRaydiumPositionsForWallet = async (
   db: Database,
   connection: Connection,
   coingecko: Coingecko,
-  wallet: Pick<z.infer<typeof walletSelectSchema>, "id" | "key">,
+  wallet: Pick<z.infer<typeof walletSchema>, "id">,
 ) => {
   const raydium = await Raydium.load({
     connection,

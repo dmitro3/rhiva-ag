@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { memo, useEffect, useRef } from "react";
 import { createDatafeed, type CreateDataFeedArgs } from "./datafeed-trpc";
 import {
   widget,
@@ -10,7 +10,7 @@ type TradeViewChartProps = {
   datafeedArgs: CreateDataFeedArgs;
 } & React.ComponentProps<"div">;
 
-export default function TradeViewChart({
+export default memo(function TradeViewChart({
   symbol,
   datafeedArgs,
   ...props
@@ -82,4 +82,4 @@ export default function TradeViewChart({
       }}
     />
   );
-}
+});

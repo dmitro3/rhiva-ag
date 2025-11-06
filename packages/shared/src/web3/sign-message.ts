@@ -87,7 +87,7 @@ export const fromWebWalletAdapter = (
     signTransaction: (tx) => wallet.signTransaction!(tx),
     signAllTransactions: (txs) => {
       if (wallet.signAllTransactions) return wallet.signAllTransactions(txs);
-      return Promise.all(txs.map((tx) => wallet.signTransaction(tx)));
+      return Promise.all(txs.map((tx) => wallet.signTransaction!(tx)));
     },
   };
 };

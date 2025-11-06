@@ -3,6 +3,7 @@ import assert from "assert";
 import Decimal from "decimal.js";
 import type { z } from "zod/mini";
 import type Dex from "@rhiva-ag/dex";
+import { PublicKey, type VersionedTransaction } from "@solana/web3.js";
 import { getAssociatedTokenAddressSync, NATIVE_MINT } from "@solana/spl-token";
 import type {
   positionSelectSchema,
@@ -14,7 +15,6 @@ import {
   type SendTransaction,
   type WalletAdapter,
 } from "@rhiva-ag/shared";
-import { PublicKey, type VersionedTransaction } from "@solana/web3.js";
 import {
   getPreTokenBalanceForAccounts,
   getTokenBalanceChangesFromBatchSimulation,
@@ -41,12 +41,15 @@ export const createPosition = async (
   wallet: WalletAdapter,
   {
     pair,
-    inputAmount,
-    inputMint,
     slippage,
-    priceChanges,
+    inputMint,
     jitoConfig,
-  }: z.infer<typeof raydiumCreatePositionSchema>,
+    inputAmount,
+    priceChanges,
+  }: Exclude<
+    z.infer<typeof raydiumCreatePositionSchema>,
+    { transactions: string[] }
+  >,
 ) => {
   const pool = await dex.dlmm.raydium.raydium.clmm.getRpcClmmPoolInfo({
     poolId: pair,
@@ -148,7 +151,10 @@ export const claimReward = async (
     pair,
     slippage,
     jitoConfig,
-  }: z.infer<typeof raydiumClaimRewardSchema>,
+  }: Exclude<
+    z.infer<typeof raydiumClaimRewardSchema>,
+    { transactions: string[] }
+  >,
 ) => {
   const accountInfo = await dex.connection.getAccountInfo(
     getPdaPersonalPositionAddress(CLMM_PROGRAM_ID, positionPubkey).publicKey,
@@ -269,7 +275,10 @@ export const closePosition = async (
     jitoConfig,
     swapToNative,
     position: positionPubkey,
-  }: z.infer<typeof raydiumClosePositionSchema>,
+  }: Exclude<
+    z.infer<typeof raydiumClosePositionSchema>,
+    { transactions: string[] }
+  >,
 ) => {
   const accountInfo = await dex.connection.getAccountInfo(
     getPdaPersonalPositionAddress(CLMM_PROGRAM_ID, positionPubkey).publicKey,
@@ -472,7 +481,7 @@ export const rebalancePosition = async ({
   const tickUpper = currentTick - tickDelta;
   const tickLower = currentTick + tickDelta;
 
-  const { transaction, signers } =
+  const { transaction, signers, extInfo } =
     await dex.dlmm.raydium.raydium.clmm.openPositionFromBase({
       poolInfo,
       tickLower,
@@ -496,6 +505,7 @@ export const rebalancePosition = async ({
   return {
     transactions,
     bundleSimulationResponse,
+    positionNftMint: extInfo.nftMint,
     async execute() {
       const { result } = await sender.sendBundle(transactions);
       return result;

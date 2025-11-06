@@ -20,6 +20,8 @@ import type { Token } from "./SelectTokenModal";
 import SelectTokenModal from "./SelectTokenModal";
 import { DefaultToken } from "@/constants/tokens";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { useDex } from "@/hooks/useDex";
+import { useWallet } from "@solana/wallet-adapter-react";
 
 type SwapModalProps = {
   modal?: boolean;
@@ -52,7 +54,9 @@ function SwapForm({
   tokens = [DefaultToken.Usdc, DefaultToken.Sol],
   ...props
 }: React.ComponentProps<typeof Form> & Pick<SwapModalProps, "tokens">) {
+  const dex = useDex();
   const trpc = useTRPC();
+  const wallet = useWallet();
   const analytics = useAnalytics();
   const { isAuthenticated, signIn, user } = useAuth();
   const [showSelectInputTokenModal, setShowSelectInputTokenModal] =
@@ -79,7 +83,21 @@ function SwapForm({
         inputDecimals: values.inputToken.decimals,
         outputDecimals: values.outputToken.decimals,
       };
-      const bundleId = await mutateAsync(swapValue);
+      let data: typeof swapValue | { transactions: string[] } = swapValue;
+      if (user.wallet.external) {
+        if (wallet.publicKey) {
+          const { transaction } = await dex.swap.jupiter.buildSwap({
+            ...swapValue,
+            owner: wallet.publicKey,
+            amount:
+              BigInt(values.inputAmount) *
+              BigInt(Math.pow(10, values.inputToken.decimals)),
+          });
+
+          data = { transactions: [transaction.serialize().toBase64()] };
+        } else return;
+      }
+      const bundleId = await mutateAsync(data);
       if (analytics)
         logEvent(analytics, "swap_transaction", { bundleId, ...swapValue });
 

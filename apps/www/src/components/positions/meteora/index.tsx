@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import type z from "zod";
 import { format } from "util";
 import { object, number } from "yup";
 import { toast } from "react-toastify";
@@ -159,29 +160,36 @@ function MeteoraOpenPositionForm({
     onSubmit: async (values) => {
       if (!isAuthenticated) await signIn();
 
-      let bundleId: string;
       const createPositionValue = {
         ...values,
         pair: pool.address,
         slippage: user.settings.slippage * 100,
       };
 
+      let data: typeof createPositionValue | { transactions: string[] } =
+        createPositionValue;
+
       if (user.wallet.external) {
         if (wallet.publicKey) {
-          const { execute } = await createMeteoraPosition(
+          const { transactions } = await createMeteoraPosition(
             dex,
             sendTransaction,
             fromWebWalletAdapter(wallet),
-            meteoraCreatePositionSchema.parse(createPositionValue),
+            meteoraCreatePositionSchema.parse(createPositionValue) as Exclude<
+              z.infer<typeof meteoraCreatePositionSchema>,
+              { transactions: string[] }
+            >,
           );
-          bundleId = await execute();
-        }
 
-        return;
-      } else
-        bundleId = await mutateAsync(createPositionValue).then(
-          ({ bundleId }) => bundleId,
-        );
+          data = {
+            transactions: transactions.map((transaction) =>
+              transaction.serialize().toBase64(),
+            ),
+          };
+        }
+      }
+
+      const bundleId = await mutateAsync(data).then(({ bundleId }) => bundleId);
 
       if (analytics)
         logEvent(analytics, "position_opened", {

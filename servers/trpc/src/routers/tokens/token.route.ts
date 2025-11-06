@@ -1,9 +1,12 @@
 import z from "zod";
 import Dex from "@rhiva-ag/dex";
 import Decimal from "decimal.js";
+import { TRPCError } from "@trpc/server";
 import { rewards } from "@rhiva-ag/datasource";
 import { isNative, loadWallet } from "@rhiva-ag/shared";
 import { createTransferCheckedInstruction } from "@solana/spl-token";
+import type { TradeGetResponse } from "@coingecko/coingecko-typescript/resources/onchain/networks/pools/trades.js";
+import type { OhlcvGetTimeframeResponse } from "@coingecko/coingecko-typescript/resources/onchain/networks/pools/ohlcv.js";
 import {
   PublicKey,
   SystemProgram,
@@ -15,8 +18,6 @@ import {
   createAssociatedTokenAccountIdempotentInstruction,
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
-import type { TradeGetResponse } from "@coingecko/coingecko-typescript/resources/onchain/networks/pools/trades.js";
-import type { OhlcvGetTimeframeResponse } from "@coingecko/coingecko-typescript/resources/onchain/networks/pools/ohlcv.js";
 
 import { privateProcedure, publicProcedure, router } from "../../trpc";
 import {
@@ -76,55 +77,75 @@ export const tokenRoute = router({
   swap: privateProcedure
     .input(tokenSwapSchema)
     .mutation(async ({ ctx, input }) => {
-      const dex = new Dex(ctx.connection);
-      const wallet = await loadWallet(ctx.user.wallet, ctx.secret);
+      let bundleId: string;
+      if ("transactions" in input) {
+        bundleId = await ctx.sendTransaction
+          .sendBundle(input.transactions)
+          .then(({ result }) => result);
+      } else {
+        if (ctx.user.wallet.external)
+          throw new TRPCError({
+            code: "NOT_IMPLEMENTED",
+            message: "external wallet not supported",
+          });
 
-      const { quote, transaction } = await dex.swap.jupiter.buildSwap({
-        ...input,
-        owner: wallet.publicKey,
-        amount:
-          BigInt(input.amount) * BigInt(Math.pow(10, input.inputDecimals)),
-      });
+        const dex = new Dex(ctx.connection);
+        const wallet = await loadWallet(ctx.user.wallet, ctx.secret);
 
-      const prices = (await ctx.coingecko.simple.tokenPrice.getID("solana", {
-        vs_currencies: "usd",
-        contract_addresses: [input.inputMint, input.outputMint].join(","),
-      })) as Record<string, { usd: number }>;
-
-      let amountUsd = 0;
-      const rawInputAmount = quote[input.inputMint];
-      const rawOutputAmount = quote[input.outputMint];
-
-      if (rawInputAmount) {
-        const inputAmount = new Decimal(rawInputAmount)
-          .div(Math.pow(10, input.inputDecimals))
-          .toNumber();
-        const price = prices[input.inputMint];
-        if (price) amountUsd += price.usd * inputAmount;
-      }
-
-      if (rawOutputAmount) {
-        const outputAmount = new Decimal(rawOutputAmount)
-          .div(Math.pow(10, input.outputDecimals))
-          .toNumber();
-        const price = prices[input.outputMint];
-        if (price) amountUsd += price.usd * outputAmount;
-      }
-
-      const { result } = await ctx.sendTransaction.sendBundle([transaction]);
-
-      if (amountUsd > 0)
-        await ctx.drizzle.insert(rewards).values({
-          key: "swap",
-          user: ctx.user.id,
-          xp: Math.floor(amountUsd),
+        const { quote, transaction } = await dex.swap.jupiter.buildSwap({
+          ...input,
+          owner: wallet.publicKey,
+          amount:
+            BigInt(input.amount) * BigInt(Math.pow(10, input.inputDecimals)),
         });
 
-      return result;
+        const prices = (await ctx.coingecko.simple.tokenPrice.getID("solana", {
+          vs_currencies: "usd",
+          contract_addresses: [input.inputMint, input.outputMint].join(","),
+        })) as Record<string, { usd: number }>;
+
+        let amountUsd = 0;
+        const rawInputAmount = quote[input.inputMint];
+        const rawOutputAmount = quote[input.outputMint];
+
+        if (rawInputAmount) {
+          const inputAmount = new Decimal(rawInputAmount)
+            .div(Math.pow(10, input.inputDecimals))
+            .toNumber();
+          const price = prices[input.inputMint];
+          if (price) amountUsd += price.usd * inputAmount;
+        }
+
+        if (rawOutputAmount) {
+          const outputAmount = new Decimal(rawOutputAmount)
+            .div(Math.pow(10, input.outputDecimals))
+            .toNumber();
+          const price = prices[input.outputMint];
+          if (price) amountUsd += price.usd * outputAmount;
+        }
+
+        bundleId = await ctx.sendTransaction
+          .sendBundle([transaction])
+          .then(({ result }) => result);
+
+        if (amountUsd > 0)
+          await ctx.drizzle.insert(rewards).values({
+            key: "swap",
+            user: ctx.user.id,
+            xp: Math.floor(amountUsd),
+          });
+      }
+      return bundleId;
     }),
   send: privateProcedure
     .input(tokenSendSchema)
     .mutation(async ({ ctx, input }) => {
+      if (ctx.user.wallet.external)
+        throw new TRPCError({
+          code: "NOT_IMPLEMENTED",
+          message: "external wallet not supported",
+        });
+
       const transferInstructions: TransactionInstruction[] = [];
       const owner = new PublicKey(ctx.user.wallet.id);
       const wallet = await loadWallet(ctx.user.wallet, ctx.secret);

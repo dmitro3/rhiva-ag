@@ -8,12 +8,12 @@ import { toast } from "react-toastify";
 import { FcGoogle } from "react-icons/fc";
 import { useCookies } from "react-cookie";
 import { Field, Form, Formik } from "formik";
+import type { ActionCodeSettings } from "firebase/auth";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { MdArrowForward, MdClose } from "react-icons/md";
 import type { safeAuthUserSchema } from "@rhiva-ag/trpc";
-import type { ActionCodeSettings } from "firebase/auth";
-import { BsFacebook, BsGithub, BsApple, BsXSquareFill } from "react-icons/bs";
 import { Dialog, DialogBackdrop, DialogPanel } from "@headlessui/react";
+import { BsFacebook, BsGithub, BsApple, BsXSquareFill } from "react-icons/bs";
 import {
   getAuth,
   sendSignInLinkToEmail,
@@ -27,6 +27,7 @@ import {
 } from "firebase/auth";
 
 import Logo from "@/assets/logo-sm.png";
+import ConnectWalletItem from "./ConnectWalletItem";
 
 class AppleAuthProvider extends OAuthProvider {
   constructor() {
@@ -51,7 +52,7 @@ type AuthConnector = {
 };
 
 export default function AuthModal({ onSignIn, ...props }: AuthModalProps) {
-  const { wallets, select } = useWallet();
+  const { wallets } = useWallet();
   const auth = useMemo(() => getAuth(), []);
   const [cookies, setCookie] = useCookies<"email", { email: string }>([
     "email",
@@ -209,20 +210,10 @@ export default function AuthModal({ onSignIn, ...props }: AuthModalProps) {
                 </button>
               ))}
               {wallets.map((wallet) => (
-                <button
+                <ConnectWalletItem
                   key={wallet.adapter.name}
-                  type="button"
-                  className="flex items-center space-x-2 border border-white/10 p-2 rounded-md"
-                  onClick={() => select(wallet.adapter.name)}
-                >
-                  <Image
-                    src={wallet.adapter.icon}
-                    width={24}
-                    height={24}
-                    alt={wallet.adapter.name}
-                  />
-                  <span>{wallet.adapter.name}</span>
-                </button>
+                  wallet={wallet}
+                />
               ))}
             </div>
           </div>

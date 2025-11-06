@@ -2,17 +2,18 @@ import Dex from "@rhiva-ag/dex";
 import { eq } from "drizzle-orm";
 import { Work } from "@rhiva-ag/cron";
 import { TRPCError } from "@trpc/server";
+import type { PublicKey } from "@solana/web3.js";
 import { fromLegacyPublicKey } from "@solana/compat";
 import { fromKeyPairToWalletAdapter, loadWallet } from "@rhiva-ag/shared";
 import {
   mints,
   positions,
-  positionSelectSchema,
   buildConflictUpdateColumns,
 } from "@rhiva-ag/datasource";
 
 import { createQueue } from "../shared";
 import { privateProcedure, router } from "../../../trpc";
+import { positionRebalanceSchema } from "../position.schema";
 import {
   claimReward,
   closePosition,
@@ -31,12 +32,6 @@ export const raydiumRoute = router({
   create: privateProcedure
     .input(raydiumCreatePositionSchema)
     .mutation(async ({ ctx, input }) => {
-      if (ctx.user.wallet.external)
-        throw new TRPCError({
-          code: "NOT_IMPLEMENTED",
-          message: "external wallet not supported",
-        });
-
       if (input.tokens)
         await ctx.drizzle
           .insert(mints)
@@ -45,17 +40,33 @@ export const raydiumRoute = router({
             target: [mints.id],
             set: buildConflictUpdateColumns(mints, ["name", "symbol", "image"]),
           });
-      const dex = new Dex(ctx.connection);
-      const owner = await loadWallet(ctx.user.wallet, ctx.secret);
-      const wallet = fromKeyPairToWalletAdapter(owner);
-      const { positionNftMint, execute } = await createPosition(
-        dex,
-        ctx.sendTransaction,
-        wallet,
-        input,
-      );
 
-      const bundleId = await execute();
+      let bundleId: string, positionNftMint: PublicKey;
+      if ("transactions" in input) {
+        positionNftMint = input.positionNftMint;
+        bundleId = await ctx.sendTransaction
+          .sendBundle(input.transactions)
+          .then(({ result }) => result);
+      } else {
+        if (ctx.user.wallet.external)
+          throw new TRPCError({
+            code: "NOT_IMPLEMENTED",
+            message: "external wallet not supported",
+          });
+
+        const dex = new Dex(ctx.connection);
+        const owner = await loadWallet(ctx.user.wallet, ctx.secret);
+        const wallet = fromKeyPairToWalletAdapter(owner);
+        const { positionNftMint: mint, execute } = await createPosition(
+          dex,
+          ctx.sendTransaction,
+          wallet,
+          input,
+        );
+
+        bundleId = await execute();
+        positionNftMint = mint;
+      }
       const response = await queue.add(
         Work.syncTransaction,
         {
@@ -76,29 +87,30 @@ export const raydiumRoute = router({
   claim: privateProcedure
     .input(raydiumClaimRewardSchema)
     .mutation(async ({ ctx, input }) => {
-      if (ctx.user.wallet.external)
-        throw new TRPCError({
-          code: "NOT_IMPLEMENTED",
-          message: "external wallet not supported",
-        });
+      let bundleId: string;
+      if ("transactions" in input) {
+        bundleId = await ctx.sendTransaction
+          .sendBundle(input.transactions)
+          .then(({ result }) => result);
+      } else {
+        if (ctx.user.wallet.external)
+          throw new TRPCError({
+            code: "NOT_IMPLEMENTED",
+            message: "external wallet not supported",
+          });
 
-      if (ctx.user.wallet.external)
-        throw new TRPCError({
-          code: "NOT_IMPLEMENTED",
-          message: "external wallet not supported",
-        });
+        const dex = new Dex(ctx.connection);
+        const owner = await loadWallet(ctx.user.wallet, ctx.secret);
+        const wallet = fromKeyPairToWalletAdapter(owner);
+        const { execute } = await claimReward(
+          dex,
+          ctx.sendTransaction,
+          wallet,
+          input,
+        );
 
-      const dex = new Dex(ctx.connection);
-      const owner = await loadWallet(ctx.user.wallet, ctx.secret);
-      const wallet = fromKeyPairToWalletAdapter(owner);
-      const { execute } = await claimReward(
-        dex,
-        ctx.sendTransaction,
-        wallet,
-        input,
-      );
-
-      const bundleId = await execute();
+        bundleId = await execute();
+      }
 
       return {
         bundleId,
@@ -107,23 +119,31 @@ export const raydiumRoute = router({
   close: privateProcedure
     .input(raydiumClosePositionSchema)
     .mutation(async ({ ctx, input }) => {
-      if (ctx.user.wallet.external)
-        throw new TRPCError({
-          code: "NOT_IMPLEMENTED",
-          message: "external wallet not supported",
-        });
+      let bundleId: string;
+      if ("transactions" in input) {
+        bundleId = await ctx.sendTransaction
+          .sendBundle(input.transactions)
+          .then(({ result }) => result);
+      } else {
+        if (ctx.user.wallet.external)
+          throw new TRPCError({
+            code: "NOT_IMPLEMENTED",
+            message: "external wallet not supported",
+          });
 
-      const dex = new Dex(ctx.connection);
-      const owner = await loadWallet(ctx.user.wallet, ctx.secret);
-      const wallet = fromKeyPairToWalletAdapter(owner);
-      const { execute } = await closePosition(
-        dex,
-        wallet,
-        ctx.sendTransaction,
-        input,
-      );
+        const dex = new Dex(ctx.connection);
+        const owner = await loadWallet(ctx.user.wallet, ctx.secret);
+        const wallet = fromKeyPairToWalletAdapter(owner);
+        const { execute } = await closePosition(
+          dex,
+          wallet,
+          ctx.sendTransaction,
+          input,
+        );
 
-      const bundleId = await execute();
+        bundleId = await execute();
+      }
+
       const response = await queue.add(
         Work.syncTransaction,
         {
@@ -141,14 +161,8 @@ export const raydiumRoute = router({
       };
     }),
   rebalance: privateProcedure
-    .input(positionSelectSchema.pick({ id: true }))
+    .input(positionRebalanceSchema)
     .mutation(async ({ ctx, input }) => {
-      if (ctx.user.wallet.external)
-        throw new TRPCError({
-          code: "NOT_IMPLEMENTED",
-          message: "external wallet not supported",
-        });
-
       const position = await ctx.drizzle.query.positions.findFirst({
         with: {
           pool: {
@@ -161,18 +175,32 @@ export const raydiumRoute = router({
         where: eq(positions.id, input.id),
       });
       if (position) {
-        const dex = new Dex(ctx.connection);
-        const owner = await loadWallet(ctx.user.wallet, ctx.secret);
-        const wallet = fromKeyPairToWalletAdapter(owner);
-        const { execute } = await rebalancePosition({
-          dex,
-          wallet,
-          position,
-          sender: ctx.sendTransaction,
-          settings: ctx.user.settings,
-        });
+        let bundleId: string;
+        if ("transactions" in input) {
+          bundleId = await ctx.sendTransaction
+            .sendBundle(input.transactions)
+            .then(({ result }) => result);
+        } else {
+          if (ctx.user.wallet.external)
+            throw new TRPCError({
+              code: "NOT_IMPLEMENTED",
+              message: "external wallet not supported",
+            });
 
-        const bundleId = await execute();
+          const dex = new Dex(ctx.connection);
+          const owner = await loadWallet(ctx.user.wallet, ctx.secret);
+          const wallet = fromKeyPairToWalletAdapter(owner);
+          const { execute } = await rebalancePosition({
+            dex,
+            wallet,
+            position,
+            sender: ctx.sendTransaction,
+            settings: ctx.user.settings,
+          });
+
+          bundleId = await execute();
+        }
+
         const response = await queue.add(
           Work.syncTransaction,
           {

@@ -11,4 +11,3 @@ export * from "./referrers";
 export * from "./positions";
 export * from "./relations";
 export * from "./notifications";
-export * from "./views";

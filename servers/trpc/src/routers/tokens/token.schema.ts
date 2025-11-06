@@ -1,5 +1,6 @@
 import z from "zod";
 import { address, publicKey } from "@rhiva-ag/datasource";
+import { externalTransactionSchema } from "../positions/position.schema";
 
 export const tokenChartFilter = z.object({
   before_timestamp: z.number().optional(),
@@ -15,14 +16,17 @@ export const tokenTradeFilter = z.object({
   trade_volume_in_usd_greater_than: z.number(),
 });
 
-export const tokenSwapSchema = z.object({
-  amount: z.number(),
-  slippage: z.number(),
-  inputMint: address(),
-  outputMint: address(),
-  inputDecimals: z.number().int(),
-  outputDecimals: z.number().int(),
-});
+export const tokenSwapSchema = z.union([
+  z.object({
+    amount: z.number(),
+    slippage: z.number(),
+    inputMint: address(),
+    outputMint: address(),
+    inputDecimals: z.number().int(),
+    outputDecimals: z.number().int(),
+  }),
+  externalTransactionSchema,
+]);
 
 export const tokenSendSchema = z.object({
   inputMint: publicKey(),

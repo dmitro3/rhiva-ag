@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import type z from "zod";
 import { format } from "util";
 import { useMemo } from "react";
 import { number, object } from "yup";
@@ -11,16 +12,10 @@ import { NATIVE_MINT } from "@solana/spl-token";
 import { address, createSolanaRpc } from "@solana/kit";
 import { Form, FormikContext, useFormik } from "formik";
 import { fetchWhirlpool } from "@orca-so/whirlpools-client";
-import { useConnection } from "@solana/wallet-adapter-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { Dialog, DialogBackdrop, DialogPanel } from "@headlessui/react";
-import { useWalletAccountTransactionSendingSigner } from "@solana/react";
 import { orcaCreatePositionSchema, createOrcaPosition } from "@rhiva-ag/trpc";
-import {
-  getUiWalletAccountStorageKey,
-  type UiWalletAccount,
-  useWallets,
-} from "@wallet-standard/react";
 
 import { useTRPC } from "@/trpc.client";
 import { useDex } from "@/hooks/useDex";
@@ -30,6 +25,7 @@ import { sendTransaction } from "@/instances";
 import PriceRangeInput from "./PriceRangeInput";
 import PositionOverview from "../PositionOverview";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { fromWebWalletAdapter } from "@rhiva-ag/shared";
 
 type OrcaOpenPositionProps = {
   pool: Pair;
@@ -61,13 +57,11 @@ function OrcaOpenPositionForm({
 }: React.ComponentProps<typeof Form> & Pick<OrcaOpenPositionProps, "pool">) {
   const dex = useDex();
   const trpc = useTRPC();
-  const wallets = useWallets();
+  const wallet = useWallet();
   const analytics = useAnalytics();
   const { connection } = useConnection();
   const nativeMint = NATIVE_MINT.toBase58();
   const { user, isAuthenticated, signIn } = useAuth();
-  console.log(wallets);
-  const transactionSigner = useWalletAccountTransactionSendingSigner();
 
   const { data: rawBalance } = useQuery({
     initialData: 0,
@@ -152,7 +146,6 @@ function OrcaOpenPositionForm({
     onSubmit: async (values) => {
       if (!isAuthenticated) await signIn();
 
-      let bundleId: string;
       const createPositionValue = {
         ...values,
         slippage: 50,
@@ -160,20 +153,30 @@ function OrcaOpenPositionForm({
         tokenADecimals: pool.baseToken.decimals,
         tokenBDecimals: pool.quoteToken.decimals,
       };
+      let data: typeof createPositionValue | { transactions: string[] } =
+        createPositionValue;
 
       if (user.wallet.external) {
-        const { execute } = await createOrcaPosition(
-          dex,
-          sendTransaction,
-          transactionSigner,
-          orcaCreatePositionSchema.parse(createPositionValue),
-        );
+        if (wallet.publicKey) {
+          const { transactions } = await createOrcaPosition(
+            dex,
+            sendTransaction,
+            fromWebWalletAdapter(wallet),
+            orcaCreatePositionSchema.parse(createPositionValue) as Exclude<
+              z.infer<typeof orcaCreatePositionSchema>,
+              { transactions: string[] }
+            >,
+          );
 
-        bundleId = await execute();
-      } else
-        bundleId = await mutateAsync(createPositionValue).then(
-          ({ bundleId }) => bundleId,
-        );
+          data = {
+            transactions: transactions.map((transaction) =>
+              transaction.serialize().toBase64(),
+            ),
+          };
+        }
+      }
+
+      const bundleId = await mutateAsync(data).then(({ bundleId }) => bundleId);
 
       if (analytics)
         logEvent(analytics, "position_opened", {

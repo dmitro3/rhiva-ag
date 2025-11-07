@@ -27,6 +27,7 @@
     "@jup-ag/api": "^6.0.46",
     "@meteora-ag/dlmm": "^1.7.5",
     "@orca-so/common-sdk": "^0.6.11",
+    "@orca-so/whirlpool-sdk": "^0.4.2",
     "@orca-so/whirlpools": "^4.0.0",
     "@orca-so/whirlpools-client": "^4.0.1",
     "@orca-so/whirlpools-core": "^2.0.0",

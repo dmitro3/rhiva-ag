@@ -54,6 +54,7 @@ export class SendTransaction {
     heliusApiKey: string,
     private readonly jitoApiURL: string,
     private readonly jitoUUID?: string,
+    private readonly getProxyUrl?: (url: string) => string,
   ) {
     this.heliusURL = format("%s?api-key=%s", heliusApiURL, heliusApiKey);
   }
@@ -122,14 +123,13 @@ export class SendTransaction {
   };
 
   readonly getBundles = async (...bundleIds: string[]) => {
+    const url = format(
+      "%s/api/v1/bundles/bundle/%s",
+      SendTransaction.blockEngineURL,
+      bundleIds.join(","),
+    );
     return xior
-      .get<BundleResponse[]>(
-        format(
-          "%s/api/v1/bundles/bundle/%s",
-          SendTransaction.blockEngineURL,
-          bundleIds.join(","),
-        ),
-      )
+      .get<BundleResponse[]>(this.getProxyUrl ? this.getProxyUrl(url) : url)
       .then(({ data }) => data);
   };
 
@@ -284,16 +284,15 @@ export class SendTransaction {
   }
 
   recentJitoTop = async (priorityFeePercentitle: Percentile = "50") => {
-    const {
-      data: [data],
-      response,
-    } = await xior.get(
-      format(
-        "%s%s",
-        SendTransaction.blockEngineURL,
-        "/api/v1/bundles/tip_floor",
-      ),
+    const url = format(
+      "%s%s",
+      SendTransaction.blockEngineURL,
+      "/api/v1/bundles/tip_floor",
     );
+    const {
+      data: [result],
+      response,
+    } = await xior.get(this.getProxyUrl ? this.getProxyUrl(url) : url);
 
     if (!response.ok) return BigInt(0);
 
@@ -301,7 +300,7 @@ export class SendTransaction {
 
     if (key)
       return lamports(
-        BigInt(Math.floor(Number(data[key]) * Math.pow(10, 9))),
+        BigInt(Math.floor(Number(result[key]) * Math.pow(10, 9))),
       ).valueOf();
 
     return BigInt(0);

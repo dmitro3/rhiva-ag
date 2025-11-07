@@ -23,7 +23,6 @@
     "@meteora-ag/dlmm": "^1.7.5",
     "@orca-so/whirlpools-client": "^4.0.1",
     "@orca-so/whirlpools-core": "^2.0.0",
-    "@raydium-io/raydium-sdk-v2": "^0.2.30-alpha",
     "@rhiva-ag/datasource": "*",
     "@rhiva-ag/decoder": "*",
     "@rhiva-ag/dex": "*",

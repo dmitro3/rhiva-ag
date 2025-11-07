@@ -1,3 +1,4 @@
+import { format } from "util";
 import { DexApi } from "@rhiva-ag/dex-api";
 import { Connection } from "@solana/web3.js";
 import { SendTransaction } from "@rhiva-ag/shared";
@@ -11,4 +12,5 @@ export const sendTransaction = new SendTransaction(
   process.env.NEXT_PUBLIC_HELIUS_API_KEY!,
   process.env.NEXT_PUBLIC_JITO_API_URL!,
   process.env.NEXT_PUBLIC_JITO_UUID,
+  (url) => format("http://127.0.0.1:8000/proxy/?url=%s", url),
 );

@@ -1,20 +1,25 @@
 import Decimal from "decimal.js";
 import { mapFilter } from "@rhiva-ag/shared";
-import { Percentage } from "@orca-so/common-sdk";
-import { Transaction, type PublicKey } from "@solana/web3.js";
+import { isVersionedTransaction, Percentage } from "@orca-so/common-sdk";
+import type {
+  VersionedTransaction,
+  PublicKey,
+  TransactionInstruction,
+  Blockhash,
+} from "@solana/web3.js";
 import {
   toTx,
   PDAUtil,
   PriceMath,
   TickUtil,
   WhirlpoolIx,
-  type WhirlpoolContext,
   TokenExtensionUtil,
   increaseLiquidityQuoteByInputToken,
   decreaseLiquidityQuoteByLiquidity,
   type Whirlpool,
   type Position,
   type WhirlpoolClient,
+  type WhirlpoolContext,
   type WhirlpoolAccountFetcherInterface,
 } from "@orca-so/whirlpools-sdk";
 
@@ -22,7 +27,7 @@ type SharedBuildCreatePositionArgs = {
   pool: Whirlpool;
   owner: PublicKey;
   slippage: number;
-  inputAmount: bigint;
+  inputAmount: number;
   inputMint: PublicKey;
 };
 
@@ -46,15 +51,37 @@ export class OrcaLegacyDLMM {
     this.context = this.client.getContext();
   }
 
-  readonly buildCreatePosition = async (args: BuildCreatePositionArgs) => {
-    const { pool, slippage, inputAmount, inputMint, owner } = args;
+  readonly buildCreatePosition = async (
+    args: BuildCreatePositionArgs & {
+      appendInstructions?: TransactionInstruction | TransactionInstruction[];
+    },
+  ) => {
+    const {
+      pool,
+      slippage,
+      inputAmount,
+      inputMint,
+      owner,
+      appendInstructions,
+    } = args;
+    this.context.provider.wallet.publicKey = owner;
 
     const poolData = pool.getData();
     const poolTokenAInfo = pool.getTokenAInfo();
     const poolTokenBInfo = pool.getTokenBInfo();
 
     let lowerTick: number, upperTick: number;
-    const transactions: Transaction[] = [];
+    const transactions: VersionedTransaction[] = [];
+
+    const latestBlockhash = await this.context.connection.getLatestBlockhash();
+    const txConfig = {
+      latestBlockhash,
+      maxSupportedTransactionVersion: 0,
+      blockhashCommitment: "confirmed",
+      computeBudgetOption: {
+        type: "none",
+      },
+    } as const;
 
     if (args.strategyType === "custom") {
       const [lowerPriceChange, upperPriceChange] = args.priceChanges;
@@ -107,7 +134,7 @@ export class OrcaLegacyDLMM {
       );
 
       transactions.push(
-        ...uninitalizedTickArrays.map((ta) => {
+        ...mapFilter(uninitalizedTickArrays, (ta) => {
           const txBuilder = toTx(
             this.context,
             WhirlpoolIx.initTickArrayIx(this.context.program, {
@@ -118,9 +145,13 @@ export class OrcaLegacyDLMM {
             }),
           );
 
-          return new Transaction().add(
-            ...txBuilder.compressIx(true).cleanupInstructions,
-          );
+          const { transaction, signers } = txBuilder.buildSync(txConfig);
+          if (isVersionedTransaction(transaction)) {
+            transaction.sign(signers);
+            return transaction;
+          }
+
+          return null;
         }),
       );
     } else
@@ -147,10 +178,24 @@ export class OrcaLegacyDLMM {
       lowerTick,
       upperTick,
       quote,
+      owner,
+      owner,
     );
-    transactions.push(
-      new Transaction().add(...tx.compressIx(true).cleanupInstructions),
-    );
+    if (appendInstructions)
+      tx.addInstructions([
+        {
+          signers: [],
+          cleanupInstructions: [],
+          instructions: Array.isArray(appendInstructions)
+            ? appendInstructions
+            : [appendInstructions],
+        },
+      ]);
+    const { signers, transaction } = tx.buildSync(txConfig);
+    if (isVersionedTransaction(transaction)) {
+      transaction.sign(signers);
+      transactions.push(transaction);
+    }
 
     return {
       transactions,
@@ -162,6 +207,7 @@ export class OrcaLegacyDLMM {
     args: Omit<BuildCreatePositionArgs, "priceChanges" | "strategyType"> & {
       lowerTick: number;
       upperTick: number;
+      appendInstructions?: TransactionInstruction[];
     },
   ) => {
     const {
@@ -172,12 +218,23 @@ export class OrcaLegacyDLMM {
       owner,
       lowerTick,
       upperTick,
+      appendInstructions,
     } = args;
+    this.context.provider.wallet.publicKey = owner;
     const fetcher = this.client.getFetcher();
     const context = this.client.getContext();
     const poolData = pool.getData();
 
-    const transactions: Transaction[] = [];
+    const transactions: VersionedTransaction[] = [];
+    const latestBlockhash = await this.context.connection.getLatestBlockhash();
+    const txConfig = {
+      latestBlockhash,
+      maxSupportedTransactionVersion: 0,
+      blockhashCommitment: "confirmed",
+      computeBudgetOption: {
+        type: "none",
+      },
+    } as const;
 
     const taPdas = [
       PDAUtil.getTickArray(
@@ -205,10 +262,10 @@ export class OrcaLegacyDLMM {
     );
 
     transactions.push(
-      ...uninitalizedTickArrays.map((ta) => {
-        const txBuilder = toTx(
-          context,
-          WhirlpoolIx.initTickArrayIx(context.program, {
+      ...mapFilter(uninitalizedTickArrays, (ta) => {
+        const { buildSync } = toTx(
+          this.context,
+          WhirlpoolIx.initTickArrayIx(this.context.program, {
             funder: owner,
             tickArrayPda: ta.pda,
             whirlpool: pool.getAddress(),
@@ -216,9 +273,13 @@ export class OrcaLegacyDLMM {
           }),
         );
 
-        return new Transaction().add(
-          ...txBuilder.compressIx(true).cleanupInstructions,
-        );
+        const { transaction, signers } = buildSync(txConfig);
+        if (isVersionedTransaction(transaction)) {
+          transaction.sign(signers);
+          return transaction;
+        }
+
+        return null;
       }),
     );
 
@@ -241,10 +302,22 @@ export class OrcaLegacyDLMM {
       lowerTick,
       upperTick,
       quote,
+      owner,
+      owner,
     );
-    transactions.push(
-      new Transaction().add(...tx.compressIx(true).cleanupInstructions),
-    );
+    if (appendInstructions)
+      tx.addInstructions([
+        {
+          signers: [],
+          cleanupInstructions: [],
+          instructions: appendInstructions,
+        },
+      ]);
+    const { signers, transaction } = tx.buildSync(txConfig);
+    if (isVersionedTransaction(transaction)) {
+      transaction.sign(signers);
+      transactions.push(transaction);
+    }
 
     return {
       transactions,
@@ -253,45 +326,96 @@ export class OrcaLegacyDLMM {
   };
 
   readonly buildClaimReward = async ({
+    owner,
+    latestBlockhash,
+    prependInstructions,
     position: positionPubkey,
   }: {
+    owner: PublicKey;
     position: PublicKey;
+    prependInstructions?: TransactionInstruction | TransactionInstruction[];
+    latestBlockhash?: {
+      blockhash: Blockhash;
+      lastValidBlockHeight: number;
+    };
   }) => {
+    this.context.provider.wallet.publicKey = owner;
+
     const position = await this.client.getPosition(positionPubkey);
-    const transactions: Transaction[] = [];
-    const collectFeeBuilder = await position.collectFees();
-    transactions.push(
-      new Transaction().add(
-        ...collectFeeBuilder.compressIx(true).cleanupInstructions,
-      ),
-    );
-    const collectRewardBuilder = await position.collectRewards();
-    transactions.push(
-      new Transaction().add(
-        ...collectRewardBuilder.flatMap(
-          (builder) => builder.compressIx(true).cleanupInstructions,
-        ),
-      ),
-    );
+    const transactions: VersionedTransaction[] = [];
+    latestBlockhash = latestBlockhash
+      ? latestBlockhash
+      : await this.context.connection.getLatestBlockhash();
+    const txConfig = {
+      latestBlockhash,
+      maxSupportedTransactionVersion: 0,
+      blockhashCommitment: "confirmed",
+      computeBudgetOption: {
+        type: "none",
+      },
+    } as const;
+
+    const collectFeeTxBuilder = await position.collectFees();
+    if (prependInstructions)
+      collectFeeTxBuilder.prependInstructions([
+        {
+          signers: [],
+          cleanupInstructions: [],
+          instructions: Array.isArray(prependInstructions)
+            ? prependInstructions
+            : [prependInstructions],
+        },
+      ]);
+    const { transaction, signers } = collectFeeTxBuilder.buildSync(txConfig);
+    if (isVersionedTransaction(transaction)) {
+      transaction.sign(signers);
+      transactions.push(transaction);
+    }
+    const collectRewardTxBuilders = await position.collectRewards();
+    for (const txBuilder of collectRewardTxBuilders) {
+      const { transaction, signers } = txBuilder.buildSync(txConfig);
+      if (isVersionedTransaction(transaction)) {
+        transaction.sign(signers);
+        transactions.push(transaction);
+      }
+    }
 
     return transactions;
   };
 
   readonly buildClosePosition = async ({
     pool,
+    owner,
     slippage,
     position,
+    prependInstructions,
   }: {
     pool: Whirlpool;
     position: Position;
     slippage: number;
+    owner: PublicKey;
+    prependInstructions?: TransactionInstruction[] | TransactionInstruction;
   }) => {
     const positionData = position.getData();
     const poolData = pool.getData();
 
-    const transactions: Transaction[] = [];
+    this.context.provider.wallet.publicKey = owner;
+
+    const transactions: VersionedTransaction[] = [];
+    const latestBlockhash = await this.context.connection.getLatestBlockhash();
+    const txConfig = {
+      latestBlockhash,
+      maxSupportedTransactionVersion: 0,
+      blockhashCommitment: "confirmed",
+      computeBudgetOption: {
+        type: "none",
+      },
+    } as const;
 
     const claimTxs = await this.buildClaimReward({
+      owner,
+      latestBlockhash,
+      prependInstructions,
       position: position.getAddress(),
     });
     const tokenExtension = await TokenExtensionUtil.buildTokenExtensionContext(
@@ -306,30 +430,28 @@ export class OrcaLegacyDLMM {
       tokenExtension,
     );
 
-    const closePositionBuilders = await pool.closePosition(
+    const closePositionTxBuilders = await pool.closePosition(
       position.getAddress(),
       Percentage.fromDecimal(new Decimal(slippage)),
     );
 
     transactions.push(...claimTxs);
     if (positionData.liquidity.gtn(0)) {
-      const decreaseLiquidityBuilder =
-        await position.decreaseLiquidity(decreaseQuote);
-
-      transactions.push(
-        new Transaction().add(
-          ...decreaseLiquidityBuilder.compressIx(true).cleanupInstructions,
-        ),
-      );
+      const { buildSync } = await position.decreaseLiquidity(decreaseQuote);
+      const { transaction, signers } = buildSync(txConfig);
+      if (isVersionedTransaction(transaction)) {
+        transaction.sign(signers);
+        transactions.push(transaction);
+      }
     }
 
-    transactions.push(
-      new Transaction().add(
-        ...closePositionBuilders.flatMap(
-          (builder) => builder.compressIx(true).cleanupInstructions,
-        ),
-      ),
-    );
+    for (const { buildSync } of closePositionTxBuilders) {
+      const { transaction, signers } = buildSync(txConfig);
+      if (isVersionedTransaction(transaction)) {
+        transaction.sign(signers);
+        transactions.push(transaction);
+      }
+    }
 
     return transactions;
   };

@@ -1,5 +1,5 @@
 import { format } from "util";
-import type { Metadata } from "next";
+import type { Metadata, ResolvingMetadata } from "next";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 
 import { dexApi } from "@/instances";
@@ -29,6 +29,7 @@ type TokenData = {
 
 export async function generateMetadata(
   props: PageProps<"/tokens/[tokenAddress]">,
+  parent: ResolvingMetadata,
 ): Promise<Metadata> {
   const params = await props.params;
   const queryClient = getQueryClient();
@@ -44,54 +45,60 @@ export async function generateMetadata(
       }),
   });
 
-  const data: TokenData = {
-    name: token.name,
-    symbol: token.symbol,
-    icon: token.icon,
-    liquidity: token.liquidity,
-    usdPrice: token.usdPrice,
-    stats24h: {
-      buyOrganicVolume: token.stats24h.buyOrganicVolume,
-      sellOrganicVolume: token.stats24h.sellOrganicVolume,
-    },
-    stats5m: {
-      priceChange: token.stats5m?.priceChange,
-    },
-    mcap: token.mcap,
-  };
+  if (token) {
+    const data: TokenData = {
+      name: token?.name,
+      symbol: token.symbol,
+      icon: token.icon,
+      liquidity: token.liquidity,
+      usdPrice: token.usdPrice,
+      stats24h: {
+        buyOrganicVolume: token.stats24h?.buyOrganicVolume,
+        sellOrganicVolume: token.stats24h?.sellOrganicVolume,
+      },
+      stats5m: {
+        priceChange: token.stats5m?.priceChange,
+      },
+      mcap: token.mcap,
+    };
 
-  const title = format("%s | Rhiva", token.name);
-  const description = format(
-    "The live market cap of %s today is %s with a 24-hour change of %s.",
-    token.name,
-    currencyIntl.format(token.mcap),
-    percentageIntl.format(token.stats24h.priceChange),
-  );
-  const url = format("https://beta.rhiva.fun/tokens/%s/", params.tokenAddress);
-  const images = [
-    format(
-      "%s/api/media/token-card?data=%s",
-      process.env.NEXT_PUBLIC_MEDIA_URL,
-      Buffer.from(JSON.stringify(data), "utf-8").toString("base64"),
-    ),
-  ];
+    const title = format("%s | Rhiva", token.name);
+    const description = format(
+      "The live market cap of %s today is %s with a 24-hour change of %s.",
+      token.name,
+      currencyIntl.format(token.mcap),
+      percentageIntl.format(token.stats24h.priceChange),
+    );
+    const url = format(
+      "https://beta.rhiva.fun/tokens/%s/",
+      params.tokenAddress,
+    );
+    const images = [
+      format(
+        "%s/api/media/token-card?data=%s",
+        process.env.NEXT_PUBLIC_MEDIA_URL,
+        Buffer.from(JSON.stringify(data), "utf-8").toString("base64"),
+      ),
+    ];
 
-  return {
-    title,
-    description,
-    openGraph: {
-      type: "website",
-      url,
-      images,
-    },
-    twitter: {
-      card: "summary_large_image",
+    return {
       title,
       description,
-      images,
-      site: url,
-    },
-  };
+      openGraph: {
+        type: "website",
+        url,
+        images,
+      },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        description,
+        images,
+        site: url,
+      },
+    };
+  }
+  return (await parent) as Metadata;
 }
 
 export default async function TokenPage(

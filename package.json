@@ -2,7 +2,6 @@
   "name": "rhiva-ag",
   "version": "0.0.0",
   "private": true,
-  "packageManager": "bun@1.2.9",
   "scripts": {
     "prepare": "husky",
     "dev": "turbo run dev",
@@ -20,12 +19,16 @@
     "tsup": "^8.5.0",
     "turbo": "^2.5.8"
   },
+  "trustedDependencies": [
+    "@raydium-io/raydium-sdk-v2"
+  ],
   "dependencies": {
     "@solana/codecs": "^2.3.0",
     "@solana/kit": "^2.3.0",
     "@solana/wallet-standard-wallet-adapter-react": "^1.1.4",
     "ajv": "^8.12.0",
-    "commander": "^2.15.1"
+    "commander": "^2.15.1",
+    "@raydium-io/raydium-sdk-v2": "npm:@oasismystre/raydium-sdk-v2@latest"
   },
   "peerDependencies": {
     "typescript": "^5.9.3"

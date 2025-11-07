@@ -67,7 +67,6 @@ function MeteoraOpenPositionForm({
   const { user, isAuthenticated, signIn } = useAuth();
 
   const { data: rawBalance } = useQuery({
-    initialData: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
     refetchInterval: 60_000,
@@ -177,7 +176,9 @@ function MeteoraOpenPositionForm({
             dex,
             sendTransaction,
             fromWebWalletAdapter(wallet),
-            meteoraCreatePositionSchema.parse(createPositionValue) as Exclude<
+            (await meteoraCreatePositionSchema.parseAsync(
+              createPositionValue,
+            )) as Exclude<
               z.infer<typeof meteoraCreatePositionSchema>,
               { transactions: string[] }
             >,

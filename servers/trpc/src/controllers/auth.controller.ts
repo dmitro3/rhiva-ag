@@ -52,7 +52,6 @@ export abstract class AuthMiddleware {
 
       if (!wallet) {
         let values: typeof wallets.$inferInsert;
-        console.log(opts);
         if (opts?.externalWallet) {
           assertIsAddress(user.uid);
           values = {

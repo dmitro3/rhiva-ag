@@ -1,5 +1,5 @@
 import { format } from "util";
-import type { Metadata } from "next";
+import type { Metadata, ResolvingMetadata } from "next";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 
 import { dexApi } from "@/instances";
@@ -30,6 +30,7 @@ type PoolData = {
 
 export async function generateMetadata(
   props: PageProps<"/pools/[dex]/[poolAddress]">,
+  parent: ResolvingMetadata,
 ): Promise<Metadata> {
   const params = await props.params;
   const queryClient = getQueryClient();
@@ -43,68 +44,72 @@ export async function generateMetadata(
     },
   });
 
-  const data: PoolData = {
-    name: pool.name,
-    price: pool.price,
-    apr: pool.apr,
-    tvl: pool.tvl,
-    maxFee: pool.maxFee,
-    baseFee: pool.baseFee,
-    volume24h: pool.volume24h,
-    dex: params.dex,
-    baseToken: {
-      name: pool.baseToken.name,
-      symbol: pool.baseToken.symbol,
-      icon: pool.baseToken.icon,
-    },
-    quoteToken: {
-      name: pool.quoteToken.name,
-      symbol: pool.quoteToken.symbol,
-      icon: pool.quoteToken.icon,
-    },
-  };
+  if (pool) {
+    const data: PoolData = {
+      name: pool.name,
+      price: pool.price,
+      apr: pool.apr,
+      tvl: pool.tvl,
+      maxFee: pool.maxFee,
+      baseFee: pool.baseFee,
+      volume24h: pool.volume24h,
+      dex: params.dex,
+      baseToken: {
+        name: pool.baseToken.name,
+        symbol: pool.baseToken.symbol,
+        icon: pool.baseToken.icon,
+      },
+      quoteToken: {
+        name: pool.quoteToken.name,
+        symbol: pool.quoteToken.symbol,
+        icon: pool.quoteToken.icon,
+      },
+    };
 
-  const title = format(
-    "Provide Liquidity for %s on %s | Rhiva",
-    pool.name,
-    params.dex,
-  );
-  const description = format(
-    "Earn fees by providing liquidity to %s — aggregated across multiple DEXs for higher efficiency. Current TVL: %s, 24h fees: %s.",
-    pool.name,
-    currencyIntl.format(pool.tvl ?? 0),
-    currencyIntl.format(pool.fees24H ?? 0),
-  );
+    const title = format(
+      "Provide Liquidity for %s on %s | Rhiva",
+      pool.name,
+      params.dex,
+    );
+    const description = format(
+      "Earn fees by providing liquidity to %s — aggregated across multiple DEXs for higher efficiency. Current TVL: %s, 24h fees: %s.",
+      pool.name,
+      currencyIntl.format(pool.tvl ?? 0),
+      currencyIntl.format(pool.fees24H ?? 0),
+    );
 
-  const url = format(
-    "https://beta.rhiva.fun/pools/%s/%s",
-    params.dex,
-    params.poolAddress,
-  );
-  const images = [
-    format(
-      "%s/api/media/pool-card?data=%s",
-      process.env.NEXT_PUBLIC_MEDIA_URL,
-      Buffer.from(JSON.stringify(data), "utf-8").toString("base64"),
-    ),
-  ];
+    const url = format(
+      "https://beta.rhiva.fun/pools/%s/%s",
+      params.dex,
+      params.poolAddress,
+    );
+    const images = [
+      format(
+        "%s/api/media/pool-card?data=%s",
+        process.env.NEXT_PUBLIC_MEDIA_URL,
+        Buffer.from(JSON.stringify(data), "utf-8").toString("base64"),
+      ),
+    ];
 
-  return {
-    title,
-    description,
-    openGraph: {
-      type: "website",
-      url,
-      images,
-    },
-    twitter: {
-      card: "summary_large_image",
+    return {
       title,
       description,
-      images,
-      site: url,
-    },
-  };
+      openGraph: {
+        type: "website",
+        url,
+        images,
+      },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        description,
+        images,
+        site: url,
+      },
+    };
+  }
+
+  return (await parent) as Metadata;
 }
 
 export default async function PoolPage(

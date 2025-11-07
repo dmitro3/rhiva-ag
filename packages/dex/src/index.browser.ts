@@ -1,4 +1,4 @@
-import type { Connection } from "@solana/web3.js";
+import type { Connection, PublicKey } from "@solana/web3.js";
 import type { Raydium } from "@raydium-io/raydium-sdk-v2";
 
 import { SwapAggregator } from "./swap-ag";
@@ -15,8 +15,9 @@ export default class Dex {
   constructor(
     readonly connection: Connection,
     raydium?: Raydium,
+    owner?: PublicKey | null,
   ) {
-    this.dlmm = new DLMM(connection, raydium);
     this.swap = new SwapAggregator(connection);
+    this.dlmm = new DLMM(connection, raydium, owner);
   }
 }

@@ -68,7 +68,7 @@ export const createPosition = async (
       const ratio = liquidityRatio ? liquidityRatio[index]! : 1;
       const amount = inputAmount * ratio;
       const bigAmount = new BN(
-        new Decimal(amount).mul(Math.pow(10, 9)).toFixed(),
+        new Decimal(amount).mul(Math.pow(10, 9)).toFixed(0),
       );
       if (isNative(side)) {
         if (side.equals(tokenXMint)) {

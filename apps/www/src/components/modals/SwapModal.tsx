@@ -1,9 +1,11 @@
 "use client";
 import clsx from "clsx";
+import Decimal from "decimal.js";
+import { number, object } from "yup";
 import { toast } from "react-toastify";
 import { useMemo, useState } from "react";
 import { logEvent } from "firebase/analytics";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { MdClose, MdSwapVert } from "react-icons/md";
 import { Form, FormikContext, useFormik } from "formik";
 import {
@@ -14,14 +16,15 @@ import {
 } from "@headlessui/react";
 
 import TokenInput from "../TokenInput";
+import { useDex } from "@/hooks/useDex";
 import { useTRPC } from "@/trpc.client";
 import { useAuth } from "@/hooks/useAuth";
 import type { Token } from "./SelectTokenModal";
 import SelectTokenModal from "./SelectTokenModal";
 import { DefaultToken } from "@/constants/tokens";
 import { useAnalytics } from "@/hooks/useAnalytics";
-import { useDex } from "@/hooks/useDex";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { useBalances } from "@/hooks/useBalances";
 
 type SwapModalProps = {
   modal?: boolean;
@@ -67,11 +70,14 @@ function SwapForm({
   const { mutateAsync } = useMutation(trpc.token.swap.mutationOptions({}));
 
   const formikContext = useFormik({
+    validateOnMount: true,
+    validationSchema: object({
+      inputAmount: number().moreThan(0).required(),
+    }),
     initialValues: {
       inputToken: tokens?.[0],
       outputToken: tokens?.[1],
       inputAmount: undefined as unknown as number,
-      outputAmount: undefined as unknown as number,
     },
     async onSubmit(values) {
       if (!isAuthenticated) await signIn();
@@ -89,12 +95,20 @@ function SwapForm({
           const { transaction } = await dex.swap.jupiter.buildSwap({
             ...swapValue,
             owner: wallet.publicKey,
-            amount:
-              BigInt(values.inputAmount) *
-              BigInt(Math.pow(10, values.inputToken.decimals)),
+            amount: BigInt(
+              new Decimal(values.inputAmount)
+                .mul(Math.pow(10, values.inputToken.decimals))
+                .toFixed(0),
+            ),
           });
 
-          data = { transactions: [transaction.serialize().toBase64()] };
+          data = {
+            transactions: [
+              (await wallet.signTransaction!(transaction))
+                .serialize()
+                .toBase64(),
+            ],
+          };
         } else return;
       }
       const bundleId = await mutateAsync(data);
@@ -105,7 +119,49 @@ function SwapForm({
     },
   });
 
-  const { values, setFieldValue, isValid, isSubmitting } = formikContext;
+  const { values, setFieldValue, isValid, isSubmitting, errors } =
+    formikContext;
+  const [inputBalance, outputBalance] = useBalances({
+    defaultValue: [values.inputToken.balance, values.outputToken.balance],
+    mints: [
+      { address: values.inputToken.mint, decimals: values.inputToken.decimals },
+      {
+        address: values.outputToken.mint,
+        decimals: values.outputToken.decimals,
+      },
+    ],
+  });
+
+  const { data: quote } = useQuery({
+    refetchInterval: 60_000,
+    enabled: values.inputAmount > 0,
+    queryKey: [
+      "quote",
+      values.inputToken.mint,
+      values.outputToken.mint,
+      values.inputAmount,
+    ],
+    queryFn: () =>
+      dex.swap.jupiter.jupiter.quoteGet({
+        inputMint: values.inputToken.mint,
+        outputMint: values.outputToken.mint,
+        // @ts-expect-error invalid openapi type
+        amount: (
+          BigInt(values.inputAmount) *
+          BigInt(Math.pow(10, values.inputToken.decimals))
+        ).toString(),
+      }),
+  });
+
+  const outAmount = useMemo(
+    () =>
+      quote
+        ? new Decimal(quote.outAmount)
+            .div(Math.pow(10, values.outputToken.decimals))
+            .toNumber()
+        : 0,
+    [quote, values.outputToken.decimals],
+  );
 
   return (
     <FormikContext value={formikContext}>
@@ -114,15 +170,24 @@ function SwapForm({
         className={clsx("flex flex-col  space-y-8", props.className)}
       >
         <div className="relative flex flex-col justify-center">
-          <TokenInput
-            label="Sell"
-            value={values.inputAmount}
-            icon={values.inputToken.icon}
-            symbol={values.inputToken.symbol}
-            balance={values.inputToken.balance}
-            onSwitch={() => setShowSelectInputTokenModal(true)}
-            onChange={(value) => setFieldValue("inputAmount", value)}
-          />
+          <div>
+            <TokenInput
+              label="Sell"
+              value={values.inputAmount}
+              balance={inputBalance}
+              token={{
+                mint: values.inputToken.mint,
+                icon: values.inputToken.icon,
+                symbol: values.inputToken.symbol,
+                decimals: values.inputToken.decimals,
+              }}
+              onSwitch={() => setShowSelectInputTokenModal(true)}
+              onChange={(value) => setFieldValue("inputAmount", value)}
+              className={clsx(
+                errors.inputAmount && "border border-red-500 bg-red-500/10",
+              )}
+            />
+          </div>
           <button
             type="button"
             className="z-10 absolute self-center size-8 flex items-center justify-center bg-dark-secondary border border-white/10 rounded-full"
@@ -137,10 +202,15 @@ function SwapForm({
           </button>
           <TokenInput
             label="Buy"
-            value={values.outputAmount}
-            icon={values.outputToken.icon}
-            symbol={values.outputToken.symbol}
-            balance={values.outputToken.balance}
+            value={outAmount}
+            balance={outputBalance}
+            inputAttrs={{ disabled: true }}
+            token={{
+              mint: values.outputToken.mint,
+              icon: values.outputToken.icon,
+              symbol: values.outputToken.symbol,
+              decimals: values.outputToken.decimals,
+            }}
             onSwitch={() => setShowSelectOutputTokenModal(true)}
             onChange={(value) => setFieldValue("outputAmount", value)}
             className="mt-4 bg-transparent border-white/20"
@@ -166,13 +236,19 @@ function SwapForm({
           value={values.inputToken}
           open={showSelectInputTokenModal}
           onClose={setShowSelectInputTokenModal}
-          onChange={(value) => setFieldValue("inputToken", value)}
+          onChange={(value) => {
+            if (value.mint === values.outputToken.mint) return;
+            setFieldValue("inputToken", value);
+          }}
         />
         <SelectTokenModal
           value={values.outputToken}
           open={showSelectOutputTokenModal}
           onClose={setShowSelectOutputTokenModal}
-          onChange={(value) => setFieldValue("outputToken", value)}
+          onChange={(value) => {
+            if (value.mint === values.inputToken.mint) return;
+            setFieldValue("outputToken", value);
+          }}
         />
       </Form>
     </FormikContext>

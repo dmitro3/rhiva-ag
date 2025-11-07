@@ -3,6 +3,7 @@ import type { z } from "zod/mini";
 import { address } from "@solana/kit";
 import { TickUtil } from "@orca-so/whirlpools-sdk";
 import { fetchWhirlpool } from "@orca-so/whirlpools-client";
+import { PublicKey, type VersionedTransaction } from "@solana/web3.js";
 import { getAssociatedTokenAddressSync, NATIVE_MINT } from "@solana/spl-token";
 import type {
   positionSelectSchema,
@@ -18,11 +19,6 @@ import {
   type SendTransaction,
   type WalletAdapter,
 } from "@rhiva-ag/shared";
-import {
-  PublicKey,
-  TransactionMessage,
-  VersionedTransaction,
-} from "@solana/web3.js";
 
 import type {
   orcaClaimRewardSchema,
@@ -46,6 +42,8 @@ export const createPosition = async (
   const { pair, inputAmount, inputMint, slippage, jitoConfig } = args;
   const pool = await dex.dlmm.orcaLegacy.client.getPool(pair);
   const poolData = pool.getData();
+  const tokenAInfo = pool.getTokenAInfo();
+  const tokenBInfo = pool.getTokenBInfo();
 
   let tokenA = BigInt(0),
     tokenB = BigInt(0);
@@ -60,7 +58,7 @@ export const createPosition = async (
     for (const token of poolToken) {
       const amount = inputAmount / 2;
       const bigAmount = BigInt(
-        new Decimal(amount).mul(Math.pow(10, 9)).toFixed(),
+        new Decimal(amount).mul(Math.pow(10, 9)).toFixed(0),
       );
 
       if (isNative(token)) {
@@ -93,36 +91,23 @@ export const createPosition = async (
     }
   } else throw new Error("unsupported input mint");
 
-  const { transactions: createPositionTransactions, positionMint } =
+  const tipInstruction = await sender.getJitoTipInstruction(
+    wallet.publicKey,
+    jitoConfig,
+  );
+  const { transactions: createPositionV0Transactions, positionMint } =
     await dex.dlmm.orcaLegacy.buildCreatePosition({
       ...args,
       pool,
       slippage,
       owner: wallet.publicKey,
-      inputAmount: tokenA > BigInt(0) ? tokenA : tokenB,
+      appendInstructions: tipInstruction,
       inputMint: new PublicKey(tokenA > BigInt(0) ? tokenXMint : tokenYMint),
+      inputAmount: (tokenA > BigInt(0)
+        ? new Decimal(tokenA).div(Math.pow(10, tokenAInfo.decimals))
+        : new Decimal(tokenB).div(Math.pow(10, tokenBInfo.decimals))
+      ).toNumber(),
     });
-
-  const { blockhash: recentBlockhash } =
-    await dex.connection.getLatestBlockhash();
-
-  const createPositionV0Transactions = await Promise.all(
-    createPositionTransactions.map(async (transaction, index) => {
-      if (index === 0)
-        transaction = await sender.processJitoTipFromTxMessage(
-          wallet.publicKey,
-          transaction,
-          jitoConfig,
-        );
-      const v0Message = new TransactionMessage({
-        recentBlockhash,
-        payerKey: wallet.publicKey,
-        instructions: transaction.instructions,
-      }).compileToV0Message();
-
-      return new VersionedTransaction(v0Message);
-    }),
-  );
 
   const transactions = await wallet.signAllTransactions([
     ...createPositionV0Transactions,
@@ -160,30 +145,15 @@ export const claimReward = async (
   }: Exclude<z.infer<typeof orcaClaimRewardSchema>, { transactions: string[] }>,
 ) => {
   const pool = await fetchWhirlpool(dex.dlmm.rpc, pair);
-  const claimRewardTransactions = await dex.dlmm.orcaLegacy.buildClaimReward({
-    position: new PublicKey(position),
-  });
-
-  const { blockhash: recentBlockhash } =
-    await dex.connection.getLatestBlockhash();
-
-  const claimRewardV0Transactions = await Promise.all(
-    claimRewardTransactions.map(async (transaction, index) => {
-      if (index === 0)
-        transaction = await sender.processJitoTipFromTxMessage(
-          wallet.publicKey,
-          transaction,
-          jitoConfig,
-        );
-      const v0Message = new TransactionMessage({
-        recentBlockhash,
-        payerKey: wallet.publicKey,
-        instructions: transaction.instructions,
-      }).compileToV0Message();
-
-      return new VersionedTransaction(v0Message);
-    }),
+  const tipInstruction = await sender.getJitoTipInstruction(
+    wallet.publicKey,
+    jitoConfig,
   );
+  const claimRewardV0Transactions = await dex.dlmm.orcaLegacy.buildClaimReward({
+    owner: wallet.publicKey,
+    position: new PublicKey(position),
+    prependInstructions: tipInstruction,
+  });
 
   const tokenAAta = getAssociatedTokenAddressSync(
     new PublicKey(pool.data.tokenMintA),
@@ -287,35 +257,20 @@ export const closePosition = async (
   const position = await dex.dlmm.orcaLegacy.client.getPosition(positionPubkey);
   const poolData = pool.getData();
 
-  const closePositionTransactions =
+  const tipInstruction = await sender.getJitoTipInstruction(
+    wallet.publicKey,
+    jitoConfig,
+  );
+  const closePositionV0Transactions =
     await dex.dlmm.orcaLegacy.buildClosePosition({
       pool,
       position,
       slippage,
+      owner: wallet.publicKey,
+      prependInstructions: tipInstruction,
     });
 
-  const { blockhash: recentBlockhash } =
-    await dex.connection.getLatestBlockhash();
-  const closePositionV0Transactions = await Promise.all(
-    closePositionTransactions.map(async (transaction, index) => {
-      if (index === 0)
-        transaction = await sender.processJitoTipFromTxMessage(
-          wallet.publicKey,
-          transaction,
-          jitoConfig,
-        );
-      const v0Message = new TransactionMessage({
-        recentBlockhash,
-        payerKey: wallet.publicKey,
-        instructions: transaction.instructions,
-      }).compileToV0Message();
-
-      return new VersionedTransaction(v0Message);
-    }),
-  );
-
   const swapV0Transactions = [];
-
   if (swapToNative) {
     const tokenAAta = getAssociatedTokenAddressSync(
       new PublicKey(poolData.tokenMintA),
@@ -439,6 +394,8 @@ export const rebalancePosition = async ({
 
   const poolData = pool.getData();
   const positionData = position.getData();
+  const tokenAInfo = pool.getTokenAInfo();
+  const tokenBInfo = pool.getTokenBInfo();
   const transactions = [...closePositionV0Transactions, ...swapV0Transactions];
 
   const tokenAAta = getAssociatedTokenAddressSync(
@@ -505,7 +462,7 @@ export const rebalancePosition = async ({
     poolData.tickSpacing,
   );
 
-  const { transactions: createPositionTransactions, positionMint } =
+  const { transactions: createPositionV0Transactions, positionMint } =
     await dex.dlmm.orcaLegacy.buildPreloadedCreatePosition({
       pool,
 
@@ -513,23 +470,12 @@ export const rebalancePosition = async ({
       upperTick,
       owner: wallet.publicKey,
       slippage: settings.slippage,
-      inputAmount: tokenA > BigInt(0) ? tokenA : tokenB,
       inputMint: tokenA > BigInt(0) ? poolData.tokenMintA : poolData.tokenMintB,
+      inputAmount: (tokenA > BigInt(0)
+        ? new Decimal(tokenA).div(Math.pow(10, tokenAInfo.decimals))
+        : new Decimal(tokenB).div(Math.pow(10, tokenBInfo.decimals))
+      ).toNumber(),
     });
-
-  const { blockhash: recentBlockhash } =
-    await dex.connection.getLatestBlockhash();
-  const createPositionV0Transactions = await Promise.all(
-    createPositionTransactions.map(async (transaction) => {
-      const v0Message = new TransactionMessage({
-        recentBlockhash,
-        payerKey: wallet.publicKey,
-        instructions: transaction.instructions,
-      }).compileToV0Message();
-
-      return new VersionedTransaction(v0Message);
-    }),
-  );
 
   transactions.push(
     ...(await wallet.signAllTransactions(createPositionV0Transactions)),

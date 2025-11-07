@@ -66,7 +66,6 @@ function RaydiumOpenPositionForm({
   const { isAuthenticated, user, signIn } = useAuth();
 
   const { data: rawBalance } = useQuery({
-    initialData: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
     refetchInterval: 60_000,
@@ -154,7 +153,9 @@ function RaydiumOpenPositionForm({
             dex,
             sendTransaction,
             fromWebWalletAdapter(wallet),
-            raydiumCreatePositionSchema.parse(createPositionValue) as Exclude<
+            (await raydiumCreatePositionSchema.parseAsync(
+              createPositionValue,
+            )) as Exclude<
               z.infer<typeof raydiumCreatePositionSchema>,
               { transactions: string[] }
             >,

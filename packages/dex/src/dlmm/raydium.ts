@@ -84,6 +84,7 @@ export class RaydiumCLMM {
       poolKeys,
       tickLower,
       tickUpper,
+      checkCreateATAOwner: true,
       base: baseIn ? "MintA" : "MintB",
       baseAmount: baseIn
         ? liquidity.amountSlippageA.amount

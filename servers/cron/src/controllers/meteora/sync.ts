@@ -230,7 +230,6 @@ export const syncMeteoraPositionsForWallet = async (
       pool.baseToken.decimals,
       pool.quoteToken.decimals,
     ).toNumber();
-    console.log(currentPrice, lbPair.activeId, pnlUpdates, { depth: null });
     positionUpdates.push({
       id: offchainPosition.id,
       update: { active, config: { ...offchainPosition.config, priceRange } },

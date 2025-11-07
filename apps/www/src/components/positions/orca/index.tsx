@@ -67,7 +67,6 @@ function OrcaOpenPositionForm({
   const { user, isAuthenticated, signIn } = useAuth();
 
   const { data: rawBalance } = useQuery({
-    initialData: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
     refetchInterval: 60_000,
@@ -160,14 +159,16 @@ function OrcaOpenPositionForm({
       };
       let data: typeof createPositionValue | { transactions: string[] } =
         createPositionValue;
-
+      console.log(data);
       if (user.wallet.external) {
         if (wallet.publicKey) {
           const { transactions } = await createOrcaPosition(
             dex,
             sendTransaction,
             fromWebWalletAdapter(wallet),
-            orcaCreatePositionSchema.parse(createPositionValue) as Exclude<
+            (await orcaCreatePositionSchema.parseAsync(
+              createPositionValue,
+            )) as Exclude<
               z.infer<typeof orcaCreatePositionSchema>,
               { transactions: string[] }
             >,

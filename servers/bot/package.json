@@ -1,0 +1,27 @@
+{
+  "name": "@rhiva-ag/bot",
+  "sideEffects": false,
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "types": "./src/index.node.ts",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "codegen": "bun x @rhiva-ag/env",
+    "dev": "bun run --watch src/index.ts"
+  },
+  "dependencies": {
+    "@rhiva-ag/cron": "*",
+    "@rhiva-ag/datasource": "*",
+    "@rhiva-ag/decoder": "*",
+    "@rhiva-ag/dex": "*",
+    "@rhiva-ag/dex-api": "*",
+    "@rhiva-ag/shared": "*",
+    "@rhiva-ag/trpc": "*",
+    "eta": "^4.0.1",
+    "telegraf": "^4.16.3"
+  },
+  "devDependencies": {
+    "@rhiva-ag/env": "*"
+  }
+}

@@ -17,7 +17,6 @@
     "@headlessui/react": "^2.2.9",
     "@meteora-ag/dlmm": "^1.7.5",
     "@opennextjs/cloudflare": "^1.11.0",
-    "@raydium-io/raydium-sdk-v2": "^0.2.30-alpha",
     "@rhiva-ag/datasource": "*",
     "@rhiva-ag/dex-api": "*",
     "@rhiva-ag/shared": "*",

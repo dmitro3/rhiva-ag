@@ -1,5 +1,5 @@
 import { createSolanaRpc } from "@solana/kit";
-import type { Connection } from "@solana/web3.js";
+import type { Connection, PublicKey } from "@solana/web3.js";
 import type { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { AnchorProvider, type Wallet } from "@coral-xyz/anchor";
 
@@ -19,11 +19,19 @@ export class DLMM {
   readonly raydium: RaydiumCLMM;
   readonly orcaLegacy: OrcaLegacyDLMM;
 
-  constructor(connection: Connection, raydium?: Raydium) {
+  constructor(
+    connection: Connection,
+    raydium?: Raydium,
+    owner?: PublicKey | null,
+  ) {
     this.rpc = createSolanaRpc(connection.rpcEndpoint);
     this.meteora = new MeteoraDLMM();
     this.raydium = new RaydiumCLMM(raydium);
-    const provider = new AnchorProvider(connection, {} as Wallet, {});
+    const provider = new AnchorProvider(
+      connection,
+      { publicKey: owner } as Wallet,
+      {},
+    );
     this.orcaLegacy = new OrcaLegacyDLMM(
       buildWhirlpoolClient(
         WhirlpoolContext.withProvider(provider, ORCA_WHIRLPOOL_PROGRAM_ID),

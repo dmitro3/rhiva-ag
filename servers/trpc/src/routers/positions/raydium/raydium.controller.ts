@@ -70,7 +70,7 @@ export const createPosition = async (
     for (const token of poolToken) {
       const amount = inputAmount / 2;
       const bigAmount = BigInt(
-        new Decimal(amount).mul(Math.pow(10, 9)).toFixed(),
+        new Decimal(amount).mul(Math.pow(10, 9)).toFixed(0),
       );
       if (isNative(token)) {
         if (token === tokenXMint) {

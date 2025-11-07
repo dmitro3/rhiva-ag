@@ -3,6 +3,7 @@
 FROM oven/bun:latest as base
 
 ENV NODE_ENV="production"
+ENV NODE_ENV=production
 
 RUN apt-get update \
   && apt-get install -y curl unzip bash ca-certificates
@@ -31,18 +32,14 @@ WORKDIR /usr/src/app
 
 COPY --from=codegen /usr/src/app/out/json .
 RUN --mount=type=cache,target=/root/.bun/cache\
-  bun install --frozen-lockfile
+  BUN_NO_POSTINSTALL=1 bun install --frozen-lockfile --production
 
 COPY --from=codegen /usr/src/app/out/full .
 COPY --from=codegen /usr/src/app/servers/ecosystem.config.js servers/ecosystem.config.js
 
 FROM base as runtime
 WORKDIR /usr/src/app
-
 COPY --from=builder /usr/src/app/ .
-
-ENV HOST="0.0.0.0"
-ENV NODE_ENV=production
 
 FROM runtime as dev
 WORKDIR /usr/src/app

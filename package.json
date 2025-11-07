@@ -25,8 +25,7 @@
     "@solana/kit": "^2.3.0",
     "@solana/wallet-standard-wallet-adapter-react": "^1.1.4",
     "ajv": "^8.12.0",
-    "commander": "^2.15.1",
-    "@raydium-io/raydium-sdk-v2": "npm:@oasismystre/raydium-sdk-v2@latest"
+    "commander": "^2.15.1"
   },
   "peerDependencies": {
     "typescript": "^5.9.3"

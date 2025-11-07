@@ -2,6 +2,7 @@
   "name": "rhiva-ag",
   "version": "0.0.0",
   "private": true,
+  "packageManager": "bun@1.2.9",
   "scripts": {
     "prepare": "husky",
     "dev": "turbo run dev",

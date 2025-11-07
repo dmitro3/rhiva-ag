@@ -1,3 +1,5 @@
-[install.scopes.oasismystre]
-registry = "https://npm.pkg.github.com"
-token = "$GITHUB_TOKEN"
+[install.scopes]
+"@oasismystre" = {
+  token = "$GITHUB_TOKEN"
+  url = "https://npm.pkg.github.com"
+}

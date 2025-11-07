@@ -22,6 +22,7 @@ services:
       - .env
       - "$HOME/vps-infra/.env"
     environment: 
+      GITHUB_TOKEN: \${GITHUB_TOKEN}
       DATABASE_URL: \${APP_DATABASE_URL}
   # alloy:
   #   image: grafana/alloy:latest

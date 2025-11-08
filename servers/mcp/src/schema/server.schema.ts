@@ -5,41 +5,48 @@ export const positionInputSchema = z.object({
 });
 
 export const tokenInputSchema = z.object({
+  addresses: z
+    .array(z.string())
+    .optional()
+    .describe("searching for multiple tokens by address."),
   limit: z
     .number()
     .describe("result limit count when category is not equal to search.")
-    .optional()
-    .nullable(),
+    .default(8),
   query: z
     .union([z.enum(["verified", "lst"]), z.string()])
-    .describe("required when category is search or tag")
-    .optional()
-    .nullable(),
+    .describe(
+      "required when category is search or tag, required when addresses is not undefined.",
+    )
+    .optional(),
   timestamp: z
     .enum(["5m", "1h", "6h", "24h"])
     .describe(
       'Query by time interval for more accuracy. Required when category is "toporganicscore", "toptraded", "toptrending".',
     )
-    .default("24h")
-    .optional()
-    .nullable(),
-  category: z.union([
-    z
-      .enum(["toporganicscore", "toptraded", "toptrending"])
-      .describe("Top tokens in different trading categories."),
-    z.literal("tag").describe("Request tokens and their information by a tag."),
-    z
-      .literal("recent")
-      .describe("Returns tokens that recently had their first created pool."),
-    z
-      .literal("search")
-      .describe("Request a search by token's symbol, name or mint address."),
-  ]),
+    .default("24h"),
+  category: z
+    .enum([
+      "toporganicscore",
+      "toptraded",
+      "toptrending",
+      "tag",
+      "recent",
+      "search",
+    ])
+    .describe(
+      "Top tokens in different trading categories. Request tokens and their information by a tag. Returns tokens that recently had their first created pool. Request a search by token's symbol, name or mint address.",
+    )
+    .default("toptraded"),
 });
 
 export const poolInputSchema = z.object({
+  token_addressses: z
+    .array(z.string())
+    .describe("use for fetching tokens for multiple tokens")
+    .optional(),
   page: z.number().describe("page through results").optional(),
-  query: z.string().describe("token name, symbol or mint address").optional(),
+  query: z.string().describe("token name, symbol or address").optional(),
   reserve_in_usd_min: z.number().describe("minimum reserve in USD").optional(),
   reserve_in_usd_max: z.number().describe("maximum reserve in USD").optional(),
   fdv_usd_min: z
@@ -134,12 +141,16 @@ export const poolInputSchema = z.object({
     .enum(["5m", "1h", "6h", "24h"])
     .describe("duration for transaction count metric")
     .optional(),
+  include: z
+    .array(z.enum(["base_token", "quote_token", "dex", "network"]))
+    .default(["base_token", "quote_token", "dex", "network"])
+    .transform((input) => input.join(","))
+    .describe("attributes to include"),
   dexes: z
     .array(z.enum(["orca", "saros-dlmm", "meteora", "raydium-clmm"]))
     .default(["orca", "meteora", "raydium-clmm"])
     .transform((input) => input.join(","))
-    .describe("filter pools by Dexes.")
-    .optional(),
+    .describe("filter pools by Dexes."),
   checks: z
     .array(
       z.enum(["no_honeypot", "good_gt_score", "on_coingecko", "has_social"]),
@@ -174,231 +185,134 @@ export const poolInputSchema = z.object({
 
 const tokenSchema = z.object({
   id: z.string(),
-  name: z.string().optional().nullable(),
-  symbol: z.string().optional().optional().nullable(),
-  image: z.string().optional().optional().nullable(),
+  name: z.string().optional(),
+  symbol: z.string().optional().optional(),
+  image: z.string().optional().optional(),
   decimals: z.number().int(),
   tokenProgram: z.string(),
-  addressLookupTables: z.array(z.string()).optional().nullable(),
+  addressLookupTables: z.array(z.string()).optional(),
+});
+
+const statsSchema = z.object({
+  priceChange: z.number().optional(),
+  numBuys: z.number().optional(),
+  numSells: z.number().optional(),
+  numTraders: z.number().optional(),
+  buyVolume: z.number().optional(),
+  sellVolume: z.number().optional(),
+  volumeChange: z.number().optional(),
+  numNetBuyers: z.number().optional(),
+  liquidityChange: z.number().optional(),
+  numOrganicBuyers: z.number().optional(),
+  buyOrganicVolume: z.number().optional(),
+  sellOrganicVolume: z.number().optional(),
 });
 
 export const tokenOutputSchema = z.object({
-  id: z.string().optional().nullable(),
-  name: z.string().optional().nullable(),
-  icon: z.string().optional().nullable(),
-  fdv: z.number().optional().nullable(),
-  mcap: z.number().optional().nullable(),
-  symbol: z.string().optional().nullable(),
-  decimals: z.number().optional().nullable(),
-  ctLikes: z.number().optional().nullable(),
-  updatedAt: z.string().optional().nullable(),
-  usdPrice: z.number().optional().nullable(),
-  liquidity: z.number().optional().nullable(),
-  priceBlockId: z.number().optional().nullable(),
-  smartCtLikes: z.number().optional().nullable(),
-  circSupply: z.number().optional().nullable(),
-  totalSupply: z.number().optional().nullable(),
-  tokenProgram: z.string().optional().nullable(),
-  holderCount: z.number().optional().nullable(),
-  organicScore: z.number().optional().nullable(),
-  isVerified: z.boolean().optional().nullable(),
-  cexes: z.array(z.string()).optional().nullable(),
-  tags: z.array(z.string()).optional().nullable(),
-  stats5m: z
-    .object({
-      priceChange: z.number().optional().nullable(),
-      numBuys: z.number().optional().nullable(),
-      numSells: z.number().optional().nullable(),
-      numTraders: z.number().optional().nullable(),
-      buyVolume: z.number().optional().nullable(),
-      sellVolume: z.number().optional().nullable(),
-      volumeChange: z.number().optional().nullable(),
-      numNetBuyers: z.number().optional().nullable(),
-      liquidityChange: z.number().optional().nullable(),
-      numOrganicBuyers: z.number().optional().nullable(),
-      buyOrganicVolume: z.number().optional().nullable(),
-      sellOrganicVolume: z.number().optional().nullable(),
-    })
-    .optional()
-    .nullable(),
-  stats1h: z
-    .object({
-      priceChange: z.number().optional().nullable(),
-      numBuys: z.number().optional().nullable(),
-      numSells: z.number().optional().nullable(),
-      numTraders: z.number().optional().nullable(),
-      buyVolume: z.number().optional().nullable(),
-      sellVolume: z.number().optional().nullable(),
-      volumeChange: z.number().optional().nullable(),
-      numNetBuyers: z.number().optional().nullable(),
-      liquidityChange: z.number().optional().nullable(),
-      numOrganicBuyers: z.number().optional().nullable(),
-      buyOrganicVolume: z.number().optional().nullable(),
-      sellOrganicVolume: z.number().optional().nullable(),
-    })
-    .optional()
-    .nullable(),
-  stats6h: z
-    .object({
-      priceChange: z.number().optional().nullable(),
-      numBuys: z.number().optional().nullable(),
-      numSells: z.number().optional().nullable(),
-      numTraders: z.number().optional().nullable(),
-      buyVolume: z.number().optional().nullable(),
-      sellVolume: z.number().optional().nullable(),
-      volumeChange: z.number().optional().nullable(),
-      numNetBuyers: z.number().optional().nullable(),
-      liquidityChange: z.number().optional().nullable(),
-      numOrganicBuyers: z.number().optional().nullable(),
-      buyOrganicVolume: z.number().optional().nullable(),
-      sellOrganicVolume: z.number().optional().nullable(),
-    })
-    .optional()
-    .nullable(),
-  stats24h: z
-    .object({
-      priceChange: z.number().optional().nullable(),
-      numBuys: z.number().optional().nullable(),
-      numSells: z.number().optional().nullable(),
-      numTraders: z.number().optional().nullable(),
-      buyVolume: z.number().optional().nullable(),
-      sellVolume: z.number().optional().nullable(),
-      volumeChange: z.number().optional().nullable(),
-      numNetBuyers: z.number().optional().nullable(),
-      liquidityChange: z.number().optional().nullable(),
-      numOrganicBuyers: z.number().optional().nullable(),
-      buyOrganicVolume: z.number().optional().nullable(),
-      sellOrganicVolume: z.number().optional().nullable(),
-    })
-    .nullable()
-    .optional(),
-  organicScoreLabel: z.enum(["low", "medium", "high"]).optional().nullable(),
+  id: z.string().optional(),
+  name: z.string().optional(),
+  icon: z.string().optional(),
+  fdv: z.number().optional(),
+  mcap: z.number().optional(),
+  symbol: z.string().optional(),
+  decimals: z.number().optional(),
+  ctLikes: z.number().optional(),
+  updatedAt: z.string().optional(),
+  usdPrice: z.number().optional(),
+  liquidity: z.number().optional(),
+  priceBlockId: z.number().optional(),
+  smartCtLikes: z.number().optional(),
+  circSupply: z.number().optional(),
+  totalSupply: z.number().optional(),
+  tokenProgram: z.string().optional(),
+  holderCount: z.number().optional(),
+  organicScore: z.number().optional(),
+  isVerified: z.boolean().optional(),
+  cexes: z.array(z.string()).optional(),
+  tags: z.array(z.string()).optional(),
+  stats5m: statsSchema.optional(),
+  stats1h: statsSchema.optional(),
+  stats6h: statsSchema.optional(),
+  stats24h: statsSchema.optional(),
+  organicScoreLabel: z.enum(["low", "medium", "high"]).optional(),
   audit: z
     .object({
-      topHoldersPercentage: z.number().optional().nullable(),
-      mintAuthorityDisabled: z.boolean().optional().nullable(),
-      freezeAuthorityDisabled: z.boolean().optional().nullable(),
+      topHoldersPercentage: z.number().optional(),
+      mintAuthorityDisabled: z.boolean().optional(),
+      freezeAuthorityDisabled: z.boolean().optional(),
     })
-    .nullable()
     .optional(),
   firstPool: z
     .object({
-      id: z.string().optional().nullable(),
-      createdAt: z.string().optional().nullable(),
+      id: z.string().optional(),
+      createdAt: z.string().optional(),
     })
-    .nullable()
     .optional(),
 });
 
+const pairSchema = z.object({
+  address: z.string().optional(),
+  name: z.string().optional(),
+  symbol: z.string().optional(),
+  decimals: z.number().optional(),
+  image_url: z.string().nullable().optional(),
+});
+
+const transactionSchema = z.object({
+  buys: z.number().optional(),
+  sells: z.number().optional(),
+  buyers: z.number().optional(),
+  sellers: z.number().optional(),
+});
+
 export const poolOutputSchema = z.object({
-  name: z.string().optional().nullable(),
-  address: z.string().optional().nullable(),
-  pool_created_at: z.string().optional().nullable(),
-  reserve_in_usd: z.string().optional().nullable(),
-  base_token_price_usd: z.string().optional().nullable(),
-  quote_token_price_usd: z.string().optional().nullable(),
-  base_token_price_base_token: z.string().optional().nullable(),
-  base_token: z
-    .object({
-      address: z.string().optional().nullable(),
-      name: z.string().optional().nullable(),
-      symbol: z.string().optional().nullable(),
-      decimals: z.number().optional().nullable(),
-      image_url: z.string().optional().nullable(),
-    })
-    .optional()
-    .nullable(),
-  quote_token: z
-    .object({
-      address: z.string().optional().nullable(),
-      name: z.string().optional().nullable(),
-      symbol: z.string().optional().nullable(),
-      decimals: z.number().optional().nullable(),
-      image_url: z.string().optional().nullable(),
-    })
-    .optional()
-    .nullable(),
+  name: z.string().optional(),
+  address: z.string().optional(),
+  pool_created_at: z.string().optional(),
+  reserve_in_usd: z.string().optional(),
+  base_token_price_usd: z.string().optional(),
+  quote_token_price_usd: z.string().optional(),
+  base_token_price_base_token: z.string().optional(),
+  base_token: pairSchema.optional(),
+  quote_token: pairSchema.optional(),
   dex: z
     .object({
-      id: z.string().optional().nullable(),
-      name: z.string().optional().nullable(),
+      id: z.string().optional(),
+      name: z.string().optional(),
     })
-    .optional()
-    .nullable(),
-  quote_token_price_base_token: z.string().optional().nullable(),
-  base_token_price_native_currency: z.string().optional().nullable(),
-  quote_token_price_native_currency: z.string().optional().nullable(),
+    .optional(),
+  quote_token_price_base_token: z.string().optional(),
+  base_token_price_native_currency: z.string().optional(),
+  quote_token_price_native_currency: z.string().optional(),
   volume_usd: z
     .object({
-      h1: z.string().nullable().optional(),
-      h24: z.string().nullable().optional(),
-      h6: z.string().nullable().optional(),
-      m15: z.string().nullable().optional(),
-      m30: z.string().nullable().optional(),
-      m5: z.string().nullable().optional(),
+      h1: z.string().optional(),
+      h24: z.string().optional(),
+      h6: z.string().optional(),
+      m15: z.string().optional(),
+      m30: z.string().optional(),
+      m5: z.string().optional(),
     })
-    .optional()
-    .nullable(),
+    .optional(),
   price_change_percentage: z
     .object({
-      h1: z.string().nullable().optional(),
-      h24: z.string().nullable().optional(),
-      h6: z.string().nullable().optional(),
-      m15: z.string().nullable().optional(),
-      m30: z.string().nullable().optional(),
-      m5: z.string().nullable().optional(),
+      h1: z.string().optional(),
+      h24: z.string().optional(),
+      h6: z.string().optional(),
+      m15: z.string().optional(),
+      m30: z.string().optional(),
+      m5: z.string().optional(),
     })
-    .optional()
-    .nullable(),
+    .optional(),
   transactions: z
     .object({
-      m5: z
-        .object({
-          buys: z.number().optional().nullable(),
-          sells: z.number().optional().nullable(),
-          buyers: z.number().optional().nullable(),
-          sellers: z.number().optional().nullable(),
-        })
-        .optional()
-        .nullable(),
-      m15: z
-        .object({
-          buys: z.number().optional().nullable(),
-          sells: z.number().optional().nullable(),
-          buyers: z.number().optional().nullable(),
-          sellers: z.number().optional().nullable(),
-        })
-        .optional()
-        .nullable(),
-      m30: z
-        .object({
-          buys: z.number().optional().nullable(),
-          sells: z.number().optional().nullable(),
-          buyers: z.number().optional().nullable(),
-          sellers: z.number().optional().nullable(),
-        })
-        .optional()
-        .nullable(),
-      h1: z
-        .object({
-          buys: z.number().optional().nullable(),
-          sells: z.number().optional().nullable(),
-          buyers: z.number().optional().nullable(),
-          sellers: z.number().optional().nullable(),
-        })
-        .optional()
-        .nullable(),
-      h24: z
-        .object({
-          buys: z.number().optional().nullable(),
-          sells: z.number().optional().nullable(),
-          buyers: z.number().optional().nullable(),
-          sellers: z.number().optional().nullable(),
-        })
-        .optional()
-        .nullable(),
+      m5: transactionSchema.optional(),
+      m15: transactionSchema.optional(),
+      m30: transactionSchema.optional(),
+      h1: transactionSchema.optional(),
+      h24: transactionSchema.optional(),
     })
-    .nullable()
+
     .optional(),
 });
 
@@ -425,4 +339,8 @@ export const positionOutputSchema = z.object({
     claimedFeeUsd: z.number(),
     state: z.enum(["opened", "closed"]),
   }),
+});
+
+export const transactionOutputSchema = z.object({
+  bundleId: z.string().describe("jito bundle id"),
 });

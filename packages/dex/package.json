@@ -1,17 +1,14 @@
 {
   "name": "@rhiva-ag/dex",
   "version": "0.0.0",
+  "type": "module",
   "sideEffects": false,
-  "scripts": {
-    "codegen": "bun x @rhiva-ag/env --out tests/env.ts"
-  },
   "exports": {
     ".": {
       "types": "./src/index.ts",
-      "import": "./src/index.ts",
       "browser": "./src/index.browser.ts",
-      "require": "./src/index.ts",
-      "default": "./src/index.ts"
+      "import": "./src/index.ts",
+      "require": "./dist/index.cjs"
     },
     "./browser": {
       "types": "./src/index.browser.ts",
@@ -19,19 +16,22 @@
     },
     "./utils": {
       "types": "./src/utils/index.ts",
-      "default": "./src/utils/index.ts"
+      "require": "./dist/utils/index.cjs",
+      "import": "./src/utils/index.ts"
     }
+  },
+  "scripts": {
+    "codegen": "bun x @rhiva-ag/env --out tests/env.ts",
+    "build": "tsup src/index.ts ./src/utils/index.ts --minify --treeshake"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.32.1",
     "@jup-ag/api": "^6.0.46",
     "@meteora-ag/dlmm": "^1.7.5",
     "@orca-so/common-sdk": "^0.6.11",
-    "@orca-so/whirlpool-sdk": "^0.4.2",
     "@orca-so/whirlpools": "^4.0.0",
     "@orca-so/whirlpools-client": "^4.0.1",
     "@orca-so/whirlpools-core": "^2.0.0",
-    "@orca-so/whirlpools-sdk": "0.15.0",
     "@rhiva-ag/shared": "*",
     "@saros-finance/dlmm-sdk": "^1.4.1",
     "@solana-program/token": "^0.7.0",

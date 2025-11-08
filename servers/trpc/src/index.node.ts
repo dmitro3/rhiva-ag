@@ -1,5 +1,5 @@
 export type { AppRouter } from "./routers";
-
+export { JWTAuthMiddleware } from "./controllers";
 export { getPools } from "./routers/pools/pool.controller";
 export { safeAuthUserSchema } from "./routes/auth/auth.schema";
 export { extendedUserSelectSchema } from "./routers/users/user.schema";
@@ -36,12 +36,6 @@ export {
   createPosition as createMeteoraPosition,
   rebalancePosition as rebalanceMeteoraPosition,
 } from "./routers/positions/meteora/meteora.controller";
-export {
-  claimReward as claimOrcaReward,
-  closePosition as closeOrcaPosition,
-  createPosition as createOrcaPosition,
-  rebalancePosition as rebalanceOrcaPosition,
-} from "./routers/positions/orca/orca-legacy.controller";
 export {
   claimReward as claimRaydiumReward,
   closePosition as closeRaydiumPosition,

@@ -113,20 +113,24 @@ export class McpClient {
       ConstructorParameters<typeof Agent>[number],
       "name" | "mcpServers" | "outputType" | "instructions"
     >,
+    context?: string,
   ) {
     const isConnected = await this.connect();
+    let instructions = readFileSync(
+      path.join(__srcdir, "prompts/en/web3.txt"),
+      "utf-8",
+    );
+    if (context) instructions = instructions.replace("%user_context%", context);
 
     if (isConnected || this.isConnected) {
       const agent = new Agent({
         ...params,
         name: this.config.name,
+        model: "gpt-4o-mini",
         mcpServers: [this.server],
         // @ts-expect-error zod type not satisfied
         outputType: agentOutputSchema,
-        instructions: readFileSync(
-          path.join(__srcdir, "prompts/en/web3.txt"),
-          "utf-8",
-        ),
+        instructions,
       });
 
       return agent;

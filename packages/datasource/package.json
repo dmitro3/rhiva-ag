@@ -5,17 +5,19 @@
   "sideEffects": false,
   "module": "./src/index.ts",
   "types": "./src/index.ts",
-  "scripts": {
-    "check": "tsc --noEmit",
-    "codegen": "bun x @rhiva-ag/env",
-    "migrate": "drizzle-kit generate && drizzle-kit migrate"
-  },
   "exports": {
     ".": {
       "types": "./src/index.ts",
-      "node": "./src/index.ts",
-      "browser": "./src/index.browser.ts"
+      "browser": "./src/index.browser.ts",
+      "import": "./src/index.ts",
+      "require": "./dist/index.cjs"
     }
+  },
+  "scripts": {
+    "check": "tsc --noEmit",
+    "codegen": "bun x @rhiva-ag/env",
+    "build": "tsup src/index.ts --minify --treeshake",
+    "migrate": "drizzle-kit generate && drizzle-kit migrate"
   },
   "peerDependencies": {
     "typescript": "^5.9.2"

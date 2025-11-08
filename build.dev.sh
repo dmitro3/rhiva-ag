@@ -10,6 +10,8 @@ services:
     build:
       context: .
       target: dev
+      args:
+        - GITHUB_TOKEN=\${GITHUB_TOKEN}
     ports:
       - "8000:8000"
       - "8001:8001"
@@ -18,9 +20,10 @@ services:
     #   - alloy
     networks:
       - webnet
+      - redis
     env_file: 
       - .env
-      - "$HOME/vps-infra/.env"
+      # - "$HOME/vps-infra/.env"
     environment: 
       GITHUB_TOKEN: \${GITHUB_TOKEN}
       DATABASE_URL: \${APP_DATABASE_URL}
@@ -40,6 +43,8 @@ services:
 networks:
   webnet:
     driver: bridge
+  redis: 
+    external: true
 EOF
 
 git pull && \

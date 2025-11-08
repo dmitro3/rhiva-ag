@@ -7,10 +7,10 @@ import {
 } from "../position.schema";
 
 const orcaFullCreatePositionSchema = z.object({
-  strategyType: z.literal("full"),
+  strategyType: z.literal("Full"),
 });
 const orcaCustomCreatePositionSchema = z.object({
-  strategyType: z.literal("custom"),
+  strategyType: z.literal("Custom"),
   tokenADecimals: z.number(),
   tokenBDecimals: z.number(),
   priceChanges: z.tuple([z.number().min(-1).max(0), z.number().min(0).max(1)]),

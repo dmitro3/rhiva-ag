@@ -1,9 +1,9 @@
 {
   "name": "@rhiva-ag/bot",
-  "sideEffects": false,
   "version": "0.0.0",
-  "type": "module",
   "private": true,
+  "type": "module",
+  "sideEffects": false,
   "types": "./src/index.node.ts",
   "scripts": {
     "check": "tsc --noEmit",

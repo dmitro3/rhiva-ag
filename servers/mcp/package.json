@@ -2,28 +2,32 @@
   "name": "@rhiva-ag/mcp",
   "version": "0.0.0",
   "type": "module",
+  "sideEffects": false,
   "types": "./src/external.ts",
   "main": "./src/external.ts",
   "module": "./src/external.ts",
   "exports": {
-    "./client": {
-      "type": "./src/client.ts",
-      "default": "./src/client.ts"
-    },
     ".": {
       "types": "./src/external.ts",
-      "import": "./src/external.ts",
-      "default": "./src/external.ts"
+      "require": "./src/external.ts",
+      "import": "./src/external.ts"
+    },
+    "./client": {
+      "type": "./src/client.ts",
+      "require": "./dist/client.cjs",
+      "import": "./src/client.ts"
     }
   },
   "scripts": {
+    "check": "tsc --noEmit",
     "codegen": "bun x @rhiva-ag/env",
-    "dev": "bun run --watch src/index.ts"
+    "dev": "bun run --watch src/index.ts",
+    "build": "tsup src/index.ts src/external.ts src/client.ts --treeshake --minify"
   },
   "dependencies": {
     "@coingecko/coingecko-typescript": "^2.2.0",
-    "@modelcontextprotocol/sdk": "^1.20.1",
-    "@openai/agents": "^0.1.10",
+    "@modelcontextprotocol/sdk": "npm:@socotra/modelcontextprotocol-sdk",
+    "@openai/agents": "^0.1.11",
     "@rhiva-ag/datasource": "*",
     "@rhiva-ag/dex-api": "*",
     "@rhiva-ag/shared": "*",
@@ -31,7 +35,7 @@
     "fastify-mcp": "^2.0.8",
     "fs": "^0.0.1-security",
     "path": "^0.12.7",
-    "zod": "3.25.40"
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@tsconfig/bun": "^1.0.9"

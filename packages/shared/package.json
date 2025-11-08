@@ -10,11 +10,13 @@
   "exports": {
     ".": {
       "types": "./src/index.ts",
+      "require": "./dist/index.cjs",
       "import": "./src/index.ts"
     }
   },
   "scripts": {
     "check": "tsc --noEmit",
+    "build": "tsup src/index.ts --minify --treeshake",
     "codegen": "bun x @rhiva-ag/env --out tests/env.ts"
   },
   "resolutions": {
@@ -24,7 +26,7 @@
     "@aws-sdk/client-kms": "^3.914.0",
     "@solana-program/system": "^0.9.0",
     "@solana/compat": "^4.0.0",
-    "@solana/kit": "^2.3.0",
+    "@solana/kit": "^5.0.0",
     "@solana/spl-token": "^0.4.14",
     "@solana/web3.js": "^1.98.4",
     "bs58": "^6.0.0",

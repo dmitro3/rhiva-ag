@@ -33,10 +33,10 @@ type SharedBuildCreatePositionArgs = {
 
 type BuildCreatePositionArgs = (
   | {
-      strategyType: "full";
+      strategyType: "Full";
     }
   | {
-      strategyType: "custom";
+      strategyType: "Custom";
       priceChanges: [number, number];
     }
 ) &
@@ -83,7 +83,7 @@ export class OrcaLegacyDLMM {
       },
     } as const;
 
-    if (args.strategyType === "custom") {
+    if (args.strategyType === "Custom") {
       const [lowerPriceChange, upperPriceChange] = args.priceChanges;
 
       const currentPrice = PriceMath.tickIndexToPrice(

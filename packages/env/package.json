@@ -2,12 +2,13 @@
   "name": "@rhiva-ag/env",
   "private": true,
   "version": "0.0.0",
+  "type": "module",
   "bin": "src/cli.ts",
   "scripts": {
     "check": "tsc --noEmit"
   },
   "dependencies": {
-    "commander": "^2.15.1",
+    "commander": "^14.0.2",
     "dotenv": "^17.2.3"
   }
 }

@@ -1,9 +1,9 @@
 {
   "name": "@rhiva-ag/trpc",
-  "sideEffects": false,
   "version": "0.0.0",
-  "type": "module",
   "private": true,
+  "type": "module",
+  "sideEffects": false,
   "types": "./src/index.node.ts",
   "exports": {
     ".": {
@@ -21,9 +21,10 @@
     "check": "tsc --noEmit",
     "codegen": "bun x @rhiva-ag/env",
     "dev": "bun run --watch src/index.ts",
-    "build": "tsup src/external.ts --treeshake"
+    "build": "tsup src/index.ts --minify --treeshake"
   },
   "dependencies": {
+    "@orca-so/whirlpools-sdk": "^0.16.0",
     "@coingecko/coingecko-typescript": "^2.2.0",
     "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "^11.1.0",
@@ -35,7 +36,6 @@
     "@orca-so/whirlpools": "^4.0.0",
     "@orca-so/whirlpools-client": "^4.0.1",
     "@orca-so/whirlpools-core": "^2.0.0",
-
     "@rhiva-ag/cron": "*",
     "@rhiva-ag/datasource": "*",
     "@rhiva-ag/decoder": "*",
@@ -45,7 +45,7 @@
     "@rhiva-ag/shared": "*",
     "@solana-tracker/data-api": "^0.1.4",
     "@solana/compat": "^4.0.0",
-    "@solana/kit": "^2.3.0",
+    "@solana/kit": "^5.0.0",
     "@solana/spl-token": "^0.4.14",
     "@solana/web3.js": "^1.98.4",
     "@trpc/server": "^11.6.0",

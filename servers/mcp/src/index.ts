@@ -9,6 +9,7 @@ const server = fastify({
   logger: true,
 });
 
+// @ts-expect-error
 server.register(streamableHttp, {
   stateful: false,
   mcpEndpoint: "/",

@@ -21,11 +21,7 @@
     "turbo": "^2.5.8"
   },
   "dependencies": {
-    "@solana/codecs": "^2.3.0",
-    "@solana/kit": "^2.3.0",
-    "@solana/wallet-standard-wallet-adapter-react": "^1.1.4",
-    "ajv": "^8.12.0",
-    "commander": "^2.15.1"
+    "@raydium-io/raydium-sdk-v2": "npm:@oasismystre/raydium-sdk-v2@latest"
   },
   "peerDependencies": {
     "typescript": "^5.9.3"

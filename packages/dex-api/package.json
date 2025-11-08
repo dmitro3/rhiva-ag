@@ -2,24 +2,24 @@
   "name": "@rhiva-ag/dex-api",
   "version": "0.0.0",
   "private": true,
-  "sideEffects": false,
   "type": "module",
+  "sideEffects": false,
   "types": "./src/index.ts",
   "main": "./src/index.ts",
   "module": "./src/index.ts",
   "exports": {
     ".": {
       "types": "./src/index.ts",
-      "import": "./src/index.ts",
-      "require": "./src/index.ts",
-      "default": "./src/index.ts"
+      "require": "./dist/index.cjs",
+      "import": "./src/index.ts"
     },
     "./*/types": {
       "types": "./src/*/models/index.ts"
     }
   },
   "scripts": {
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "build": "tsup src/index.ts --treeshake --minify"
   },
   "dependencies": {
     "@rhiva-ag/shared": "*",

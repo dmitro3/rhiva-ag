@@ -29,6 +29,7 @@ import PriceRangeInput from "./PriceRangeInput";
 import PositionOverview from "../PositionOverview";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { fromWebWalletAdapter } from "@rhiva-ag/shared";
+x;
 
 type OrcaOpenPositionProps = {
   pool: Pair;
@@ -82,8 +83,8 @@ function OrcaOpenPositionForm({
 
   const curves = useMemo(
     () => [
-      { label: "Full", value: "full" },
-      { label: "Custom", value: "custom" },
+      { label: "Full", value: "Full" },
+      { label: "Custom", value: "Custom" },
     ],
     [],
   );
@@ -124,7 +125,7 @@ function OrcaOpenPositionForm({
     initialValues: {
       inputAmount: undefined as unknown as number,
       inputMint: NATIVE_MINT.toBase58(),
-      strategyType: "full" as "custom" | "full",
+      strategyType: "Full" as "Custom" | "Full",
       priceChanges: [-0.01, 0.01] as [number, number],
       liquidityRatio: [0.5, 0.5] as [number, number],
       sides: [pool.baseToken.id, pool.quoteToken.id],
@@ -159,7 +160,6 @@ function OrcaOpenPositionForm({
       };
       let data: typeof createPositionValue | { transactions: string[] } =
         createPositionValue;
-      console.log(data);
       if (user.wallet.external) {
         if (wallet.publicKey) {
           const { transactions } = await createOrcaPosition(
@@ -230,7 +230,7 @@ function OrcaOpenPositionForm({
           </div>
           <div className="flex-1 flex flex-col space-y-16 py-4 overflow-y-scroll sm:py-8">
             <div className="flex flex-col space-y-4">
-              {values.strategyType === "custom" && (
+              {values.strategyType === "Custom" && (
                 <PriceRangeInput
                   pool={pool}
                   whirlpool={whirlpool}

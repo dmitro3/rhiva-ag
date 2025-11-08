@@ -1,7 +1,9 @@
 # syntax = docker/dockerfile:1.2
+# for this sake of christ don't edit this file unless you know what you're doing 
 
 FROM oven/bun:latest as base
 
+ARG GITHUB_TOKEN
 ENV NODE_ENV="production"
 
 RUN apt-get update \
@@ -21,6 +23,7 @@ COPY packages ./packages
 COPY servers ./servers
 COPY turbo.json ./turbo.json
 COPY bun.lock ./bun.lock
+COPY bunfig.toml ./bunfig.toml
 COPY package.json ./package.json
 
 # Run turbo prune for docker build
@@ -29,40 +32,35 @@ RUN bun x turbo prune @rhiva-ag/trpc @rhiva-ag/cron @rhiva-ag/mcp --docker
 FROM base as builder
 WORKDIR /usr/src/app
 
-COPY --from=codegen /usr/src/app/out/json .
-RUN --mount=type=cache,target=/root/.bun/cache\
-  bun install --frozen-lockfile
-
+COPY --from=codegen /usr/src/app/bunfig.toml .
 COPY --from=codegen /usr/src/app/out/full .
 COPY --from=codegen /usr/src/app/servers/ecosystem.config.js servers/ecosystem.config.js
 
-FROM base as runtime
+RUN --mount=type=cache,target=/root/.bun/cache\
+  bun install --frozen-lockfile # instead of copying turbo json folder cache install instead.
+
+RUN bun x turbo run build
+
+FROM builder as dev
 WORKDIR /usr/src/app
-
-COPY --from=builder /usr/src/app/ .
-
-ENV HOST="0.0.0.0"
-ENV NODE_ENV=production
-
-FROM runtime as dev
-WORKDIR /usr/src/app
+RUN bun install pm2 --global
 CMD sh -c "cd packages/datasource && \
   bun x drizzle-kit migrate && \
   cd ../../servers && \
-  bun x pm2-runtime start ecosystem.config.js"
+  pm2-runtime start ecosystem.config.js"
 
-FROM runtime as trpc
+FROM builder as trpc
 WORKDIR /usr/src/app/servers/trpc
-CMD ["bun", "src/index.ts"]
+CMD ["bun", "dist/index.cjs"]
 
-FROM runtime as schedules
+FROM builder as schedules
 WORKDIR /usr/src/app/servers/cron
-CMD sh -c "bun src/schedules/index.ts"
+CMD sh -c "bun dist/schedules/index.cjs"
 
-FROM runtime as workers
+FROM builder as workers
 WORKDIR /usr/src/app/servers/cron
-CMD sh -c "bun src/workers/index.ts"
+CMD sh -c "bun dist/workers/index.cjs"
 
-FROM runtime as mcp
+FROM builder as mcp
 WORKDIR /usr/src/app/servers/mcp
-CMD sh -c "bun src/index.ts"
+CMD sh -c "bun dist/index.cjs"

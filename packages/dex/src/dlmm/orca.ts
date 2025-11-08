@@ -27,10 +27,10 @@ type SharedBuildCreatePositionArgs = {
 
 type BuildCreatePositionArgs = (
   | {
-      strategyType: "full";
+      strategyType: "Full";
     }
   | {
-      strategyType: "custom";
+      strategyType: "Custom";
       tokenADecimals: number;
       tokenBDecimals: number;
       priceChanges: [number, number];
@@ -50,7 +50,7 @@ export class OrcaDLMM {
 
   readonly buildCreatePosition = async (args: BuildCreatePositionArgs) => {
     const { pool, slippage, tokenA, tokenB } = args;
-    if (args.strategyType === "custom") {
+    if (args.strategyType === "Custom") {
       const [lowerPriceChange, upperPriceChange] = args.priceChanges;
 
       const currentPrice = tickIndexToPrice(

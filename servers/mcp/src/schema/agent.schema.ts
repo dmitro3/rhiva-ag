@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v3";
 
 const poolOutputSchema = z.object({
   name: z.string().describe("pool name"),
@@ -31,8 +31,10 @@ const poolOutputSchema = z.object({
     riskScore: z.number().gt(0).max(10).describe("agent risk score."),
     confidence: z.number().gt(0).max(1).describe("agent confidence."),
     suggestedStrategy: z
-      .enum(["Spot", "Curve", "BidAsk"])
-      .describe("agent suggested strategy."),
+      .enum(["Spot", "Full", "Custom", "Curve", "BidAsk"])
+      .describe(
+        "agent suggested strategy. Orca supports Full and Custom only. Raydium supports Spot only.",
+      ),
     suggestedDeposit: z.number().describe("agent suggested deposit."),
     estimatedEarnPerDay: z
       .number()

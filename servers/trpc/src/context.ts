@@ -1,7 +1,6 @@
 import type { CreateFastifyContextOptions } from "@trpc/server/adapters/fastify";
 
-import type { User } from "./controllers/types";
-import { JWTAuthMiddleware } from "./controllers/jwt-auth.controller";
+import { JWTAuthMiddleware, type User } from "./controllers";
 import {
   drizzle,
   mcpClient,

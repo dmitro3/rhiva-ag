@@ -1,21 +1,23 @@
 {
   "name": "@rhiva-ag/cron",
   "version": "0.0.0",
+  "type": "module",
   "private": true,
+  "sideEffects": false,
   "types": "./src/external.ts",
   "main": "./src/external.ts",
   "module": "./src/external.ts",
-  "type": "module",
   "exports": {
     ".": {
       "types": "./src/external.ts",
-      "import": "./src/external.ts",
-      "default": "./src/external.ts"
+      "require": "./dist/external.cjs",
+      "import": "./src/external.ts"
     }
   },
   "scripts": {
     "check": "tsc --noEmit",
     "codegen": "bun x @rhiva-ag/env",
+    "build": "tsup src/external.ts src/schedules/index.ts src/workers/index.ts --minify --treeshake",
     "dev": "bun run --watch src/schedules/index.ts & bun run --watch src/workers/index.ts"
   },
   "dependencies": {

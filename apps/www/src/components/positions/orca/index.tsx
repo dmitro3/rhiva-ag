@@ -11,10 +11,11 @@ import { logEvent } from "firebase/analytics";
 import { NATIVE_MINT } from "@solana/spl-token";
 import { address, createSolanaRpc } from "@solana/kit";
 import { Form, FormikContext, useFormik } from "formik";
-import { fetchWhirlpool } from "@orca-so/whirlpools-client";
+import { fromWebWalletAdapter } from "@rhiva-ag/shared";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { Dialog, DialogBackdrop, DialogPanel } from "@headlessui/react";
+import { fetchWhirlpool } from "@orca-so/whirlpools-sdk/whirlpools-client";
 import {
   orcaCreatePositionSchema,
   createOrcaPosition,
@@ -28,8 +29,6 @@ import { sendTransaction } from "@/instances";
 import PriceRangeInput from "./PriceRangeInput";
 import PositionOverview from "../PositionOverview";
 import { useAnalytics } from "@/hooks/useAnalytics";
-import { fromWebWalletAdapter } from "@rhiva-ag/shared";
-x;
 
 type OrcaOpenPositionProps = {
   pool: Pair;
@@ -207,7 +206,7 @@ function OrcaOpenPositionForm({
             props.className,
           )}
         >
-          <div className="flex">
+          <div className="flex sticky top-0">
             {curves.map((curve) => {
               const selected = curve.value === values.strategyType;
 

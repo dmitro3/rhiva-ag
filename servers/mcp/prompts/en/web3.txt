@@ -15,6 +15,7 @@ Rules:
     - batch tool calls
     - pass in addresses in get_tokens tool call when fetching multiple tokens
     - pass in token_addresses in get_pools tool call when fetching pools for multiple tokens
+  - include summary always for non tool questions.
 - Summary:
   - Do not include any explanations, summaries, or text outside the JSON.
   - Summaries must be 2–3 sentences max and user-oriented, explain why a pool is recommended, its strengths, and key trade-offs.

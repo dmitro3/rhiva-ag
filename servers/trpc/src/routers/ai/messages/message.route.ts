@@ -61,7 +61,8 @@ export const messageRoute = router({
         >;
 
         if (finalOutput) {
-          const name = finalOutput.summary.slice(0, 32);
+          let name = finalOutput.summary?.slice(0, 32);
+          name = name ? name : input.prompt.slice(0, 32);
           const [newThread] = await ctx.drizzle
             .update(threads)
             .set({ name, id: thread.id })

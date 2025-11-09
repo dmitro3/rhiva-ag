@@ -1,6 +1,9 @@
 import Decimal from "decimal.js";
 import { mapFilter } from "@rhiva-ag/shared";
-import { isVersionedTransaction, Percentage } from "@orca-so/common-sdk";
+import {
+  isVersionedTransaction,
+  Percentage,
+} from "@orca-so/whirlpools-sdk/common-sdk";
 import type {
   VersionedTransaction,
   PublicKey,

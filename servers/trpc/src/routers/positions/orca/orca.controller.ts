@@ -1,12 +1,15 @@
 import Decimal from "decimal.js";
 import type { z } from "zod/mini";
 import type Dex from "@rhiva-ag/dex";
-import { tickIndexToPrice } from "@orca-so/whirlpools-core";
-import { openPositionInstructions } from "@orca-so/whirlpools";
-import { fetchPosition, fetchWhirlpool } from "@orca-so/whirlpools-client";
+import { tickIndexToPrice } from "@orca-so/whirlpools-sdk/whirlpools-core";
+import { openPositionInstructions } from "@orca-so/whirlpools-sdk/whirlpools";
 import { isNative, mapFilter, type SendTransaction } from "@rhiva-ag/shared";
 import { fromLegacyPublicKey, fromVersionedTransaction } from "@solana/compat";
 import { getAssociatedTokenAddressSync, NATIVE_MINT } from "@solana/spl-token";
+import {
+  fetchPosition,
+  fetchWhirlpool,
+} from "@orca-so/whirlpools-sdk/whirlpools-client";
 import {
   type Keypair,
   PublicKey,

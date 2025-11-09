@@ -4,8 +4,8 @@ import type { Pair } from "@rhiva-ag/dex-api";
 import { useCallback, useMemo } from "react";
 import { PriceMath } from "@orca-so/whirlpools-sdk";
 import type { Account, Address } from "@solana/kit";
-import type { Whirlpool } from "@orca-so/whirlpools-client";
 import { BarElement, CategoryScale, LinearScale } from "chart.js";
+import type { Whirlpool } from "@orca-so/whirlpools-sdk/whirlpools-client";
 
 import PriceRangeInput from "../PriceRangeInput";
 

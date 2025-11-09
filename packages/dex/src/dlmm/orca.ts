@@ -1,11 +1,11 @@
-import { tickIndexToPrice } from "@orca-so/whirlpools-core";
-import type { Whirlpool } from "@orca-so/whirlpools-client";
+import { tickIndexToPrice } from "@orca-so/whirlpools-sdk/whirlpools-core";
+import type { Whirlpool } from "@orca-so/whirlpools-sdk/whirlpools-client";
 import {
   closePositionInstructions,
   openPositionInstructions,
   harvestPositionInstructions,
   openFullRangePositionInstructions,
-} from "@orca-so/whirlpools";
+} from "@orca-so/whirlpools-sdk/whirlpools";
 import type {
   Account,
   Address,

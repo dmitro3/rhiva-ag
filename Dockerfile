@@ -1,13 +1,13 @@
 # syntax = docker/dockerfile:1.2
 # for this sake of christ don't edit this file unless you know what you're doing 
 
-FROM oven/bun:latest as base
+FROM oven/bun:1.3.2 as base
 
 ARG GITHUB_TOKEN
 ENV NODE_ENV="production"
 
 RUN apt-get update \
-  && apt-get install -y curl unzip bash ca-certificates
+  && apt-get install -y curl unzip bash ca-certificates redis-tools
 
 RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
 RUN unzip awscliv2.zip
@@ -19,6 +19,7 @@ FROM base as codegen
 WORKDIR /usr/src/app
 
 # Copy source code
+COPY bin ./bin
 COPY packages ./packages
 COPY servers ./servers
 COPY turbo.json ./turbo.json
@@ -32,12 +33,19 @@ RUN bun x turbo prune @rhiva-ag/trpc @rhiva-ag/cron @rhiva-ag/mcp --docker
 FROM base as builder
 WORKDIR /usr/src/app
 
+COPY --from=codegen /usr/src/app/bin ./bin
 COPY --from=codegen /usr/src/app/bunfig.toml .
+
 COPY --from=codegen /usr/src/app/out/full .
+RUN --mount=type=cache,target=/root/.bun/cache\
+  bun install --frozen-lockfile  # instead of copying turbo json folder cache install instead.
 COPY --from=codegen /usr/src/app/servers/ecosystem.config.js servers/ecosystem.config.js
 
+<<<<<<< HEAD
+=======
 RUN --mount=type=cache,target=/root/.bun/cache\
   bun install --frozen-lockfile # instead of copying turbo json folder cache install instead.
+>>>>>>> 39574df6b2b31abb479823f50752a36f9976827a
 
 RUN bun x turbo run build
 

@@ -176,7 +176,7 @@ export function createDatafeed({
         type: symbolInfo.type as "token" | "pool",
         filter: {
           aggregate,
-          limit: 1000,
+          limit: 100,
           currency: "usd",
           before_timestamp,
         },

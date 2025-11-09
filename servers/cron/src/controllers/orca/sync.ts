@@ -23,14 +23,14 @@ import {
   collectRewardsQuote,
   decreaseLiquidityQuote,
   getTickArrayStartTickIndex,
-} from "@orca-so/whirlpools-core";
+} from "@orca-so/whirlpools-sdk/whirlpools-core";
 import {
   positionMintFilter,
   getTickArrayAddress,
   getTickArrayDecoder,
   getWhirlpoolDecoder,
   fetchAllPositionWithFilter,
-} from "@orca-so/whirlpools-client";
+} from "@orca-so/whirlpools-sdk/whirlpools-client";
 import {
   address,
   type Rpc,

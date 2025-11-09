@@ -1,6 +1,6 @@
 import { createSolanaRpc } from "@solana/kit";
-import type { Connection, PublicKey } from "@solana/web3.js";
 import type { Raydium } from "@raydium-io/raydium-sdk-v2";
+import type { Connection, PublicKey } from "@solana/web3.js";
 import { AnchorProvider, type Wallet } from "@coral-xyz/anchor";
 
 import { RaydiumCLMM } from "./raydium";
@@ -9,7 +9,6 @@ import { OrcaLegacyDLMM } from "./orca-legacy";
 import {
   WhirlpoolContext,
   buildWhirlpoolClient,
-  ORCA_WHIRLPOOL_PROGRAM_ID,
 } from "@orca-so/whirlpools-sdk";
 
 export class DLMM {
@@ -33,9 +32,7 @@ export class DLMM {
       {},
     );
     this.orcaLegacy = new OrcaLegacyDLMM(
-      buildWhirlpoolClient(
-        WhirlpoolContext.withProvider(provider, ORCA_WHIRLPOOL_PROGRAM_ID),
-      ),
+      buildWhirlpoolClient(WhirlpoolContext.withProvider(provider)),
     );
   }
 }

@@ -23,7 +23,9 @@ services:
       - redis
     env_file: 
       - .env
-      # - "$HOME/vps-infra/.env"
+      - "$HOME/vps-infra/.env"
+    volumes:
+      - $HOME/vps-infra/.env:/usr/app/.env
     environment: 
       GITHUB_TOKEN: \${GITHUB_TOKEN}
       DATABASE_URL: \${APP_DATABASE_URL}

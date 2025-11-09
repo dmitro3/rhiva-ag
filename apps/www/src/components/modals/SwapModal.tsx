@@ -5,9 +5,10 @@ import { number, object } from "yup";
 import { toast } from "react-toastify";
 import { useMemo, useState } from "react";
 import { logEvent } from "firebase/analytics";
-import { useMutation, useQuery } from "@tanstack/react-query";
 import { MdClose, MdSwapVert } from "react-icons/md";
 import { Form, FormikContext, useFormik } from "formik";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   Dialog,
   DialogBackdrop,
@@ -23,7 +24,6 @@ import type { Token } from "./SelectTokenModal";
 import SelectTokenModal from "./SelectTokenModal";
 import { DefaultToken } from "@/constants/tokens";
 import { useAnalytics } from "@/hooks/useAnalytics";
-import { useWallet } from "@solana/wallet-adapter-react";
 import { useBalances } from "@/hooks/useBalances";
 
 type SwapModalProps = {
@@ -62,18 +62,27 @@ function SwapForm({
   const wallet = useWallet();
   const analytics = useAnalytics();
   const { isAuthenticated, signIn, user } = useAuth();
+  const [[inputBalance, outputBalance], setBalances] = useState([0, 0]);
   const [showSelectInputTokenModal, setShowSelectInputTokenModal] =
     useState(false);
   const [showSelectOutputTokenModal, setShowSelectOutputTokenModal] =
     useState(false);
 
   const { mutateAsync } = useMutation(trpc.token.swap.mutationOptions({}));
+  const validationSchema = useMemo(
+    () =>
+      object({
+        inputAmount: number()
+          .moreThan(0)
+          .max(inputBalance, "Insufficient balance")
+          .required(),
+      }),
+    [inputBalance],
+  );
 
   const formikContext = useFormik({
+    validationSchema,
     validateOnMount: true,
-    validationSchema: object({
-      inputAmount: number().moreThan(0).required(),
-    }),
     initialValues: {
       inputToken: tokens?.[0],
       outputToken: tokens?.[1],
@@ -121,7 +130,7 @@ function SwapForm({
 
   const { values, setFieldValue, isValid, isSubmitting, errors } =
     formikContext;
-  const [inputBalance, outputBalance] = useBalances({
+  useBalances({
     defaultValue: [values.inputToken.balance, values.outputToken.balance],
     mints: [
       { address: values.inputToken.mint, decimals: values.inputToken.decimals },
@@ -130,6 +139,7 @@ function SwapForm({
         decimals: values.outputToken.decimals,
       },
     ],
+    callback: setBalances,
   });
 
   const { data: quote } = useQuery({
@@ -152,6 +162,7 @@ function SwapForm({
         ).toString(),
       }),
   });
+  console.log(quote);
 
   const outAmount = useMemo(
     () =>

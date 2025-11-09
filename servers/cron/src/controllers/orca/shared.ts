@@ -1,8 +1,8 @@
 import { PublicKey } from "@solana/web3.js";
 import { fromLegacyPublicKey } from "@solana/compat";
 import { getMintDecoder } from "@solana-program/token";
-import { fetchWhirlpool } from "@orca-so/whirlpools-client";
 import { address, type Rpc, type SolanaRpcApi } from "@solana/kit";
+import { fetchWhirlpool } from "@orca-so/whirlpools-sdk/whirlpools-client";
 import {
   mints,
   poolRewardTokens,

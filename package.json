@@ -20,8 +20,13 @@
     "tsup": "^8.5.0",
     "turbo": "^2.5.8"
   },
+  "trustedDependencies": [
+    "@orca-so/whirlpools-sdk",
+    "@raydium-io/raydium-sdk-v2"
+  ],
   "dependencies": {
-    "@raydium-io/raydium-sdk-v2": "npm:@oasismystre/raydium-sdk-v2@latest"
+    "@orca-so/whirlpools-sdk": "./bin/oasismystre-whirlpools-0.0.0.tgz",
+    "@raydium-io/raydium-sdk-v2": "./bin/oasismystre-raydium-sdk-v2-0.0.0.tgz"
   },
   "peerDependencies": {
     "typescript": "^5.9.3"
@@ -30,5 +35,7 @@
     "packages/*",
     "servers/*",
     "apps/*"
-  ]
+  ],
+  "module": "index.ts",
+  "type": "module"
 }

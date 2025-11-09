@@ -42,7 +42,7 @@ export default function PortfolioTokenList({
 
       <div className="grid grid-cols-3 gap-4 p-2 border-b border-white/10">
         <div className="text-gray text-sm font-medium">TOKEN NAME</div>
-        <div className="text-gray text-sm font-medium text-center">
+        <div className="text-gray text-sm font-medium text-center lt-sm:hidden">
           PRICE/24H CHANGE
         </div>
         <div className="text-gray text-sm font-medium text-right">BALANCE</div>

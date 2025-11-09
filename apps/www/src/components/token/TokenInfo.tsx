@@ -42,12 +42,7 @@ export default function TokenInfo({
           className="flex items-center space-x-2 border border-green fill-green px-2 py-1 rounded-md"
           onClick={() => {
             if (isAuthenticated)
-              router.push(
-                format(
-                  "/ai?prompt=Analyse token and recommend/anaylyse pools for token %s",
-                  mint,
-                ),
-              );
+              router.push(format("/ai?prompt=Analyse this token %s", mint));
             else signIn();
           }}
         >

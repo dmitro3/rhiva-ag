@@ -195,7 +195,7 @@ function RaydiumOpenPositionForm({
             props.className,
           )}
         >
-          <div className="flex">
+          <div className="flex sticky top-0">
             {curves.map((curve) => {
               const selected = curve.value === values.strategyType;
 

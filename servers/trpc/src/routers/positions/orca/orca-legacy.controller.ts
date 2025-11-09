@@ -2,8 +2,8 @@ import Decimal from "decimal.js";
 import type { z } from "zod/mini";
 import { address } from "@solana/kit";
 import { TickUtil } from "@orca-so/whirlpools-sdk";
-import { fetchWhirlpool } from "@orca-so/whirlpools-client";
 import { PublicKey, type VersionedTransaction } from "@solana/web3.js";
+import { fetchWhirlpool } from "@orca-so/whirlpools-sdk/whirlpools-client";
 import { getAssociatedTokenAddressSync, NATIVE_MINT } from "@solana/spl-token";
 import type {
   positionSelectSchema,

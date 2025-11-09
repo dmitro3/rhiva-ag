@@ -64,7 +64,7 @@ function TokenListSmall({ timestamp = "24H", tokens }: TokenListProps) {
                   <CopyButton content={token.id} />
                   <div
                     className={clsx(
-                      "size-2  rounded-full",
+                      "size-2 rounded-full",
                       token.isVerified ? "bg-primary" : "bg-red-500",
                     )}
                   />

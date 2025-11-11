@@ -8,7 +8,7 @@ import Image from "./Image";
 type TokenInputProps = {
   value: number;
   label?: string;
-  balance: number;
+  balance?: number;
   token: {
     symbol: string;
     icon: string;
@@ -82,7 +82,9 @@ export default function TokenInput({
           onChange={onChangeText}
         />
       </div>
-      <p className="text-gray text-xs">Balance: {balance}</p>
+      {balance != null && (
+        <p className="text-gray text-xs">Balance: {balance}</p>
+      )}
     </div>
   );
 }

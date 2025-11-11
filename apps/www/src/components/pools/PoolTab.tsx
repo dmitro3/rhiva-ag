@@ -8,6 +8,7 @@ import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 
 import { useDexes } from "@/hooks/useDexes";
 import IcDex from "@/assets/icons/ic_dex";
+import { useMemo } from "react";
 
 export default function PoolTab(props: React.ComponentProps<"div">) {
   const dexes = useDexes();
@@ -55,6 +56,10 @@ export function PoolTabSmall(props: React.ComponentProps<typeof Menu>) {
 
   const searchParams = useSearchParams();
   const dex = searchParams.get("dexes");
+  const selectedDex = useMemo(
+    () => dexes.find(({ value }) => value === dex),
+    [dex, dexes],
+  );
 
   return (
     <Menu
@@ -62,7 +67,15 @@ export function PoolTabSmall(props: React.ComponentProps<typeof Menu>) {
       className={clsx("relative z-50", props.className)}
     >
       <MenuButton className="flex items-center space-x-2 focus:outline-none">
-        <span>All Pools</span>
+        {selectedDex?.value && (
+          <IcDex
+            dex={selectedDex.value}
+            width={16}
+            height={16}
+            className="rounded-full"
+          />
+        )}
+        <span>{selectedDex ? selectedDex?.title : "All Pools"}</span>
         <IoChevronDownOutline />
       </MenuButton>
       <MenuItems
@@ -85,8 +98,8 @@ export function PoolTabSmall(props: React.ComponentProps<typeof Menu>) {
                 {tab.value && (
                   <IcDex
                     dex={tab.value}
-                    width={24}
-                    height={24}
+                    width={18}
+                    height={18}
                     className="rounded-full"
                   />
                 )}

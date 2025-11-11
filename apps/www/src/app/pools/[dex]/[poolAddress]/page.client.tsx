@@ -33,6 +33,8 @@ export default function PoolClientPage({
     },
   });
 
+  console.log(data);
+
   return (
     <div className="flex-1 flex flex-col overflow-y-scroll">
       <Header

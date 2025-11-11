@@ -41,21 +41,14 @@ RUN --mount=type=cache,target=/root/.bun/cache\
   bun install --frozen-lockfile  # instead of copying turbo json folder cache install instead.
 COPY --from=codegen /usr/src/app/servers/ecosystem.config.js servers/ecosystem.config.js
 
-<<<<<<< HEAD
-=======
-RUN --mount=type=cache,target=/root/.bun/cache\
-  bun install --frozen-lockfile # instead of copying turbo json folder cache install instead.
->>>>>>> 39574df6b2b31abb479823f50752a36f9976827a
-
 RUN bun x turbo run build
 
 FROM builder as dev
 WORKDIR /usr/src/app
-RUN bun install pm2 --global
 CMD sh -c "cd packages/datasource && \
   bun x drizzle-kit migrate && \
   cd ../../servers && \
-  pm2-runtime start ecosystem.config.js"
+  bun x pm2-runtime start ecosystem.config.js"
 
 FROM builder as trpc
 WORKDIR /usr/src/app/servers/trpc

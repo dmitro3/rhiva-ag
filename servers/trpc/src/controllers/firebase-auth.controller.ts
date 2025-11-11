@@ -1,31 +1,10 @@
-import { eq } from "drizzle-orm";
-import { users } from "@rhiva-ag/datasource";
+// @ts-nocheck
 import type { FastifyRequest } from "fastify";
 import { getAuth, type DecodedIdToken } from "firebase-admin/auth";
 
-import type { User } from "./types";
 import { AuthMiddleware } from "./auth.controller";
 
 export class FirebaseAuthMiddleware extends AuthMiddleware {
-  async getUserFromSession(request: FastifyRequest): Promise<User | null> {
-    const sessionId = request.session.sessionId;
-    const key = this.getCacheUserKey(sessionId);
-    const cachedUser = await this.redis.get(key);
-    if (cachedUser) {
-      const decodedUser: { user: string } = JSON.parse(cachedUser);
-      const user = await this.drizzle.query.users.findFirst({
-        where: eq(users.id, decodedUser.user),
-        with: {
-          wallet: true,
-          settings: true,
-        },
-      });
-
-      if (user) return user;
-    }
-    return null;
-  }
-
   async getUserFromHeader(request: FastifyRequest) {
     const authorization = request.headers.authorization;
     if (authorization) {

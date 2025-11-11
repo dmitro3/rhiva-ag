@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type z from "zod";
 import moment from "moment";
 import { format } from "util";
@@ -150,7 +151,24 @@ export abstract class AuthMiddleware {
     return this.getUserFromHeader(request);
   }
 
-  abstract getUserFromSession(request: FastifyRequest): Promise<User | null>;
+  async getUserFromSession(request: FastifyRequest): Promise<User | null> {
+    const sessionId = request.session.sessionId;
+    const key = this.getCacheUserKey(sessionId);
+    const cachedUser = await this.redis.get(key);
+    if (cachedUser) {
+      const decodedUser: { user: string } = JSON.parse(cachedUser);
+      const user = await this.drizzle.query.users.findFirst({
+        where: eq(users.id, decodedUser.user),
+        with: {
+          wallet: true,
+          settings: true,
+        },
+      });
+
+      if (user) return user;
+    }
+    return null;
+  }
 
   abstract getUserFromHeader(request: FastifyRequest): Promise<User | null>;
 }

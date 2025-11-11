@@ -156,13 +156,13 @@ function SwapForm({
         inputMint: values.inputToken.mint,
         outputMint: values.outputToken.mint,
         // @ts-expect-error invalid openapi type
-        amount: (
-          BigInt(values.inputAmount) *
-          BigInt(Math.pow(10, values.inputToken.decimals))
-        ).toString(),
+        amount: BigInt(
+          new Decimal(values.inputAmount)
+            .mul(Math.pow(10, values.inputToken.decimals))
+            .toFixed(0),
+        ),
       }),
   });
-  console.log(quote);
 
   const outAmount = useMemo(
     () =>

@@ -9,7 +9,7 @@ import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 
 export default function PoolSort(props: React.ComponentProps<"div">) {
   const searchParams = useSearchParams();
-  const sortBy = searchParams.get("sortBy");
+  const sortBy = searchParams.get("sort");
 
   const values = [
     { title: "TVL", value: "reserve_in_usd_desc" },
@@ -40,8 +40,8 @@ export default function PoolSort(props: React.ComponentProps<"div">) {
         {values.map((sort) => {
           const selected = sortBy === sort.value;
           const urlSearchParams = new URLSearchParams(searchParams);
-          if (selected) urlSearchParams.delete("sortBy");
-          else urlSearchParams.set("sortBy", sort.value);
+          if (selected) urlSearchParams.delete("sort");
+          else urlSearchParams.set("sort", sort.value);
 
           return (
             <Link

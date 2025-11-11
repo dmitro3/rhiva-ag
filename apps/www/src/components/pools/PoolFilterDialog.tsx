@@ -1,12 +1,14 @@
 import clsx from "clsx";
 import { format } from "util";
-import { useMemo } from "react";
+import type z from "zod";
 import { object, string } from "yup";
-import { MdClose } from "react-icons/md";
+import { MdCheck, MdClose } from "react-icons/md";
+import { useMemo, useState } from "react";
 import { IoChevronDownOutline } from "react-icons/io5";
 import { Form, Formik, Field, ErrorMessage } from "formik";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import type { poolFilterSelectSchema } from "@rhiva-ag/datasource";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogBackdrop,
@@ -27,8 +29,12 @@ export default function PoolFilterDialog(
   const trpc = useTRPC();
   const router = useRouter();
   const trpcClient = useTRPCClient();
+  const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const { isAuthenticated, signIn } = useAuth();
+  const [selectedFilter, setSelectedFilter] = useState<z.infer<
+    typeof poolFilterSelectSchema
+  > | null>(null);
 
   const filterFields = useMemo(
     () => [
@@ -59,7 +65,13 @@ export default function PoolFilterDialog(
   });
 
   const { mutateAsync } = useMutation(
-    trpc.poolFilter.create.mutationOptions({}),
+    trpc.poolFilter.create.mutationOptions({
+      onSuccess(data) {
+        queryClient.setQueryData(trpc.poolFilter.list.queryKey(), (previous) =>
+          previous ? [...previous, data] : [data],
+        );
+      },
+    }),
   );
 
   return (
@@ -67,12 +79,14 @@ export default function PoolFilterDialog(
       validateOnMount
       validationSchema={object({ name: string().trim().required() })}
       initialValues={Object.fromEntries(searchParams.entries())}
-      onSubmit={async ({ name, ...values }) => {
+      onSubmit={async ({ name, ...values }, { resetForm }) => {
         if (!isAuthenticated) await signIn();
-        return mutateAsync({
+        await mutateAsync({
           name,
           data: values,
         });
+
+        resetForm();
       }}
     >
       {({ values, setValues, isValid, isSubmitting }) => (
@@ -103,24 +117,37 @@ export default function PoolFilterDialog(
                       as="div"
                       className="relative"
                     >
-                      <MenuButton className="flex items-center space-x-4 border border-white/10 p-2 rounded-md">
-                        <p className="flex-1 text-gray">Select Filter</p>
+                      <MenuButton className="w-48 flex items-center space-x-4 border border-white/10 p-2 rounded-md">
+                        <p className="flex-1 text-gray text-start">
+                          {selectedFilter
+                            ? selectedFilter.name
+                            : "Select Filter"}
+                        </p>
                         <IoChevronDownOutline className="text-gray" />
                       </MenuButton>
-                      <MenuItems className="absolute inset-x-0 flex flex-col bg-dark-secondary p-4 rounded-md">
-                        {data?.map((filter) => (
-                          <MenuItem key={filter.id}>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                // @ts-expect-error don't type check value
-                                setValues(filter.data)
-                              }
-                            >
-                              {filter.name}
-                            </button>
-                          </MenuItem>
-                        ))}
+                      <MenuItems className="absolute inset-x-0 flex flex-col space-y-2 bg-dark-secondary px-1 py-2 rounded-md">
+                        {data?.map((filter) => {
+                          const selected = filter.id === selectedFilter?.id;
+                          return (
+                            <MenuItem key={filter.id}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  // @ts-expect-error don't type check value
+                                  setValues(filter.data);
+                                  setSelectedFilter(filter);
+                                }}
+                                className={clsx(
+                                  "flex space-x-1 items-center text-start p-2 hover:bg-white/5 hover:rounded",
+                                  selected && "bg-white/5 rounded",
+                                )}
+                              >
+                                {selected && <MdCheck size={18} />}
+                                <span>{filter.name}</span>
+                              </button>
+                            </MenuItem>
+                          );
+                        })}
                       </MenuItems>
                     </Menu>
                   </div>

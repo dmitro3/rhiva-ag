@@ -3,8 +3,9 @@ import type { web3 } from "@coral-xyz/anchor";
 
 import { LogProcessor } from "./processors/log-processor";
 import { InstructionProcessor } from "./processors/instruction-processor";
+import type { ConsumerReturnType } from "./processors/consumer";
 
-export class Pipeline<T extends InstructionProcessor<any> | LogProcessor<any>> {
+export class Pipeline<T> {
   private readonly logPipes: LogProcessor<unknown>[];
   private readonly instructionPipes: InstructionProcessor<unknown>[];
 
@@ -23,7 +24,7 @@ export class Pipeline<T extends InstructionProcessor<any> | LogProcessor<any>> {
   async process(
     ...parsedTransactionWithMetas: web3.ParsedTransactionWithMeta[]
   ) {
-    return Promise.all(
+    const results = await Promise.all(
       parsedTransactionWithMetas.map((parsedTransactionWithMeta) => {
         const nestedInstructions = this.getNestedInstructions(
           parsedTransactionWithMeta,
@@ -64,6 +65,10 @@ export class Pipeline<T extends InstructionProcessor<any> | LogProcessor<any>> {
         return Promise.all(promiseJoins.filter(Boolean));
       }),
     );
+
+    return results.flat(2) as unknown as Promise<
+      Awaited<ConsumerReturnType<T>>
+    >;
   }
 
   protected getNestedInstructions(

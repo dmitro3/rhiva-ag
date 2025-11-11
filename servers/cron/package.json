@@ -20,9 +20,14 @@
     "build": "tsup src/external.ts src/schedules/index.ts src/workers/index.ts --minify --treeshake",
     "dev": "bun run --watch src/schedules/index.ts & bun run --watch src/workers/index.ts"
   },
+  "peerDependencies": {
+    "@meteora-ag/dlmm": "../../bin/meteora-ag-dlmm-0.0.0.tgz",
+    "@saros-finance/dlmm-sdk": "../../bin/saros-finance-dlmm-sdk-0.0.0.tgz",
+    "@orca-so/whirlpools-sdk": "../../bin/orca-so-whirlpools-0.0.0.tgz",
+    "@raydium-io/raydium-sdk-v2": "../../bin/raydium-io-raydium-sdk-v2-0.0.0.tgz"
+  },
   "dependencies": {
     "@coingecko/coingecko-typescript": "^2.2.0",
-    "@meteora-ag/dlmm": "^1.7.5",
     "@rhiva-ag/datasource": "*",
     "@rhiva-ag/decoder": "*",
     "@rhiva-ag/dex": "*",
@@ -30,8 +35,8 @@
     "@rhiva-ag/env": "*",
     "@rhiva-ag/shared": "*",
     "@solana-program/token": "^0.7.0",
-    "@solana/compat": "^4.0.0",
-    "@solana/kit": "^2.3.0",
+    "@solana/compat": "^5.0.0",
+    "@solana/kit": "^5.0.0",
     "@solana/spl-token": "^0.4.14",
     "@solana/web3.js": "^1.98.4",
     "bn.js": "^5.2.2",

@@ -1,17 +1,18 @@
 "use client";
-import { useMemo, useState } from "react";
-import { mapFilter } from "@rhiva-ag/shared";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import type z from "zod";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import type { poolFilterSchema } from "@rhiva-ag/trpc";
 
 import Header from "@/components/layout/Header";
 import PoolTab from "@/components/pools/PoolTab";
 import Pagination from "@/components/Pagination";
 import SearchInput from "@/components/SearchInput";
 import PoolSort from "@/components/pools/PoolSort";
+import PoolList from "@/components/pools/PoolList";
 import { useTRPC, useTRPCClient } from "@/trpc.client";
 import PoolFilter from "@/components/pools/PoolFilter";
 import PoolInfoList from "@/components/pools/PoolInfoList";
-import PoolList, { PoolListSmall } from "@/components/pools/PoolList";
 
 type PoolClientPageProps = {
   searchParams: Record<string, any>;
@@ -19,34 +20,26 @@ type PoolClientPageProps = {
 
 export default function PoolClientPage({ searchParams }: PoolClientPageProps) {
   const trpc = useTRPC();
-  const queryClient = useQueryClient();
   const trpcClient = useTRPCClient();
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(0);
   const [query, setQuery] = useState<string | undefined>(searchParams.query);
 
   const { data } = useQuery({
     queryKey: trpc.pool.list.queryKey({ query, page, ...searchParams }),
-    queryFn: () =>
-      trpcClient.pool.list.query({
-        page,
-        query,
+    queryFn: () => {
+      const data: Partial<z.infer<typeof poolFilterSchema>> = {
+        page: page + 1,
         sort: "h6_trending",
         include: "base_token,quote_token",
-        ...searchParams,
-      }),
-  });
 
-  const allPages = useMemo(() => {
-    const pages = Array.from({ length: page }).map((_, index) => index + 1);
-    return mapFilter(
-      pages.map((page) => {
-        const key = trpc.pool.list.queryKey({ query, page, ...searchParams });
-        const data = queryClient.getQueryData(key);
-        return data;
-      }),
-      (data) => data,
-    ).flat();
-  }, [page, trpc, searchParams, queryClient, query]);
+        ...searchParams,
+      };
+
+      if (query) data.query = query;
+
+      return trpcClient.pool.list.query(data);
+    },
+  });
 
   return (
     <div className="flex-1 flex flex-col overflow-y-scroll">
@@ -87,8 +80,7 @@ export default function PoolClientPage({ searchParams }: PoolClientPageProps) {
               pools={data}
             />
           )}
-          <PoolListSmall pools={allPages} />
-          <div className="flex items-center justify-center lt-sm:hidden">
+          <div className="flex items-center justify-center">
             <Pagination
               maxPage={10}
               totalItems={200}

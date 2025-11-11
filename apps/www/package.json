@@ -13,13 +13,15 @@
     "preview": "opennextjs-cloudflare build --noMinify && opennextjs-cloudflare preview",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },
+  "peerDependencies": {
+    "@meteora-ag/dlmm": "../../bin/meteora-ag-dlmm-0.0.0.tgz",
+    "@saros-finance/dlmm-sdk": "../../bin/saros-finance-dlmm-sdk-0.0.0.tgz",
+    "@orca-so/whirlpools-sdk": "../../bin/orca-so-whirlpools-0.0.0.tgz",
+    "@raydium-io/raydium-sdk-v2": "../../bin/raydium-io-raydium-sdk-v2-0.0.0.tgz"
+  },
   "dependencies": {
-    "@orca-so/whirlpools-sdk": "../../bin/oasismystre-whirlpools-0.0.0.tgz",
-    "@raydium-io/raydium-sdk-v2": "../../bin/oasismystre-raydium-sdk-v2-0.0.0.tgz",
     "@headlessui/react": "^2.2.9",
-    "@meteora-ag/dlmm": "^1.7.5",
     "@opennextjs/cloudflare": "^1.11.0",
-    "@orca-so/whirlpools-client": "^4.0.1",
     "@rhiva-ag/datasource": "*",
     "@rhiva-ag/dex-api": "*",
     "@rhiva-ag/shared": "*",

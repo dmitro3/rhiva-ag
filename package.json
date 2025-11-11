@@ -9,6 +9,12 @@
     "prepare": "if [ \"$NODE_ENV\" != \"production\" ]; then husky; fi",
     "lint": "bun x biome format --write && bun x biome lint --fix && biome check ."
   },
+  "dependencies": {
+    "@meteora-ag/dlmm": "./bin/meteora-ag-dlmm-0.0.0.tgz",
+    "@saros-finance/dlmm-sdk": "./bin/saros-finance-dlmm-sdk-0.0.0.tgz",
+    "@orca-so/whirlpools-sdk": "./bin/orca-so-whirlpools-0.0.0.tgz",
+    "@raydium-io/raydium-sdk-v2": "./bin/raydium-io-raydium-sdk-v2-0.0.0.tgz"
+  },
   "devDependencies": {
     "@biomejs/biome": "2.2.4",
     "@tsconfig/recommended": "^1.0.10",
@@ -19,14 +25,6 @@
     "pm2": "^6.0.13",
     "tsup": "^8.5.0",
     "turbo": "^2.5.8"
-  },
-  "trustedDependencies": [
-    "@orca-so/whirlpools-sdk",
-    "@raydium-io/raydium-sdk-v2"
-  ],
-  "dependencies": {
-    "@orca-so/whirlpools-sdk": "./bin/oasismystre-whirlpools-0.0.0.tgz",
-    "@raydium-io/raydium-sdk-v2": "./bin/oasismystre-raydium-sdk-v2-0.0.0.tgz"
   },
   "peerDependencies": {
     "typescript": "^5.9.3"

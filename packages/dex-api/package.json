@@ -21,10 +21,12 @@
     "check": "tsc --noEmit",
     "build": "tsup src/index.ts --treeshake --minify"
   },
-  "dependencies": {
-    "@rhiva-ag/shared": "*",
+  "peerDependencies": {
     "util": "^0.12.5",
     "xior": "^0.7.8"
+  },
+  "dependencies": {
+    "@rhiva-ag/shared": "*"
   },
   "devDependencies": {
     "@tsconfig/bun": "^1.0.9",

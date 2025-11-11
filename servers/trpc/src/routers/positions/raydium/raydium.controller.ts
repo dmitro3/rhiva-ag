@@ -54,7 +54,7 @@ export const createPosition = async (
     { transactions: string[] }
   >,
 ) => {
-  const pool = await dex.dlmm.raydium.raydium.clmm.getRpcClmmPoolInfo({
+  const pool = await dex.clmm.raydium.raydium.clmm.getRpcClmmPoolInfo({
     poolId: pair,
   });
   let tokenA = BigInt(0),
@@ -103,7 +103,7 @@ export const createPosition = async (
   } else throw new Error("unsupported input mint");
 
   const { signers, builder, extInfo } =
-    await dex.dlmm.raydium.buildCreatePosition({
+    await dex.clmm.raydium.buildCreatePosition({
       slippage,
       priceChanges,
       pool: pair.toBase58(),
@@ -165,13 +165,13 @@ export const claimReward = async (
   assert(accountInfo, "position not found.");
 
   const position = PositionInfoLayout.decode(accountInfo.data);
-  const [poolInfo] = await dex.dlmm.raydium.raydium.api.fetchPoolById({
+  const [poolInfo] = await dex.clmm.raydium.raydium.api.fetchPoolById({
     ids: pair.toBase58(),
   });
 
   assert(poolInfo, "pool not found.");
 
-  const { builder } = await dex.dlmm.raydium.buildClaimReward({
+  const { builder } = await dex.clmm.raydium.buildClaimReward({
     position,
     poolInfo: poolInfo as ApiV3PoolInfoConcentratedItem,
   });
@@ -289,13 +289,13 @@ export const closePosition = async (
   assert(accountInfo, "position not found.");
 
   const position = PositionInfoLayout.decode(accountInfo.data);
-  const [poolInfo] = (await dex.dlmm.raydium.raydium.api.fetchPoolById({
+  const [poolInfo] = (await dex.clmm.raydium.raydium.api.fetchPoolById({
     ids: pair.toBase58(),
   })) as ApiV3PoolInfoConcentratedItem[];
 
   assert(poolInfo, "pool not found.");
 
-  const { builder } = await dex.dlmm.raydium.buildClosePosition({
+  const { builder } = await dex.clmm.raydium.buildClosePosition({
     position,
     poolInfo: poolInfo as ApiV3PoolInfoConcentratedItem,
   });
@@ -469,7 +469,7 @@ export const rebalancePosition = async ({
   const amountMaxB = new BN(
     tokenBalanceChanges[poolInfo.mintB.address] || BigInt(0),
   );
-  const rpcData = await dex.dlmm.raydium.raydium.clmm.getRpcClmmPoolInfo({
+  const rpcData = await dex.clmm.raydium.raydium.clmm.getRpcClmmPoolInfo({
     poolId: poolInfo.id,
   });
   poolInfo.price = rpcData.currentPrice;
@@ -485,7 +485,7 @@ export const rebalancePosition = async ({
   const tickLower = currentTick + tickDelta;
 
   const { transaction, signers, extInfo } =
-    await dex.dlmm.raydium.raydium.clmm.openPositionFromBase({
+    await dex.clmm.raydium.raydium.clmm.openPositionFromBase({
       poolInfo,
       tickLower,
       tickUpper,

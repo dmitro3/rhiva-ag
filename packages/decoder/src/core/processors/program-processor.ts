@@ -1,3 +1,4 @@
+import { mapFilter } from "@rhiva-ag/shared";
 import { base64, bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 import {
   type Idl,
@@ -10,7 +11,6 @@ import {
 import { LogProcessor } from "./log-processor";
 import { InstructionProcessor } from "./instruction-processor";
 import type { ProgramEventType, ProgramInstructionType } from "./types";
-import { mapFilter } from "@rhiva-ag/shared";
 
 abstract class SharedProgramInstance<
   T extends Idl,

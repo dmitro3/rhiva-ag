@@ -26,11 +26,11 @@ import {
 } from "@rhiva-ag/trpc/browser";
 
 import Image from "@/components/Image";
-import Pagination from "../Pagination";
 import { useDex } from "@/hooks/useDex";
 import PnLCardModal from "./PnLCardModal";
 import { useAuth } from "@/hooks/useAuth";
 import { sendTransaction } from "@/instances";
+import Pagination from "../PositionPagination";
 import CopyButton from "@/components/CopyButton";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useTRPC, useTRPCClient } from "@/trpc.client";

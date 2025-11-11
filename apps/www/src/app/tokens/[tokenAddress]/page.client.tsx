@@ -100,6 +100,7 @@ export default function TokenPage({
             <SwapModal
               open={showSwapModal}
               tokens={[
+                DefaultToken.Sol,
                 {
                   balance: 0,
                   mint: token.id,
@@ -109,7 +110,6 @@ export default function TokenPage({
                   decimals: token.decimals,
                   verified: token.isVerified,
                 },
-                DefaultToken.Sol,
               ]}
               onClose={() => setShowSwapModal(false)}
             />

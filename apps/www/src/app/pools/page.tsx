@@ -10,9 +10,10 @@ export default async function PoolPage(props: PageProps<"/pools">) {
   const trpcClient = getTRPCClient();
   const queryClient = getQueryClient();
   await queryClient.prefetchQuery({
-    queryKey: trpc.pool.list.queryKey({ ...searchParams }),
+    queryKey: trpc.pool.list.queryKey({ page: 0, ...searchParams }),
     queryFn: () =>
       trpcClient.pool.list.query({
+        page: 1,
         sort: "h6_trending",
         include: "base_token,quote_token",
         ...searchParams,

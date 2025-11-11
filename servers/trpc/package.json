@@ -21,17 +21,21 @@
     "check": "tsc --noEmit",
     "codegen": "bun x @rhiva-ag/env",
     "dev": "bun run --watch src/index.ts",
-    "build": "tsup src/index.ts --minify --treeshake"
+    "build": "tsup src/index.ts --minify --treeshake --sourcemap"
+  },
+  "peerDependencies": {
+    "@meteora-ag/dlmm": "../../bin/meteora-ag-dlmm-0.0.0.tgz",
+    "@saros-finance/dlmm-sdk": "../../bin/saros-finance-dlmm-sdk-0.0.0.tgz",
+    "@orca-so/whirlpools-sdk": "../../bin/orca-so-whirlpools-0.0.0.tgz",
+    "@raydium-io/raydium-sdk-v2": "../../bin/raydium-io-raydium-sdk-v2-0.0.0.tgz"
   },
   "dependencies": {
-    "@orca-so/whirlpools-sdk": "^0.16.0",
     "@coingecko/coingecko-typescript": "^2.2.0",
     "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "^11.1.0",
     "@fastify/rate-limit": "^10.3.0",
     "@fastify/session": "^11.1.0",
     "@fastify/websocket": "^11.2.0",
-    "@meteora-ag/dlmm": "^1.7.5",
     "@openai/agents": "^0.1.11",
     "@rhiva-ag/cron": "*",
     "@rhiva-ag/datasource": "*",
@@ -41,7 +45,7 @@
     "@rhiva-ag/mcp": "*",
     "@rhiva-ag/shared": "*",
     "@solana-tracker/data-api": "^0.1.4",
-    "@solana/compat": "^4.0.0",
+    "@solana/compat": "^5.0.0",
     "@solana/kit": "^5.0.0",
     "@solana/spl-token": "^0.4.14",
     "@solana/web3.js": "^1.98.4",

@@ -147,12 +147,12 @@ export class DexApi {
         const { data: pair } = await this.saros.pool.retrieve(pairAddress);
         const tokens = await this.jup.token.list({
           category: "search",
-          query: [pair.tokenX.address, pair.tokenY.address].join(","),
+          query: [pair.tokenX.mintAddress, pair.tokenY.mintAddress].join(","),
         });
 
         const mapTokens = collectionToMap(tokens, (token) => token.id);
-        const baseToken = mapTokens.get(pair.tokenX.address)!;
-        const quoteToken = mapTokens.get(pair.tokenY.address)!;
+        const baseToken = mapTokens.get(pair.tokenX.mintAddress)!;
+        const quoteToken = mapTokens.get(pair.tokenY.mintAddress)!;
 
         return {
           baseToken,

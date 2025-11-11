@@ -41,7 +41,7 @@ export class PoolApi extends ApiImpl {
       name: [pool.tokenX.symbol, pool.tokenY.symbol].join("-"),
       address: pool.pair,
       apr: pool.apr24h,
-      baseFee: pool.binStep * pool.baseFactor,
+      baseFee: (pool.binStep * pool.baseFactor) / 1e6,
       fees24H: parseFloat(pool.fees24h),
       binStep: pool.binStep,
       maxFee: pool.binStep * pool.baseFactor,
@@ -49,6 +49,17 @@ export class PoolApi extends ApiImpl {
       quoteReserveAmount: parseFloat(pool.reserveY),
       volume24h: parseFloat(pool.volume24h),
       liquidity: parseFloat(pool.totalLiquidity),
+    };
+  }
+
+  normalizeToken(token: Pair["tokenX"]) {
+    return {
+      name: token.name,
+      symbol: token.symbol,
+      decimals: token.decimals,
+      icon: token.image,
+      tokenProgram: null,
+      id: token.mintAddress,
     };
   }
 }

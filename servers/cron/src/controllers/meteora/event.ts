@@ -1,10 +1,10 @@
 import type z from "zod";
 import Decimal from "decimal.js";
 import { eq } from "drizzle-orm";
-import type { LbClmm } from "@meteora-ag/dlmm";
 import type { Connection } from "@solana/web3.js";
 import type { ProgramEventType } from "@rhiva-ag/decoder";
 import type Coingecko from "@coingecko/coingecko-typescript";
+import type { LbClmm } from "@rhiva-ag/decoder/programs/idls/types/meteora";
 import {
   positions,
   rewards,

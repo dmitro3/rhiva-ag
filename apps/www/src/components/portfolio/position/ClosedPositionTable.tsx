@@ -9,8 +9,8 @@ import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 
 import Image from "@/components/Image";
 import { useTRPC } from "@/trpc.client";
-import Pagination from "../Pagination";
 import PnLCardModal from "./PnLCardModal";
+import Pagination from "../PositionPagination";
 import CopyButton from "@/components/CopyButton";
 import NativeOrUsdAndPercentage from "./NativeOrUsdAndPercentage";
 

@@ -4,9 +4,9 @@ import { useRouter } from "next/navigation";
 
 import Image from "../Image";
 import CopyButton from "../CopyButton";
+import { useAuth } from "@/hooks/useAuth";
 import IcDex from "@/assets/icons/ic_dex";
 import IcAiIcon from "@/assets/icons/ic_ai";
-import { useAuth } from "@/hooks/useAuth";
 
 type PoolTokenMetadata = {
   id: string;
@@ -67,6 +67,7 @@ export default function PoolTokenMetadata({
           dex={dex}
           width={16}
           height={16}
+          className="rounded-full"
         />
       </div>
       <button

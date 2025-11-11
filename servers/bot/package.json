@@ -18,6 +18,7 @@
     "@rhiva-ag/dex-api": "*",
     "@rhiva-ag/shared": "*",
     "@rhiva-ag/trpc": "*",
+    "@trpc/client": "^11.7.1",
     "eta": "^4.0.1",
     "telegraf": "^4.16.3"
   },

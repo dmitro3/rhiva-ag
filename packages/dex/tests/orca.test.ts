@@ -2,8 +2,11 @@ import { AccountLayout } from "@solana/spl-token";
 import { beforeAll, describe, test, expect } from "bun:test";
 import { mapFilter, SendTransaction } from "@rhiva-ag/shared";
 import { createJupiterApiClient, type SwapApi } from "@jup-ag/api";
-import { fetchWhirlpool, type Whirlpool } from "@orca-so/whirlpools-client";
 import { getAssociatedTokenAddressSync, NATIVE_MINT } from "@solana/spl-token";
+import {
+  fetchWhirlpool,
+  type Whirlpool,
+} from "@orca-so/whirlpools-sdk/whirlpools-client";
 import {
   Connection,
   type Keypair,
@@ -137,7 +140,7 @@ describe("orca", () => {
       slippage: 50,
       tokenA: BigInt(amount) / 2n,
       tokenB: inputTokenB / 2n,
-      strategyType: "full",
+      strategyType: "Full",
       owner: signer,
     });
 
@@ -147,7 +150,7 @@ describe("orca", () => {
         slippage: 50,
         tokenA: BigInt(amount) / 2n,
         tokenB: inputTokenB / 2n,
-        strategyType: "custom",
+        strategyType: "Custom",
         owner: signer,
         tokenADecimals: 9,
         tokenBDecimals: 6,

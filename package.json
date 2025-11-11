@@ -15,6 +15,9 @@
     "@orca-so/whirlpools-sdk": "./bin/orca-so-whirlpools-0.0.0.tgz",
     "@raydium-io/raydium-sdk-v2": "./bin/raydium-io-raydium-sdk-v2-0.0.0.tgz"
   },
+  "trustedDependencies": [
+    "@orca-so/whirlpools-sdk"
+  ],
   "devDependencies": {
     "@biomejs/biome": "2.2.4",
     "@tsconfig/recommended": "^1.0.10",

@@ -76,8 +76,8 @@ export default function PoolSort(props: React.ComponentProps<"div">) {
           {trendingSorts.map((sort) => {
             const selected = sortBy === sort.value;
             const urlSearchParams = new URLSearchParams(searchParams);
-            if (selected || !sort.value) urlSearchParams.delete("sortBy");
-            else if (sort.value) urlSearchParams.set("sortBy", sort.value);
+            if (selected || !sort.value) urlSearchParams.delete("sort");
+            else if (sort.value) urlSearchParams.set("sort", sort.value);
 
             return (
               <MenuItem key={sort.value}>

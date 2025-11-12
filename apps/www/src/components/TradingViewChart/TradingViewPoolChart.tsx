@@ -1,7 +1,7 @@
 "use client";
 import dynamic from "next/dynamic";
 import type { Pair } from "@rhiva-ag/dex-api";
-import { useCallback, useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 
 import { useTRPCClient } from "@/trpc.client";
 import { transformOHLCVToBar } from "./utils";
@@ -15,7 +15,7 @@ export type TradingViewPoolChartProps = {
 
 const Chart = dynamic(() => import("."));
 
-export default function TradingViewPoolChart({
+export default memo(function TradingViewPoolChart({
   pool,
 }: TradingViewPoolChartProps) {
   const trpcClient = useTRPCClient();
@@ -127,4 +127,4 @@ export default function TradingViewPoolChart({
       }}
     />
   );
-}
+});

@@ -4,7 +4,6 @@ export { getPools } from "./routers/pools/pool.controller";
 export { safeAuthUserSchema } from "./routes/auth/auth.schema";
 export { extendedUserSelectSchema } from "./routers/users/user.schema";
 export { getWalletPositions } from "./routers/positions/position.controller";
-export { agentOutputSchema } from "./routers/ai/messages/agent.schema-patch";
 export {
   poolFilterSchema,
   poolAnalyticSchema,

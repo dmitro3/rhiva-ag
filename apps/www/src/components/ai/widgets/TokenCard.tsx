@@ -1,10 +1,10 @@
-import type z from "zod";
+import type z from "zod/v3";
 import Link from "next/link";
 import { format } from "util";
 import { useMemo } from "react";
 import { MdOpenInNew } from "react-icons/md";
 import type { NonNullable } from "@rhiva-ag/shared";
-import type { agentOutputSchema } from "@rhiva-ag/trpc";
+import type { agentOutputSchema } from "@rhiva-ag/mcp";
 
 import Image from "@/components/Image";
 import BarProgress from "@/components/BarProgress";

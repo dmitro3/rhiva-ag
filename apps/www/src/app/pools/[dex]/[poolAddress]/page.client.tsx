@@ -103,7 +103,7 @@ export default function PoolClientPage({
               pool={data}
               open={showCreatePositionModal}
               onClose={setShowCreatePositionModal}
-              className="min-w-2xl"
+              className="w-full xl:max-w-2xl"
             />
             <button
               type="button"

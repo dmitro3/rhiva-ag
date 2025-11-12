@@ -87,6 +87,7 @@ function MeteoraOpenPositionForm({
       ),
   });
 
+  const pairs = useMemo(() => [pool.baseToken, pool.quoteToken], [pool]);
   const curves = useMemo(
     () => [
       { label: "Spot", value: "Spot" },
@@ -266,7 +267,7 @@ function MeteoraOpenPositionForm({
               </small>
             </div>
             <div className="flex space-x-4">
-              {[pool.baseToken, pool.quoteToken].map((token) => {
+              {pairs.map((token) => {
                 const selected = values.sides.find((side) => side === token.id);
 
                 return (
@@ -281,9 +282,10 @@ function MeteoraOpenPositionForm({
                     )}
                     onClick={() => {
                       let sides = values.sides;
-                      if (selected)
+                      if (selected) {
                         sides = sides.filter((side) => side !== token.id);
-                      else sides.push(token.id);
+                        if (sides.length < 1) return;
+                      } else sides.push(token.id);
                       setFieldValue("sides", sides);
                     }}
                   >
@@ -309,15 +311,22 @@ function MeteoraOpenPositionForm({
             {activeBin && (
               <PriceRangeInput
                 pool={pool}
-                sides={[values.sides.length > 0, values.sides.length > 1]}
+                sides={[
+                  Boolean(
+                    values.sides.find((side) => side === pool.baseToken.id),
+                  ),
+                  Boolean(
+                    values.sides.find((side) => side === pool.quoteToken.id),
+                  ),
+                ]}
                 curveType={values.strategyType}
                 amount={values.inputAmount}
                 activeBin={activeBin}
                 value={values.priceChanges}
+                onChange={onPriceChanges}
                 liquidityRatio={
                   values.sides.length > 1 ? values.liquidityRatio : undefined
                 }
-                onChange={onPriceChanges}
               />
             )}
           </div>

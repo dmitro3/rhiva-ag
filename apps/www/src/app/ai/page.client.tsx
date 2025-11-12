@@ -1,5 +1,6 @@
 "use client";
-import type z from "zod";
+import type z from "zod/v3";
+import type z4 from "zod/v4";
 import { object, string } from "yup";
 import { FiSend } from "react-icons/fi";
 import { useRouter } from "next/navigation";
@@ -21,9 +22,10 @@ type AiPageClientProps = {
 };
 
 type Message = z.infer<typeof messageOutputSchema>;
-type Thread = z.infer<typeof threadSelectSchema>;
+type Thread = z4.infer<typeof threadSelectSchema>;
 
 export default function AiPageClient({ searchParams }: AiPageClientProps) {
+  const intentProcesses = useRef(false);
   const listRef = useRef<HTMLDivElement | null>(null);
 
   const trpc = useTRPC();
@@ -140,7 +142,7 @@ export default function AiPageClient({ searchParams }: AiPageClientProps) {
   }, [queryClient, resetForm]);
 
   const handleThreadSelect = useCallback(
-    (thread: z.infer<typeof threadSelectSchema>) => {
+    (thread: z4.infer<typeof threadSelectSchema>) => {
       resetForm({ values: { prompt: "" } });
       setIsCollapsed(true);
       setCurrentThread(thread);
@@ -174,9 +176,11 @@ export default function AiPageClient({ searchParams }: AiPageClientProps) {
   }, [messages?.length]);
 
   useEffect(() => {
+    if (intentProcesses.current) return;
+    intentProcesses.current = true;
     if (searchParams.prompt && searchParams.prompt.trim().length > 0) {
       sendMessage({ prompt: searchParams.prompt });
-      router.replace("/ai"); // todo
+      router.replace("/ai");
     }
   }, [searchParams.prompt, sendMessage, router]);
 

@@ -1,4 +1,4 @@
-import type z from "zod";
+import type z from "zod/v3";
 import type { agentMessageSchema } from "@rhiva-ag/trpc";
 
 import { PoolCard } from "./PoolCard";

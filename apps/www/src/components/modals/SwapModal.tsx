@@ -42,10 +42,10 @@ export default function Swap({
     <SwapModal {...props}>{form}</SwapModal>
   ) : (
     <>
-      <div className="lt-md:hidden">{form}</div>
+      <div className={clsx("lt-sm:hidden", props.className)}>{form}</div>
       <SwapModal
         {...props}
-        className="md:hidden"
+        className={clsx("sm:hidden", props.className)}
       >
         {form}
       </SwapModal>
@@ -277,7 +277,7 @@ function SwapModal({
     >
       <div className="fixed inset-0 flex lt-sm:items-end sm:items-center sm:justify-center">
         <DialogBackdrop className="absolute inset-0 bg-black/50 -z-10" />
-        <DialogPanel className="flex flex-col space-y-4 bg-dark-secondary p-4 rounded-xl lt-md:min-w-9/10 md:min-w-md">
+        <DialogPanel className="flex flex-col space-y-4 bg-dark-secondary p-4 rounded-xl lt-sm:w-full lt-md:min-w-9/10 md:min-w-md">
           <header className="flex items-center justify-between py-4">
             <DialogTitle className="text-lg font-bold sm:text-xl">
               Swap

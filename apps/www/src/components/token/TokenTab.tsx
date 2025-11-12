@@ -42,7 +42,7 @@ export default function TokenTab({ data, ...props }: TokenSortProps) {
       {...props}
       className={clsx(
         props.className,
-        "flex divide-x divide-white/10 border border-white/10 rounded-md overflow-hidden",
+        "flex divide-x divide-white/10 border border-white/10 rounded-md overflow-hidden md:max-w-xl",
       )}
     >
       {tabs.map((tab) => {
@@ -56,14 +56,14 @@ export default function TokenTab({ data, ...props }: TokenSortProps) {
             key={tab.value}
             href={format("?%s", urlSearchParams.toString())}
             className={clsx(
-              "flex-1 flex items-center space-x-2 px-2 py-1 md:flex-col lg:flex-row",
+              "flex-1 flex items-center space-x-2 px-2 py-1 lt-md:flex-col lg:flex-row",
               tab.priceChange && tab.priceChange > 0
                 ? "text-primary"
                 : "  text-red-500",
               selected && "bg-primary/20",
             )}
           >
-            <span className="text-white">{tab.title}</span>&nbsp;
+            <span className="text-white">{tab.title}</span>
             {tab.priceChange !== undefined && (
               <Decimal
                 as="small"

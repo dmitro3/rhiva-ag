@@ -47,7 +47,7 @@ export default function TokenAnalytic({
         props.className,
       )}
     >
-      <div className="flex flex-col">
+      <div className="flex flex-col md:flex-1">
         <p className="text-xs text-gray md:text-sm">Total Supply</p>
         <Decimal
           value={totalSupply}
@@ -58,7 +58,7 @@ export default function TokenAnalytic({
           }}
         />
       </div>
-      <div className="flex flex-col">
+      <div className="flex flex-col md:flex-1">
         <p className="text-xs text-gray md:text-sm">{timeframe} Vol</p>
         <Decimal
           value={volume24H}
@@ -66,21 +66,21 @@ export default function TokenAnalytic({
         />
       </div>
 
-      <div className="flex flex-col">
+      <div className="flex flex-col md:flex-1">
         <p className="text-xs text-gray md:text-sm">{timeframe} Buys</p>
         <p className="text-green-500">
           {percentageIntl.format(buysPercentage)} Buys
         </p>
       </div>
-      <div className="flex flex-col">
+      <div className="flex flex-col md:flex-1">
         <p className="text-xs text-gray md:text-sm">{timeframe} Traders</p>
         <Decimal value={traders} />
       </div>
-      <div className="flex flex-col">
+      <div className="flex flex-col md:flex-1">
         <p className="text-xs text-gray md:text-sm">{timeframe} Net Buyers</p>
         <Decimal value={buys} />
       </div>
-      <div className="flex flex-col">
+      <div className="flex flex-col md:flex-1">
         <p className="text-xs text-gray md:text-sm">{timeframe} Sells</p>
         <p className="text-red-500">
           {percentageIntl.format(sellsPercentage)} Sell

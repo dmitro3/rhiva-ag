@@ -12,12 +12,13 @@ jobs:
   deploy_www:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    name: Deploy media
+    name: Deploy www
     steps:
       - uses: actions/checkout@v4
       - name: Deploy www
         uses: cloudflare/wrangler-action@v3
         with:
+          packageManager: bun
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           environment: ${{ github.event.inputs.environment }}
@@ -44,6 +45,7 @@ jobs:
       - name: Deploy media
         uses: cloudflare/wrangler-action@v3
         with:
+          packageManager: bun
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           environment: ${{ github.event.inputs.environment }}

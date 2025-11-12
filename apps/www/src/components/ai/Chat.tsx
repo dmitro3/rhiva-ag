@@ -1,4 +1,4 @@
-import type z from "zod";
+import type z from "zod/v3";
 import type { messageOutputSchema } from "@rhiva-ag/trpc";
 
 import { UserMessage, AgentMessage } from "./widgets";

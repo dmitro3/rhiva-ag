@@ -1,6 +1,6 @@
 "use client";
 import dynamic from "next/dynamic";
-import { useCallback, useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import type { Token } from "@rhiva-ag/dex-api/jup/types";
 
 import { dexApi } from "@/instances";
@@ -15,7 +15,7 @@ export type TradingViewtokenChartProps = {
 };
 
 const Chart = dynamic(() => import("."));
-export default function TradingViewtokenChart({
+export default memo(function TradingViewtokenChart({
   token,
 }: TradingViewtokenChartProps) {
   const trpcClient = useTRPCClient();
@@ -111,4 +111,4 @@ export default function TradingViewtokenChart({
       }}
     />
   );
-}
+});

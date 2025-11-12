@@ -20,7 +20,6 @@ type RangeAutoFillOption = {
 
 type PriceRangeInputProps = {
   pool: Pair;
-
   sides: boolean[];
   amount?: number;
   label?: string;
@@ -179,12 +178,10 @@ export default function PriceRangeInput({
 
                       return index <= leftMax ? "#00D897" : "#6A0DAD";
                     }
-                    const index = ctx.dataIndex;
-                    const dataLength = ctx.dataset.data.length;
-                    const midpoint = dataLength / 2;
-                    const sideIndex = Math.floor(index / midpoint);
-                    const enabled = sides[sideIndex];
-                    return enabled ? "#00D897" : "#737373";
+                    const colors = ["#00D897", "#6A0DAD"];
+                    const enabledIndex = sides.indexOf(true);
+
+                    return colors[enabledIndex];
                   },
                 },
                 {
@@ -217,7 +214,16 @@ export default function PriceRangeInput({
                         const dataLength = ctx.dataset.data.length;
                         const [left] = liquidityRatio;
                         const leftMax = Math.floor(dataLength * left);
-                        const sideIndex = index <= leftMax ? 0 : 1;
+                        const enabled = sides[index <= leftMax ? 0 : 1];
+                        const sideIndex =
+                          index <= leftMax
+                            ? enabled
+                              ? 0
+                              : 1
+                            : enabled
+                              ? 1
+                              : 0;
+
                         const token = tokens[sideIndex];
 
                         return format(

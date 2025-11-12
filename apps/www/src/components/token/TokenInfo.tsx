@@ -36,7 +36,7 @@ export default function TokenInfo({
         props.className,
       )}
     >
-      <div>
+      <div className="md:flex-1 max-w-48">
         <button
           type="button"
           className="flex items-center space-x-2 border border-green fill-green px-2 py-1 rounded-md"
@@ -53,35 +53,35 @@ export default function TokenInfo({
           <span className="text-green">Ask Ai</span>
         </button>
       </div>
-      <div>
+      <div className="md:flex-1 max-w-48">
         <p className="text-xs text-gray md:text-sm">Current Liquidity</p>
         <Decimal
           value={liquidity}
           intlArgs={currencyIntlArgs}
         />
       </div>
-      <div>
+      <div className="md:flex-1 max-w-48">
         <p className="text-xs text-gray md:text-sm">Market Cap</p>
         <Decimal
           value={marketCap}
           intlArgs={currencyIntlArgs}
         />
       </div>
-      <div>
+      <div className="md:flex-1 max-w-48">
         <p className="text-xs text-gray md:text-sm">Volume</p>
         <Decimal
           value={volume}
           intlArgs={currencyIntlArgs}
         />
       </div>
-      <div>
+      <div className="md:flex-1 max-w-48">
         <p className="text-xs text-gray md:text-sm">Price</p>
         <Decimal
           value={price}
           intlArgs={currencyIntlArgs}
         />
       </div>
-      <div>
+      <div className="md:flex-1 max-w-48">
         <p className="text-xs text-gray md:text-sm">Holders</p>
         <Decimal value={holders} />
       </div>

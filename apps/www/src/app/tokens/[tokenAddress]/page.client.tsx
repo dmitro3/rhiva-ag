@@ -53,7 +53,7 @@ export default function TokenPage({
           canBack
           className="sticky top-0 z-10"
         />
-        <div className="flex-1 flex flex-col space-y-4 overflow-y-scroll px-4 py-4 md:grid md:gap-16 md:grid-cols-2">
+        <div className="flex-1 flex flex-col space-y-4 overflow-y-scroll px-4 py-4 xl:grid xl:gap-16 xl:grid-cols-2">
           <div className="lt-md:flex-1 flex flex-col space-y-4">
             <div className="grid gap-4 md:grid-cols-2 md:items-start">
               <TokenMetadata
@@ -77,7 +77,7 @@ export default function TokenPage({
                 className="md:order-3 md:col-span-2"
               />
               <TokenSort
-                className="md:order-2 md:col-span-2 xl:col-span-1"
+                className="md:order-2 md:col-span-1"
                 data={token}
               />
               {stat && (
@@ -88,7 +88,7 @@ export default function TokenPage({
                   totalSupply={token.totalSupply}
                   timeframe={TimeFrame[timeframe] ?? "24H"}
                   volume24H={stat.buyOrganicVolume + stat.sellOrganicVolume}
-                  className="md:order-3 md-col-span-2"
+                  className="md:order-3 md:col-span-2"
                 />
               )}
             </div>
@@ -98,6 +98,7 @@ export default function TokenPage({
           </div>
           <div className="flex flex-col xl:flex xl:items-center">
             <SwapModal
+              className="w-full xl:max-w-2xl"
               open={showSwapModal}
               tokens={[
                 DefaultToken.Sol,
@@ -115,7 +116,7 @@ export default function TokenPage({
             />
             <button
               type="button"
-              className="bg-primary text-black px-2 py-3 rounded md:hidden"
+              className="bg-primary text-black px-2 py-3 rounded sm:hidden"
               onClick={() => {
                 if (isAuthenticated) return setShowSwapModal(true);
                 signIn();

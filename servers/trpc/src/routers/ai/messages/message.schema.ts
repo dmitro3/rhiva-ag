@@ -1,17 +1,17 @@
-import z from "zod";
+import z from "zod/v3";
+import z4 from "zod/v4";
+import { agentOutputSchema } from "@rhiva-ag/mcp";
 import {
   threadSelectSchema,
   whereOperator,
   orderByOperator,
 } from "@rhiva-ag/datasource";
 
-import { agentOutputSchema } from "./agent.schema-patch";
-
-export const messageFilterSchema = z.object({
+export const messageFilterSchema = z4.object({
   thread: whereOperator(threadSelectSchema.shape.id),
 });
 
-export const messageSortSchema = orderByOperator(z.enum(["createdAt"]));
+export const messageSortSchema = orderByOperator(z4.enum(["createdAt"]));
 
 export const agentMessageSchema = z.object({
   id: z.string(),
@@ -21,7 +21,6 @@ export const agentMessageSchema = z.object({
 });
 export const userMessageSchema = z.object({
   id: z.string(),
-
   role: z.literal("user"),
   content: z.object({
     text: z.string(),

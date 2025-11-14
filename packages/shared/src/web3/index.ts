@@ -31,6 +31,7 @@ import {
 } from "./types";
 
 export * from "./utils";
+export * from "./errors";
 export * from "./sign-message";
 export type { SimulateBundleResponse };
 

@@ -1,6 +1,7 @@
 import clsx from "clsx";
 import { format } from "util";
 import Link from "next/link";
+import { useMemo } from "react";
 import type { AppRouter } from "@rhiva-ag/trpc";
 import type { NonNullable } from "@rhiva-ag/shared";
 
@@ -12,10 +13,27 @@ import IcDex from "@/assets/icons/ic_dex";
 import { compactCurrencyIntlArgs, currencyIntlArgs } from "@/constants/format";
 
 type PoolListProps = {
+  sort?: "m5_trending" | "h1_trending" | "h6_trending" | "h24_trending";
   pools: NonNullable<Awaited<ReturnType<AppRouter["pool"]["list"]>>>;
 } & React.ComponentProps<"div" | "table">;
 
-export default function PoolList({ pools, ...props }: PoolListProps) {
+export default function PoolList({
+  pools,
+  sort = "h24_trending",
+  ...props
+}: PoolListProps) {
+  const sorts = useMemo(
+    () =>
+      ({
+        m5_trending: { label: "5m", value: "m5" },
+        h1_trending: { label: "1h", value: "h1" },
+        h6_trending: { label: "6h", value: "h6" },
+        h24_trending: { label: "24h", value: "h24" },
+      }) as const,
+    [],
+  );
+  const timestamp = useMemo(() => sorts[sort], [sorts, sort]);
+
   return (
     <>
       <div
@@ -82,9 +100,9 @@ export default function PoolList({ pools, ...props }: PoolListProps) {
                 />
               </div>
               <div className="flex justify-between">
-                <p className="text-gray">24H VOL</p>
+                <p className="text-gray uppercase">{timestamp.label} VOL</p>
                 <Decimal
-                  value={pool.volume_usd.h24 ?? 0}
+                  value={pool.volume_usd[timestamp.value] ?? 0}
                   intlArgs={currencyIntlArgs}
                 />
               </div>
@@ -94,6 +112,7 @@ export default function PoolList({ pools, ...props }: PoolListProps) {
       </div>
       <PoolListSmall
         {...props}
+        timestamp={timestamp}
         pools={pools}
       />
     </>
@@ -101,10 +120,19 @@ export default function PoolList({ pools, ...props }: PoolListProps) {
 }
 
 type PoolListSmallProps = {
+  timestamp:
+    | { label: "5m"; value: "m5" }
+    | { label: "1h"; value: "h1" }
+    | { label: "6h"; value: "h6" }
+    | { label: "24h"; value: "h24" };
   pools: NonNullable<Awaited<ReturnType<AppRouter["pool"]["list"]>>>;
 } & Pick<React.ComponentProps<"table">, "className">;
 
-export function PoolListSmall({ pools, ...props }: PoolListSmallProps) {
+export function PoolListSmall({
+  pools,
+  timestamp,
+  ...props
+}: PoolListSmallProps) {
   return (
     <table
       {...props}
@@ -117,7 +145,9 @@ export function PoolListSmall({ pools, ...props }: PoolListSmallProps) {
             <PoolTabSmall />
           </td>
           <td>FDV/Mcap</td>
-          <td className="text-end text-nowrap">TVL/24H VOL</td>
+          <td className="text-end text-nowrap uppercase">
+            TVL/{timestamp.label} VOL
+          </td>
         </tr>
       </thead>
       <tbody className="h-full divide-y divide-white/10 overflow-y-scroll">
@@ -189,7 +219,7 @@ export function PoolListSmall({ pools, ...props }: PoolListSmallProps) {
               />
               <Decimal
                 as="p"
-                value={pool.volume_usd.h24 ?? 0}
+                value={pool.volume_usd[timestamp.value] ?? 0}
                 intlArgs={compactCurrencyIntlArgs}
               />
             </td>

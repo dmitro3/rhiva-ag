@@ -12,5 +12,5 @@ export const sendTransaction = new SendTransaction(
   process.env.NEXT_PUBLIC_HELIUS_API_KEY!,
   process.env.NEXT_PUBLIC_JITO_API_URL!,
   process.env.NEXT_PUBLIC_JITO_UUID,
-  (url) => format("http://127.0.0.1:8000/proxy/?url=%s", url),
+  (url) => format("%s/proxy/?url=%s", process.env.NEXT_PUBLIC_API_URL!, url),
 );

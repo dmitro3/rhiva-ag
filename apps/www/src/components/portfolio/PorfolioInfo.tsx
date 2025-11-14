@@ -50,6 +50,7 @@ export default function PortfolioInfo(props: React.ComponentProps<"div">) {
           <div className="flex flex-col">
             <p className="text-gray uppercase">Total Net Worth</p>
             <Decimal
+              disableTruncate
               value={data.networthUsd + (token?.summary?.balance || 0)}
               intlArgs={currencyIntlArgs}
               className="text-2xl font-semibold"

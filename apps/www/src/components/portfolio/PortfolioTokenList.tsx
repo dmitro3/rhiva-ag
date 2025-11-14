@@ -42,7 +42,7 @@ export default function PortfolioTokenList({
 
       <div className="grid grid-cols-3 gap-4 p-2 border-b border-white/10">
         <div className="text-gray text-sm font-medium">TOKEN NAME</div>
-        <div className="text-gray text-sm font-medium text-center lt-sm:hidden">
+        <div className="text-gray text-sm font-medium text-center lt-sm:invisible">
           PRICE/24H CHANGE
         </div>
         <div className="text-gray text-sm font-medium text-right">BALANCE</div>
@@ -92,6 +92,7 @@ export default function PortfolioTokenList({
 
             <div className="hidden lg:flex lg:flex-col lg:items-center lg:justify-center">
               <Decimal
+                disableTruncate
                 value={token.usdPrice}
                 intlArgs={currencyIntlArgs}
                 className="text-base font-medium"
@@ -110,13 +111,18 @@ export default function PortfolioTokenList({
 
             <div className="text-right lg:flex lg:flex-col lg:items-end lg:justify-center">
               <Decimal
+                disableTruncate
                 value={token.balance * token.usdPrice}
                 intlArgs={currencyIntlArgs}
                 minValue={0.01}
                 className="text-base font-medium"
               />
               <p className="text-gray text-sm">
-                <Decimal value={token.balance} /> {token.symbol}
+                <Decimal
+                  disableTruncate
+                  value={token.balance}
+                />{" "}
+                {token.symbol}
               </p>
             </div>
           </div>

@@ -1,4 +1,4 @@
-import { mapFilter } from "@rhiva-ag/shared";
+import { mapFilter, throwSimulationError } from "@rhiva-ag/shared";
 import type { QuoteResponse, SwapApi } from "@jup-ag/api";
 import {
   AccountLayout,
@@ -96,6 +96,8 @@ export class Jupiter {
         replaceRecentBlockhash: true,
       },
     );
+
+    throwSimulationError(simulateSwapResponse.value);
 
     const tokenBalanceChanges = getTokenBalanceChangesFromSimulation(
       simulateSwapResponse.value,

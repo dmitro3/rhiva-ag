@@ -1,6 +1,8 @@
 import z from "zod";
 import moment from "moment";
+import { TRPCError } from "@trpc/server";
 import { DexApi } from "@rhiva-ag/dex-api";
+import type { NonNullable } from "@rhiva-ag/shared";
 import type { TradeGetResponse } from "@coingecko/coingecko-typescript/resources/onchain/networks/tokens/trades.js";
 import type { OhlcvGetTimeframeResponse } from "@coingecko/coingecko-typescript/resources/onchain/networks/tokens/ohlcv.js";
 
@@ -17,7 +19,22 @@ import {
 export const poolRoute = router({
   list: publicProcedure
     .input(z.union([poolFilterSchema, poolSearchSchema]).optional())
-    .query(async ({ ctx, input }) => getPools(ctx.coingecko, input)),
+    .query(async ({ ctx, input }) => {
+      const key = Buffer.from(JSON.stringify(input), "utf-8").toBase64();
+      const cache = await ctx.redis.get(key);
+      if (cache)
+        return JSON.parse(cache) as NonNullable<
+          Awaited<ReturnType<typeof getPools>>
+        >;
+
+      const pools = await getPools(ctx.coingecko, input);
+      if (pools) {
+        await ctx.redis.setex(key, 60, JSON.stringify(pools));
+        return pools;
+      }
+
+      throw new TRPCError({ code: "NOT_FOUND", message: "pools not found" });
+    }),
 
   chart: publicProcedure
     .input(

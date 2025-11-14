@@ -94,9 +94,12 @@ export const getWalletPNL = async (
 
   for (const token of tokens) {
     const price = token.usdPrice;
-    const price24h = price - price * (token.stats24h.priceChange / 100);
-    balance += token.balance * price;
-    balance24h += token.balance * price24h;
+
+    if (price) balance += token.balance * price;
+    if (token.stats24h?.priceChange) {
+      const price24h = price - price * (token.stats24h?.priceChange / 100);
+      balance24h += token.balance * price24h;
+    }
   }
 
   return {

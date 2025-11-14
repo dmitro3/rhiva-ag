@@ -26,7 +26,9 @@ export type SimulateBundleRequest = {
 };
 
 export type SimulateBundleResponse = {
-  summary: "succeeded";
+  summary:
+    | "succeeded"
+    | { failed: { error: { TransactionFailure: [number[] | string] } } };
   transactionResults: {
     err: TransactionError | null;
     logs: string[];

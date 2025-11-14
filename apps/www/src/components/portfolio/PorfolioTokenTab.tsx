@@ -26,7 +26,6 @@ export default function PorfolioTokenTab() {
     () => new Intl.NumberFormat("en-US", percentageIntlArgs),
     [],
   );
-
   const { data } = useQuery({
     queryKey: ["wallet", "tokens", user.wallet.id],
     queryFn: async () => getWalletPNL(connection, dexApi, user.wallet.id),
@@ -44,6 +43,7 @@ export default function PorfolioTokenTab() {
                   <Decimal
                     value={data.summary.balance}
                     intlArgs={currencyIntlArgs}
+                    disableTruncate
                     className="text-xl font-semibold"
                   />
                   <span

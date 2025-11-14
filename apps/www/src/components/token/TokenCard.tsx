@@ -1,6 +1,7 @@
 import clsx from "clsx";
 import Link from "next/link";
 import { format } from "util";
+import { useMemo } from "react";
 import type { DexApi } from "@rhiva-ag/dex-api";
 
 import Image from "../Image";
@@ -9,7 +10,7 @@ import CopyButton from "../CopyButton";
 import { compactCurrencyIntlArgs } from "@/constants/format";
 
 type TokenCardProps = {
-  timestamp?: string;
+  timestamp?: "5m" | "1h" | "6h" | "24h";
   token: Awaited<ReturnType<DexApi["jup"]["token"]["list"]>>[number];
 };
 
@@ -17,6 +18,18 @@ export default function TokenCard({
   timestamp = "24h",
   token,
 }: TokenCardProps) {
+  const stats = useMemo(
+    () =>
+      ({
+        "5m": "stats5m",
+        "1h": "stats1h",
+        "6h": "stats6h",
+        "24h": "stats24h",
+      }) as const,
+    [],
+  );
+  const stat = useMemo(() => stats[timestamp], [stats, timestamp]);
+
   return (
     <Link
       key={token.id}
@@ -66,12 +79,12 @@ export default function TokenCard({
           </p>
           <p className="whitespace-nowrap">
             <span>
-              <span>{timestamp}</span> Vol:{" "}
+              <span>{timestamp}</span> Vol:&nbsp;
             </span>
             <Decimal
               value={
-                token.stats24h.buyOrganicVolume ||
-                token.stats24h.sellOrganicVolume ||
+                token[stat]?.buyOrganicVolume ||
+                token[stat]?.sellOrganicVolume ||
                 0
               }
               intlArgs={compactCurrencyIntlArgs}

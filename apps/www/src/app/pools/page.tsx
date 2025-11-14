@@ -4,7 +4,10 @@ import PoolClientPage from "./page.client";
 import { getQueryClient, getTRPC, getTRPCClient } from "@/trpc.server";
 
 export default async function PoolPage(props: PageProps<"/pools">) {
-  const searchParams = await props.searchParams;
+  const searchParams = (await props.searchParams) as {
+    sort?: "m5_trending" | "h1_trending" | "h6_trending" | "h24_trending";
+    query?: string;
+  };
 
   const trpc = getTRPC();
   const trpcClient = getTRPCClient();
@@ -14,7 +17,7 @@ export default async function PoolPage(props: PageProps<"/pools">) {
     queryFn: () =>
       trpcClient.pool.list.query({
         page: 1,
-        sort: "h6_trending",
+        sort: "h24_trending",
         include: "base_token,quote_token",
         ...searchParams,
       }),

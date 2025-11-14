@@ -11,22 +11,28 @@ export default function PoolSort(props: React.ComponentProps<"div">) {
   const searchParams = useSearchParams();
   const sortBy = searchParams.get("sort");
 
-  const values = [
-    { title: "TVL", value: "reserve_in_usd_desc" },
-    { title: "24H Volume", value: "h24_volume_desc" },
-    { title: "Age", value: "pool_created_at_desc" },
-  ];
+  const values = useMemo(
+    () => [
+      { title: "TVL", value: "reserve_in_usd_desc" },
+      { title: "24H Volume", value: "h24_volume_desc" },
+      { title: "Age", value: "pool_created_at_desc" },
+    ],
+    [],
+  );
 
-  const trendingSorts = [
-    { title: "5m", value: "m5_trending" },
-    { title: "6h", value: null },
-    { title: "1h", value: "h1_trending" },
-    { title: "24h", value: "h24_trending" },
-  ];
+  const trendingSorts = useMemo(
+    () => [
+      { title: "5m", value: "m5_trending" },
+      { title: "6h", value: "h6_trending" },
+      { title: "1h", value: "h1_trending" },
+      { title: "24h", value: null },
+    ],
+    [],
+  );
 
   const sortTitle = useMemo(
     () => trendingSorts.find((sort) => sort.value === sortBy)?.title,
-    [sortBy],
+    [sortBy, trendingSorts],
   );
   return (
     <div
@@ -64,7 +70,7 @@ export default function PoolSort(props: React.ComponentProps<"div">) {
       >
         <MenuButton
           type="button"
-          className="w-18 flex items-center space-x-2 border border-white/10 backdrop-blur px-2 py-1  rounded-md focus:outline-none"
+          className="w-20 flex items-center space-x-2 border border-white/10 backdrop-blur px-2 py-1  rounded-md focus:outline-none"
         >
           <span className="text-gray">{sortTitle ?? "None"}</span>
           <MdArrowDropDown

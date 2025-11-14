@@ -1,10 +1,25 @@
 import superjson from "superjson";
+import { SimulationError } from "@rhiva-ag/shared";
 import { initTRPC, TRPCError } from "@trpc/server";
 
 import type { Context } from "./context";
 
 const t = initTRPC.context<Context>().create({
   transformer: superjson,
+  errorFormatter(opts) {
+    const { shape, error } = opts;
+    if (error.cause instanceof SimulationError)
+      return {
+        ...shape,
+        message: error.cause.logs,
+        data: {
+          ...shape.data,
+          code: "BAD_REQUEST",
+        },
+      };
+
+    return shape;
+  },
 });
 
 export const router = t.router;

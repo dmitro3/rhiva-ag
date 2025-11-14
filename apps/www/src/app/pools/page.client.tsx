@@ -15,7 +15,10 @@ import PoolFilter from "@/components/pools/PoolFilter";
 import PoolInfoList from "@/components/pools/PoolInfoList";
 
 type PoolClientPageProps = {
-  searchParams: Record<string, any>;
+  searchParams: {
+    sort?: "m5_trending" | "h1_trending" | "h6_trending" | "h24_trending";
+    query?: string;
+  };
 };
 
 export default function PoolClientPage({ searchParams }: PoolClientPageProps) {
@@ -25,13 +28,13 @@ export default function PoolClientPage({ searchParams }: PoolClientPageProps) {
   const [query, setQuery] = useState<string | undefined>(searchParams.query);
 
   const { data } = useQuery({
+    placeholderData: (previous) => previous,
     queryKey: trpc.pool.list.queryKey({ query, page, ...searchParams }),
     queryFn: () => {
       const data: Partial<z.infer<typeof poolFilterSchema>> = {
         page: page + 1,
-        sort: "h6_trending",
+        sort: "h24_trending",
         include: "base_token,quote_token",
-
         ...searchParams,
       };
 
@@ -78,6 +81,7 @@ export default function PoolClientPage({ searchParams }: PoolClientPageProps) {
             <PoolList
               className="flex-1"
               pools={data}
+              sort={searchParams.sort}
             />
           )}
           <div className="flex items-center justify-center">

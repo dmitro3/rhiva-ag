@@ -1,6 +1,7 @@
 import clsx from "clsx";
 import Link from "next/link";
 import { format } from "util";
+import { useMemo } from "react";
 import type { DexApi } from "@rhiva-ag/dex-api";
 
 import Image from "../Image";
@@ -10,7 +11,7 @@ import CopyButton from "../CopyButton";
 import { compactCurrencyIntlArgs } from "@/constants/format";
 
 type TokenListProps = {
-  timestamp?: string;
+  timestamp?: "5m" | "1h" | "6h" | "24h";
   tokens: Awaited<ReturnType<DexApi["jup"]["token"]["list"]>>;
 };
 export default function TokenList(props: TokenListProps) {
@@ -30,7 +31,19 @@ export default function TokenList(props: TokenListProps) {
   );
 }
 
-function TokenListSmall({ timestamp = "24H", tokens }: TokenListProps) {
+function TokenListSmall({ timestamp = "24h", tokens }: TokenListProps) {
+  const stats = useMemo(
+    () =>
+      ({
+        "5m": "stats5m",
+        "1h": "stats1h",
+        "6h": "stats6h",
+        "24h": "stats24h",
+      }) as const,
+    [],
+  );
+  const stat = useMemo(() => stats[timestamp], [stats, timestamp]);
+
   return (
     <table className="sm:hidden">
       <thead>
@@ -80,8 +93,7 @@ function TokenListSmall({ timestamp = "24H", tokens }: TokenListProps) {
                 <Decimal
                   intlArgs={compactCurrencyIntlArgs}
                   value={
-                    token.stats24h.buyOrganicVolume +
-                    token.stats24h.sellOrganicVolume
+                    token[stat].buyOrganicVolume + token[stat].sellOrganicVolume
                   }
                 />
               </td>

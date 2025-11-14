@@ -33,6 +33,15 @@ export default function PoolList({
     [],
   );
   const timestamp = useMemo(() => sorts[sort], [sorts, sort]);
+  const sortedPools = useMemo(
+    () =>
+      pools.sort(
+        (a, b) =>
+          parseFloat(b.volume_usd[timestamp.value] ?? "0") -
+          parseFloat(a.volume_usd[timestamp.value] ?? "0"),
+      ),
+    [pools, timestamp.value],
+  );
 
   return (
     <>
@@ -43,7 +52,7 @@ export default function PoolList({
           props.className,
         )}
       >
-        {pools.map((pool) => (
+        {sortedPools.map((pool) => (
           <Link
             key={pool.address}
             href={format("/pools/%s/%s/", pool.dex.id, pool.address)}
@@ -113,7 +122,7 @@ export default function PoolList({
       <PoolListSmall
         {...props}
         timestamp={timestamp}
-        pools={pools}
+        pools={sortedPools}
       />
     </>
   );

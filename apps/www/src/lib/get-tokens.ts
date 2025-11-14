@@ -1,5 +1,5 @@
 import type { DexApi } from "@rhiva-ag/dex-api";
-import { collectionToMap } from "@rhiva-ag/shared";
+import { collectionToMap, mapFilter } from "@rhiva-ag/shared";
 import { PublicKey, type Connection } from "@solana/web3.js";
 import {
   NATIVE_MINT,
@@ -77,10 +77,12 @@ export const getWalletTokens = async (
 
   return [
     { ...nativeToken, balance: nativeBalance / Math.pow(10, 9) },
-    ...tokenAccounts.map((tokenAccount) => {
+    ...mapFilter(tokenAccounts, (tokenAccount) => {
       const parsed = tokenAccount.account.data.parsed as ParsedTokenAccount;
-      const token = tokens.get(parsed.info.mint)!;
-      return { ...token, balance: parsed.info.tokenAmount.uiAmount };
+      const token = tokens.get(parsed.info.mint);
+      if (token?.stats24h?.priceChange)
+        return { ...token, balance: parsed.info.tokenAmount.uiAmount };
+      return null;
     }),
   ];
 };

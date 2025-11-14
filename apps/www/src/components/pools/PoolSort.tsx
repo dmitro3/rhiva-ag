@@ -23,8 +23,8 @@ export default function PoolSort(props: React.ComponentProps<"div">) {
   const trendingSorts = useMemo(
     () => [
       { title: "5m", value: "m5_trending" },
-      { title: "6h", value: "h6_trending" },
       { title: "1h", value: "h1_trending" },
+      { title: "6h", value: "h6_trending" },
       { title: "24h", value: null },
     ],
     [],

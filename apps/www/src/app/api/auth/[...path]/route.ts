@@ -1,3 +1,3 @@
-import { registerAuthRoutes } from "@rhiva-ag/auth-ai/server";
+import { registerAuthRoutes } from "@rhiva-ag/auth-ui/server";
 
 export const { POST, DELETE } = registerAuthRoutes();

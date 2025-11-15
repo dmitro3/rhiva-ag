@@ -84,15 +84,18 @@ export default withCookieProvider(function AuthProvider({
 
   const signOut = useCallback(async () => {
     disableWalletConnect.current = true;
-    wallet.disconnect().catch(() => null);
-    firebaseSignOut(auth).catch(() => null);
-    xior
-      .delete<z.infer<typeof extendedUserSelectSchema>>("/api/auth/session")
-      .catch(() => null);
-    localStorage.clear();
+    await Promise.allSettled([
+      window.localStorage.clear(),
+      wallet.disconnect(),
+      firebaseSignOut(auth),
+      xior.delete<z.infer<typeof extendedUserSelectSchema>>(
+        "/api/auth/session",
+      ),
+    ]);
 
     setUser(undefined);
     setIsAuthenticated(false);
+    disableWalletConnect.current = false;
   }, [auth, wallet]);
 
   const fetchServerUser = useCallback(async (user: FirebaseUser) => {

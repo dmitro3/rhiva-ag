@@ -1,7 +1,8 @@
-import { percentageIntlArgs } from "@/constants/format";
 import clsx from "clsx";
 import { useMemo } from "react";
+
 import Image from "../Image";
+import { percentageIntlArgs } from "@/constants/format";
 
 type PositionOverviewProps = {
   estimatedYield: number;

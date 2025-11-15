@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MdAdd } from "react-icons/md";
 import { FiMinus } from "react-icons/fi";
 
@@ -18,6 +18,10 @@ export default function NumberInput({
   const [inputValue, setInputValue] = useState<string | number>(
     value.toPrecision(6),
   );
+
+  useEffect(() => {
+    setInputValue(value.toPrecision(6));
+  }, [value]);
 
   return (
     <div className="flex-1 flex flex-col space-y-2">

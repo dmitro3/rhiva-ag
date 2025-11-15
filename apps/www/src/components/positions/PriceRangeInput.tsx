@@ -46,6 +46,8 @@ export default function PriceRangeInput({
   curveType = "Spot",
   showInput = true,
 }: PriceRangeInputProps) {
+  const [range, setRange] = useState([0, 1]);
+  const [priceRange, setPriceRange] = useState(value);
   const [lowerPriceChange, upperPriceChange] = value;
   const [binStep, setBinStep] = useState(69);
   const [minPrice, setMinPrice] = useState(() => {
@@ -108,6 +110,7 @@ export default function PriceRangeInput({
       ];
       setMinPrice(price);
       onChange(priceChanges);
+      setPriceRange(priceChanges);
     },
     [currentPrice, upperPriceChange, onChange],
   );
@@ -121,6 +124,7 @@ export default function PriceRangeInput({
       ];
       setMaxPrice(price);
       onChange(priceChanges);
+      setPriceRange(priceChanges);
     },
     [currentPrice, lowerPriceChange, onChange],
   );
@@ -132,6 +136,7 @@ export default function PriceRangeInput({
 
       setMinPrice(minPrice);
       setMaxPrice(maxPrice);
+      setPriceRange([lowerPriceChange, upperPriceChange]);
       onChange([lowerPriceChange, upperPriceChange]);
     },
     [currentPrice, onChange],
@@ -271,9 +276,15 @@ export default function PriceRangeInput({
             range
             max={1}
             step={0.01}
-            value={value}
+            value={range}
             className="absolute inset-x-0 bottom-5"
-            onChange={(value) => onChange(value as [number, number])}
+            onChange={(val) => {
+              const range = val as [number, number];
+              const [lowerDelta, upperDelta] = range;
+              const [lower, upper] = priceRange;
+              setRange(range);
+              onChange([lower - lower * lowerDelta, upper * upperDelta]);
+            }}
           />
         </div>
         <div className="flex flex-col space-y-4">

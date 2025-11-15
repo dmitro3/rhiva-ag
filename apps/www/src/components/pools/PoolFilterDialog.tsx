@@ -2,8 +2,9 @@ import clsx from "clsx";
 import { format } from "util";
 import type z from "zod";
 import { object, string } from "yup";
-import { MdCheck, MdClose } from "react-icons/md";
 import { useMemo, useState } from "react";
+import { MdCheck, MdClose } from "react-icons/md";
+import { useAuth } from "@rhiva-ag/auth-ui/client";
 import { IoChevronDownOutline } from "react-icons/io5";
 import { Form, Formik, Field, ErrorMessage } from "formik";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -20,7 +21,6 @@ import {
   MenuItem,
 } from "@headlessui/react";
 
-import { useAuth } from "@/hooks/useAuth";
 import { useTRPC, useTRPCClient } from "@/trpc.client";
 
 export default function PoolFilterDialog(

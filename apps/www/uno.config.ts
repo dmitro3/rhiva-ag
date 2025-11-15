@@ -1,6 +1,7 @@
 import { defineConfig, presetWind3 } from "unocss";
 
 export default defineConfig({
+  safelist: ["sm:w-sm", "lt-sm:min-w-xs"],
   theme: {
     fontFamily: {
       times: "'Times New Roman', 'Times', 'serif'",

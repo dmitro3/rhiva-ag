@@ -5,9 +5,9 @@ import Link from "next/link";
 import Image from "next/image";
 import Logo from "@/assets/logo.png";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@rhiva-ag/auth-ui/client";
 import { FaDiscord, FaXTwitter, FaYoutube } from "react-icons/fa6";
 
-import { useAuth } from "@/hooks/useAuth";
 import IcMessage from "@/assets/icons/ic_message";
 import IcSettings from "@/assets/icons/ic_settings";
 
@@ -65,7 +65,7 @@ export default function SideNav({
   return (
     <div
       {...props}
-      className={clsx("relative z-100", props.className)}
+      className={clsx("relative", props.className)}
     >
       <div className="lt-sm:fixed lt-sm:inset-0 flex flex-col z-50">
         <div
@@ -76,7 +76,7 @@ export default function SideNav({
         <div
           className={clsx(
             props.className,
-            "flex-1 flex flex-col lt-sm:space-y-12  lt-sm:bg-dark-secondary lt-sm:max-w-5/10",
+            "flex-1 flex flex-col lt-sm:bg-dark-secondary lt-sm:max-w-5/10",
           )}
         >
           <Link

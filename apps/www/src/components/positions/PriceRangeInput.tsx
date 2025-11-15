@@ -173,7 +173,10 @@ export default function PriceRangeInput({
               datasets: [
                 {
                   data: relativeLiquidities,
-                  categoryPercentage: 1.0,
+                  barPercentage: 0.8,
+                  categoryPercentage: 0.8,
+                  borderSkipped: true,
+                  barThickness: "flex",
                   backgroundColor: (ctx) => {
                     if (liquidityRatio) {
                       const index = ctx.dataIndex;
@@ -190,9 +193,12 @@ export default function PriceRangeInput({
                   },
                 },
                 {
-                  data: Array(liquidities.length).fill(1),
-                  backgroundColor: "#737373",
                   borderSkipped: true,
+                  barThickness: "flex",
+                  barPercentage: 0.8,
+                  categoryPercentage: 0.8,
+                  backgroundColor: "#737373",
+                  data: Array(liquidities.length).fill(1),
                 },
               ],
             }}
@@ -252,14 +258,17 @@ export default function PriceRangeInput({
                   },
                 },
               },
+
               scales: {
                 x: {
                   grid: { display: false },
                   ticks: {
                     maxRotation: 0,
                     color: "#888",
+                    padding: 0,
                     font: { size: 12 },
                   },
+
                   stacked: true,
                 },
                 y: {
@@ -272,20 +281,22 @@ export default function PriceRangeInput({
               },
             }}
           />
-          <RangeSlider
-            range
-            max={1}
-            step={0.01}
-            value={range}
-            className="absolute inset-x-0 bottom-5"
-            onChange={(val) => {
-              const range = val as [number, number];
-              const [lowerDelta, upperDelta] = range;
-              const [lower, upper] = priceRange;
-              setRange(range);
-              onChange([lower - lower * lowerDelta, upper * upperDelta]);
-            }}
-          />
+          <div className="absolute inset-x-0 flex items-center justify-center bottom-3.2">
+            <RangeSlider
+              range
+              max={1}
+              step={0.01}
+              value={range}
+              handleStyle={[{ marginLeft: 7 }, { marginLeft: -7 }]}
+              onChange={(val) => {
+                const range = val as [number, number];
+                const [lowerDelta, upperDelta] = range;
+                const [lower, upper] = priceRange;
+                setRange(range);
+                onChange([lower - lower * lowerDelta, upper * upperDelta]);
+              }}
+            />
+          </div>
         </div>
         <div className="flex flex-col space-y-4">
           <div

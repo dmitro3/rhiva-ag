@@ -5,6 +5,7 @@ import { number, object } from "yup";
 import { toast } from "react-toastify";
 import { useMemo, useState } from "react";
 import { logEvent } from "firebase/analytics";
+import { useAuth } from "@rhiva-ag/auth-ui/client";
 import { MdClose, MdSwapVert } from "react-icons/md";
 import { Form, FormikContext, useFormik } from "formik";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -19,7 +20,6 @@ import {
 import TokenInput from "../TokenInput";
 import { useDex } from "@/hooks/useDex";
 import { useTRPC } from "@/trpc.client";
-import { useAuth } from "@/hooks/useAuth";
 import type { Token } from "./SelectTokenModal";
 import SelectTokenModal from "./SelectTokenModal";
 import { DefaultToken } from "@/constants/tokens";

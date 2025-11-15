@@ -1,6 +1,7 @@
 import clsx from "clsx";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@rhiva-ag/auth-ui/client";
 import { MdClose, MdVerified } from "react-icons/md";
 import { useConnection } from "@solana/wallet-adapter-react";
 import {
@@ -14,7 +15,6 @@ import Image from "../Image";
 import { dexApi } from "@/instances";
 import { truncateString } from "@/lib";
 import SearchInput from "../SearchInput";
-import { useAuth } from "@/hooks/useAuth";
 import { getWalletPNL } from "@/lib/get-tokens";
 
 export type Token = {

@@ -1,11 +1,11 @@
 import clsx from "clsx";
+import { format } from "util";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@rhiva-ag/auth-ui/client";
 
 import Decimal from "../Decimal";
 import IcAiIcon from "@/assets/icons/ic_ai";
 import { currencyIntlArgs } from "@/constants/format";
-import { format } from "util";
-import { useAuth } from "@/hooks/useAuth";
 
 type TokenInfoProps = {
   mint: string;

@@ -9,6 +9,7 @@ import type { Pair } from "@rhiva-ag/dex-api";
 import { IoArrowBack } from "react-icons/io5";
 import { logEvent } from "firebase/analytics";
 import { NATIVE_MINT } from "@solana/spl-token";
+import { useAuth } from "@rhiva-ag/auth-ui/client";
 import { address, createSolanaRpc } from "@solana/kit";
 import { Form, FormikContext, useFormik } from "formik";
 import { fromWebWalletAdapter } from "@rhiva-ag/shared";
@@ -23,7 +24,6 @@ import {
 
 import { useTRPC } from "@/trpc.client";
 import { useDex } from "@/hooks/useDex";
-import { useAuth } from "@/hooks/useAuth";
 import DepositInput from "../DepositInput";
 import { sendTransaction } from "@/instances";
 import PriceRangeInput from "./PriceRangeInput";

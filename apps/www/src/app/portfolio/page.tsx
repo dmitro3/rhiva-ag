@@ -1,8 +1,8 @@
+import { getUser } from "@rhiva-ag/auth-ui/server";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 
 import { getTRPC } from "@/trpc.server";
 import { makeQueryClient } from "@/query";
-import { getUser } from "@/components/auth";
 import { getWalletPNL } from "@/lib/get-tokens";
 import PortfolioClientPage from "./page.client";
 import { dexApi, solanaConnection } from "@/instances";

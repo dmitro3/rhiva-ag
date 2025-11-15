@@ -1,5 +1,6 @@
 import { useMemo } from "react";
-import { useAuth } from "./useAuth";
+import { useAuth } from "@rhiva-ag/auth-ui/client";
+
 import IcPup from "@/assets/icons/tiers/ic_pup.svg";
 import IcDuke from "@/assets/icons/tiers/ic_duke.svg";
 import IcLord from "@/assets/icons/tiers/ic_lord.svg";

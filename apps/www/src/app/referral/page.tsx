@@ -1,8 +1,8 @@
 "use client";
 import { format } from "util";
 import { useMemo } from "react";
+import { useAuth } from "@rhiva-ag/auth-ui/client";
 
-import { useAuth } from "@/hooks/useAuth";
 import Header from "@/components/layout/Header";
 import CopyButton from "@/components/CopyButton";
 

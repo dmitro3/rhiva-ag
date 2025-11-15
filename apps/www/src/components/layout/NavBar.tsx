@@ -6,11 +6,11 @@ import Image from "next/image";
 import debounce from "lodash.debounce";
 import { useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@rhiva-ag/auth-ui/client";
 
 import SideNav from "./SideNav";
 import Logo from "@/assets/logo.png";
 import IcAi from "@/assets/icons/ic_ai";
-import { useAuth } from "@/hooks/useAuth";
 import IcHome from "@/assets/icons/ic_home";
 import IcPool from "@/assets/icons/ic_pool";
 import LogoSmall from "@/assets/logo-sm.png";

@@ -2,6 +2,7 @@ import clsx from "clsx";
 import Image from "next/image";
 import type { Metadata } from "next";
 import { Roboto } from "next/font/google";
+import { Auth } from "@rhiva-ag/auth-ui/server";
 import { ToastContainer } from "react-toastify";
 import { NextIntlClientProvider } from "next-intl";
 
@@ -10,8 +11,8 @@ import "rc-slider/assets/index.css";
 
 import "./globals.css";
 import Provider from "@/providers";
-import Auth from "@/components/auth";
 import Line from "@/assets/bg/line.png";
+import Logo from "@/assets/logo-sm.png";
 import NavBar from "@/components/layout/NavBar";
 
 const defaultFont = Roboto({
@@ -34,7 +35,26 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: React.PropsWithChildren) {
   return (
     <NextIntlClientProvider>
-      <Auth>
+      <Auth
+        logo={
+          <Image
+            src={Logo}
+            width={24}
+            height={24}
+            alt="Rhiva"
+            className="self-center"
+          />
+        }
+        firebaseOptions={{
+          projectId: "apexflixpro",
+          measurementId: "G-VP6SR8TBRZ",
+          authDomain: "auth.rhiva.fun",
+          messagingSenderId: "389673955403",
+          storageBucket: "apexflixpro.firebasestorage.app",
+          appId: "1:389673955403:web:2528a7a190f23a8acaddce",
+          apiKey: "AIzaSyCH0Vaw4h1dlIigWu7FzdxJx3mjiGwSzpA",
+        }}
+      >
         <Provider>
           <html
             lang="en"

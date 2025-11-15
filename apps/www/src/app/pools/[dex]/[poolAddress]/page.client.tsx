@@ -1,10 +1,10 @@
 "use client";
 import { useState } from "react";
+import { useAuth } from "@rhiva-ag/auth-ui/client";
 import { useQuery } from "@tanstack/react-query";
 
 import { dexApi } from "@/instances";
 import { isSupportedDex } from "@/lib";
-import { useAuth } from "@/hooks/useAuth";
 import Header from "@/components/layout/Header";
 import PoolInfo from "@/components/pools/PoolInfo";
 import PoolAnalytic from "@/components/pools/PoolAnalytic";

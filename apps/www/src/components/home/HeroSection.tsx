@@ -2,8 +2,8 @@
 import clsx from "clsx";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
+import { useAuth } from "@rhiva-ag/auth-ui/client";
 
-import { useAuth } from "@/hooks/useAuth";
 import Banner from "@/assets/bg/banner.svg";
 
 export default function HeroSection(props: React.ComponentProps<"section">) {

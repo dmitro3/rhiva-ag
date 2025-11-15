@@ -4,6 +4,7 @@ import { MdClose } from "react-icons/md";
 import { number, object, string } from "yup";
 import { Field, Form, Formik } from "formik";
 import { logEvent } from "firebase/analytics";
+import { useAuth } from "@rhiva-ag/auth-ui/client";
 import { useEffect, useMemo, useState } from "react";
 import type { Token } from "@rhiva-ag/dex-api/jup/types";
 import { useConnection } from "@solana/wallet-adapter-react";
@@ -17,7 +18,6 @@ import {
 
 import { dexApi } from "@/instances";
 import { useTRPC } from "@/trpc.client";
-import { useAuth } from "@/hooks/useAuth";
 import { getWalletPNL } from "@/lib/get-tokens";
 import TokenInput from "../send-token/TokenInput";
 import TokenSelect from "../send-token/TokenSelect";

@@ -5,6 +5,7 @@ import { MdMoreVert } from "react-icons/md";
 import { logEvent } from "firebase/analytics";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
+import { useAuth } from "@rhiva-ag/auth-ui/client";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { fromWebWalletAdapter, mapFilter } from "@rhiva-ag/shared";
@@ -28,7 +29,6 @@ import {
 import Image from "@/components/Image";
 import { useDex } from "@/hooks/useDex";
 import PnLCardModal from "./PnLCardModal";
-import { useAuth } from "@/hooks/useAuth";
 import { sendTransaction } from "@/instances";
 import Pagination from "../PositionPagination";
 import CopyButton from "@/components/CopyButton";

@@ -1,7 +1,6 @@
 import clsx from "clsx";
 import type z from "zod";
 import { format } from "util";
-import Image from "next/image";
 import { useMemo } from "react";
 import { object, string } from "yup";
 import { toast } from "react-toastify";
@@ -12,8 +11,8 @@ import type { ActionCodeSettings } from "firebase/auth";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { MdArrowForward, MdClose } from "react-icons/md";
 import type { safeAuthUserSchema } from "@rhiva-ag/trpc";
+import { BsFacebook, BsApple, BsXSquareFill } from "react-icons/bs";
 import { Dialog, DialogBackdrop, DialogPanel } from "@headlessui/react";
-import { BsFacebook, BsGithub, BsApple, BsXSquareFill } from "react-icons/bs";
 import {
   getAuth,
   sendSignInLinkToEmail,
@@ -22,11 +21,10 @@ import {
   TwitterAuthProvider,
   GoogleAuthProvider,
   FacebookAuthProvider,
-  GithubAuthProvider,
+  type GithubAuthProvider,
   type User,
 } from "firebase/auth";
 
-import Logo from "@/assets/logo-sm.png";
 import ConnectWalletItem from "./ConnectWalletItem";
 
 class AppleAuthProvider extends OAuthProvider {
@@ -36,6 +34,7 @@ class AppleAuthProvider extends OAuthProvider {
 }
 
 export type AuthModalProps = {
+  logo: React.ReactNode;
   onSignIn(user: User): Promise<z.infer<typeof safeAuthUserSchema>>;
 } & React.ComponentProps<typeof Dialog>;
 
@@ -51,7 +50,11 @@ type AuthConnector = {
     | typeof GithubAuthProvider;
 };
 
-export default function AuthModal({ onSignIn, ...props }: AuthModalProps) {
+export default function AuthModal({
+  onSignIn,
+  logo,
+  ...props
+}: AuthModalProps) {
   const { wallets } = useWallet();
   const auth = useMemo(() => getAuth(), []);
   const [cookies, setCookie] = useCookies<"email", { email: string }>([
@@ -84,11 +87,6 @@ export default function AuthModal({ onSignIn, ...props }: AuthModalProps) {
         icon: BsXSquareFill,
         provider: TwitterAuthProvider,
       },
-      {
-        name: "Github",
-        icon: BsGithub,
-        provider: GithubAuthProvider,
-      },
     ],
     [],
   );
@@ -110,13 +108,7 @@ export default function AuthModal({ onSignIn, ...props }: AuthModalProps) {
               <MdClose size={18} />
             </button>
             <div className="self-center flex flex-col space-y-2">
-              <Image
-                src={Logo}
-                width={24}
-                height={24}
-                alt="Rhiva"
-                className="self-center"
-              />
+              {logo}
               <p className="text-center">Log in or create account</p>
             </div>
           </header>
@@ -188,27 +180,29 @@ export default function AuthModal({ onSignIn, ...props }: AuthModalProps) {
               )}
             </Formik>
             <div className="grid grid-cols-1 gap-2">
-              {authConnectors.map((authConnector) => (
-                <button
-                  key={authConnector.name}
-                  type="button"
-                  className="flex items-center space-x-2 border border-white/10 p-2 rounded-md"
-                  onClick={async () => {
-                    const provider = new authConnector.provider();
-                    provider.addScope("email");
-                    provider.addScope("name");
+              <div className="grid grid-cols-2 gap-2">
+                {authConnectors.map((authConnector) => (
+                  <button
+                    key={authConnector.name}
+                    type="button"
+                    className="flex items-center justify-center space-x-2 border border-white/10 p-2 rounded-md"
+                    onClick={async () => {
+                      const provider = new authConnector.provider();
+                      provider.addScope("email");
+                      provider.addScope("name");
 
-                    return signInWithPopup(auth, provider).then(({ user }) =>
-                      onSignIn(user),
-                    );
-                  }}
-                >
-                  <authConnector.icon size={24} />
-                  <span className="text-start capitalize">
-                    {authConnector.name}
-                  </span>
-                </button>
-              ))}
+                      return signInWithPopup(auth, provider).then(({ user }) =>
+                        onSignIn(user),
+                      );
+                    }}
+                  >
+                    <authConnector.icon size={24} />
+                    <span className="text-start capitalize hidden">
+                      {authConnector.name}
+                    </span>
+                  </button>
+                ))}
+              </div>
               {wallets.map((wallet) => (
                 <ConnectWalletItem
                   key={wallet.adapter.name}

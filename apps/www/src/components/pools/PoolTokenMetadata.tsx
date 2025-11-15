@@ -1,10 +1,10 @@
 import clsx from "clsx";
 import { format } from "util";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@rhiva-ag/auth-ui/client";
 
 import Image from "../Image";
 import CopyButton from "../CopyButton";
-import { useAuth } from "@/hooks/useAuth";
 import IcDex from "@/assets/icons/ic_dex";
 import IcAiIcon from "@/assets/icons/ic_ai";
 

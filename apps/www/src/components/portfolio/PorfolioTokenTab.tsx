@@ -2,11 +2,11 @@ import clsx from "clsx";
 import { useMemo, useState } from "react";
 import { TabPanel } from "@headlessui/react";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@rhiva-ag/auth-ui/client";
 import { useConnection } from "@solana/wallet-adapter-react";
 
 import Decimal from "../Decimal";
 import { dexApi } from "@/instances";
-import { useAuth } from "@/hooks/useAuth";
 import SwapModal from "../modals/SwapModal";
 import { getWalletPNL } from "@/lib/get-tokens";
 import PortfolioTokenList from "./PortfolioTokenList";

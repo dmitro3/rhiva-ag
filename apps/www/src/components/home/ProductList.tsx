@@ -3,6 +3,7 @@ import clsx from "clsx";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@rhiva-ag/auth-ui/client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { IoArrowBackOutline, IoArrowForwardOutline } from "react-icons/io5";
 
@@ -11,7 +12,6 @@ import Swap from "@/assets/swap.png";
 import Lens from "@/assets/lens.png";
 import Point from "@/assets/point.png";
 import Learn from "@/assets/learn.png";
-import { useAuth } from "@/hooks/useAuth";
 import SwapModal from "../modals/SwapModal";
 import Referral from "@/assets/referral.png";
 

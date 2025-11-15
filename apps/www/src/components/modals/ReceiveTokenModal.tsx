@@ -1,14 +1,13 @@
 import clsx from "clsx";
 import { QRCodeSVG } from "qrcode.react";
 import { MdClose } from "react-icons/md";
+import { useAuth } from "@rhiva-ag/auth-ui/client";
 import {
   Dialog,
   DialogBackdrop,
   DialogPanel,
   DialogTitle,
 } from "@headlessui/react";
-
-import { useAuth } from "@/hooks/useAuth";
 
 export default function ReceiveTokenModal(
   props: React.ComponentProps<typeof Dialog>,

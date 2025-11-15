@@ -1,9 +1,9 @@
 import "server-only";
 
 import { cache } from "react";
+import { makeTRPCClient } from "@rhiva-ag/auth-ui";
 import { createTRPCOptionsProxy } from "@trpc/tanstack-react-query";
 
-import { makeTRPCClient } from "./trpc";
 import { makeQueryClient } from "./query";
 
 export const getQueryClient = cache(makeQueryClient);

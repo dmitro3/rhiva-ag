@@ -2,25 +2,20 @@
 
 import clsx from "clsx";
 import Link from "next/link";
-import { useCallback } from "react";
+import { useAuth } from "@rhiva-ag/auth-ui/client";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { MdContentCopy, MdLogout, MdOutlineSend } from "react-icons/md";
 import { Popover, PopoverButton, PopoverPanel } from "@headlessui/react";
 
 import Image from "../Image";
 import { truncateString } from "@/lib";
-import { useAuth } from "@/hooks/useAuth";
 import { useMounted } from "@/hooks/useMounted";
 
 export default function HeaderAction(props: React.ComponentProps<"div">) {
   const mounted = useMounted();
   const { wallet } = useWallet();
-  const { user, setUser, signIn, signOut } = useAuth();
+  const { user, signIn, signOut } = useAuth();
 
-  const onSignOut = useCallback(
-    () => signOut().then(() => setUser(undefined)),
-    [signOut, setUser],
-  );
   return (
     <div
       {...props}
@@ -77,7 +72,7 @@ export default function HeaderAction(props: React.ComponentProps<"div">) {
                 <button
                   type="button"
                   className="flex items-center space-x-2 p-2"
-                  onClick={onSignOut}
+                  onClick={signOut}
                 >
                   <MdLogout />
                   <span>Logout</span>

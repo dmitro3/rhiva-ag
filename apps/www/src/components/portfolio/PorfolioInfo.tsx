@@ -2,12 +2,12 @@ import clsx from "clsx";
 import Link from "next/link";
 import { format } from "util";
 import { useMemo } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
+import { useAuth } from "@rhiva-ag/auth-ui/client";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import Decimal from "../Decimal";
 import { useTRPC } from "@/trpc.client";
-import { useAuth } from "@/hooks/useAuth";
 import type { getWalletPNL } from "@/lib/get-tokens";
 import { useCurrencies } from "@/hooks/useCurrency";
 import { currencyIntlArgs, percentageIntlArgs } from "@/constants/format";

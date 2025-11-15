@@ -9,6 +9,7 @@ import { IoArrowBack } from "react-icons/io5";
 import type { Pair } from "@rhiva-ag/dex-api";
 import { logEvent } from "firebase/analytics";
 import { NATIVE_MINT } from "@solana/spl-token";
+import { useAuth } from "@rhiva-ag/auth-ui/client";
 import { fromWebWalletAdapter } from "@rhiva-ag/shared";
 import { Form, FormikContext, useFormik } from "formik";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -21,7 +22,6 @@ import {
 
 import { useTRPC } from "@/trpc.client";
 import { useDex } from "@/hooks/useDex";
-import { useAuth } from "@/hooks/useAuth";
 import DepositInput from "../DepositInput";
 import { sendTransaction } from "@/instances";
 import PriceRangeInput from "./PriceRangeInput";

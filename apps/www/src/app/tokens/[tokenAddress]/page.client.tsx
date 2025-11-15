@@ -2,9 +2,9 @@
 import moment from "moment";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@rhiva-ag/auth-ui/client";
 
 import { dexApi } from "@/instances";
-import { useAuth } from "@/hooks/useAuth";
 import Header from "@/components/layout/Header";
 import { DefaultToken } from "@/constants/tokens";
 import TokenSort from "@/components/token/TokenTab";

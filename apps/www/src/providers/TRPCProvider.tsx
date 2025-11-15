@@ -1,8 +1,8 @@
 import { useMemo } from "react";
+import { useAuth } from "@rhiva-ag/auth-ui/client";
+import { makeTRPCClient } from "@rhiva-ag/auth-ui";
 import { useQueryClient } from "@tanstack/react-query";
 
-import { useAuth } from "@/hooks/useAuth";
-import { makeTRPCClient } from "@/trpc";
 import { TRPCProvider as Provider } from "@/trpc.client";
 
 export default function TRPCProvider({ children }: React.PropsWithChildren) {

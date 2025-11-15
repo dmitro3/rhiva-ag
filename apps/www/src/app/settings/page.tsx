@@ -1,27 +1,24 @@
 "use client";
 import { toast } from "react-toastify";
 import { Form, Formik, Field } from "formik";
+import { useAuth } from "@rhiva-ag/auth-ui/client";
 import { useMutation } from "@tanstack/react-query";
 
 import { useTRPC } from "@/trpc.client";
 import Toggle from "@/components/Toggle";
-import { useAuth } from "@/hooks/useAuth";
+
 import Header from "@/components/layout/Header";
 import RebalanceTime from "@/components/settings/RebalanceTime";
 import RebalanceType from "@/components/settings/RebalanceType";
-import type { TAuthContext } from "@/components/auth/AuthProvider";
 
 export default function SettingsPage() {
   const trpc = useTRPC();
-  const { user, setUser } = useAuth();
+  const { user, updateUser } = useAuth();
 
   const { mutateAsync } = useMutation(
     trpc.settings.update.mutationOptions({
       onSuccess(settings) {
-        setUser(
-          (previous) =>
-            ({ ...previous, settings }) as NonNullable<TAuthContext["user"]>,
-        );
+        updateUser({ settings });
       },
     }),
   );

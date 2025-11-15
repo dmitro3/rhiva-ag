@@ -2,10 +2,10 @@ import Decimal from "decimal.js";
 import { PublicKey } from "@solana/web3.js";
 import { isNative } from "@rhiva-ag/shared";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@rhiva-ag/auth-ui/client";
 import { useConnection } from "@solana/wallet-adapter-react";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 
-import { useAuth } from "./useAuth";
 import { useEffect } from "react";
 
 type Args<T extends number[]> = {

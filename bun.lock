@@ -55,6 +55,7 @@
       "dependencies": {
         "@headlessui/react": "^2.2.9",
         "@opennextjs/cloudflare": "^1.11.0",
+        "@rhiva-ag/auth-ui": "*",
         "@rhiva-ag/datasource": "*",
         "@rhiva-ag/dex-api": "*",
         "@rhiva-ag/shared": "*",
@@ -141,23 +142,18 @@
         "@trpc/client": "^11.7.0",
         "@trpc/tanstack-react-query": "^11.7.0",
         "bs58": "^6.0.0",
-        "chart.js": "^4.5.1",
-        "chartjs-plugin-annotation": "^3.1.0",
         "clsx": "^2.1.1",
         "decimal.js": "^10.6.0",
         "es-arraybuffer-base64": "^1.1.2",
         "firebase": "^12.4.0",
         "formik": "^2.4.6",
-        "html-to-image": "^1.11.13",
         "lodash.debounce": "^4.0.8",
         "moment": "^2.30.1",
         "ms": "^2.1.3",
         "next": "15.5.6",
         "next-intl": "^4.4.0",
         "qrcode.react": "^4.2.0",
-        "rc-slider": "^11.1.9",
         "react": "^19.2.0",
-        "react-chartjs-2": "^5.3.0",
         "react-cookie": "^8.0.1",
         "react-dom": "^19.2.0",
         "react-icons": "^5.5.0",
@@ -179,12 +175,6 @@
         "typescript": "^5.9.3",
         "unocss": "^66.5.4",
         "wrangler": "^4.45.3",
-      },
-      "peerDependencies": {
-        "@meteora-ag/dlmm": "../../bin/meteora-ag-dlmm-0.0.0.tgz",
-        "@orca-so/whirlpools-sdk": "../../bin/orca-so-whirlpools-0.0.0.tgz",
-        "@raydium-io/raydium-sdk-v2": "../../bin/raydium-io-raydium-sdk-v2-0.0.0.tgz",
-        "@saros-finance/dlmm-sdk": "../../bin/saros-finance-dlmm-sdk-0.0.0.tgz",
       },
     },
     "packages/datasource": {
@@ -429,20 +419,19 @@
       },
     },
     "ui/auth": {
-      "name": "@rhiva-ag/auth-ai",
-      "dependencies": {
-        "@trpc/client": "^11.7.1",
-        "superjson": "^2.2.5",
-      },
+      "name": "@rhiva-ag/auth-ui",
+      "version": "0.0.0",
       "peerDependencies": {
         "@headlessui/react": "^2.2.9",
         "@rhiva-ag/trpc": "*",
         "@solana/wallet-adapter-react": "^0.15.39",
+        "@trpc/client": "^11.7.1",
         "clsx": "^2.1.1",
         "firebase": "^12.6.0",
         "next": "15.5.6",
         "react-icons": "^5.5.0",
         "react-toastify": "^11.0.5",
+        "superjson": "^2.2.5",
         "util": "^0.12.5",
         "yup": "^1.7.1",
         "zod": "^4.1.12",
@@ -1241,7 +1230,7 @@
 
     "@reown/appkit-wallet": ["@reown/appkit-wallet@1.7.2", "", { "dependencies": { "@reown/appkit-common": "1.7.2", "@reown/appkit-polyfills": "1.7.2", "@walletconnect/logger": "2.1.2", "zod": "3.22.4" } }, "sha512-WQ0ykk5TwsjOcUL62ajT1bhZYdFZl0HjwwAH9LYvtKYdyZcF0Ps4+y2H4HHYOc03Q+LKOHEfrFztMBLXPTxwZA=="],
 
-    "@rhiva-ag/auth-ai": ["@rhiva-ag/auth-ai@workspace:ui/auth"],
+    "@rhiva-ag/auth-ui": ["@rhiva-ag/auth-ui@workspace:ui/auth"],
 
     "@rhiva-ag/bot": ["@rhiva-ag/bot@workspace:servers/bot"],
 
@@ -4737,11 +4726,7 @@
 
     "wrap-ansi-cjs/string-width": ["string-width@4.2.3", "", { "dependencies": { "emoji-regex": "^8.0.0", "is-fullwidth-code-point": "^3.0.0", "strip-ansi": "^6.0.1" } }, "sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g=="],
 
-    "www/firebase": ["firebase@12.5.0", "", { "dependencies": { "@firebase/ai": "2.5.0", "@firebase/analytics": "0.10.19", "@firebase/analytics-compat": "0.2.25", "@firebase/app": "0.14.5", "@firebase/app-check": "0.11.0", "@firebase/app-check-compat": "0.4.0", "@firebase/app-compat": "0.5.5", "@firebase/app-types": "0.9.3", "@firebase/auth": "1.11.1", "@firebase/auth-compat": "0.6.1", "@firebase/data-connect": "0.3.11", "@firebase/database": "1.1.0", "@firebase/database-compat": "2.1.0", "@firebase/firestore": "4.9.2", "@firebase/firestore-compat": "0.4.2", "@firebase/functions": "0.13.1", "@firebase/functions-compat": "0.4.1", "@firebase/installations": "0.6.19", "@firebase/installations-compat": "0.2.19", "@firebase/messaging": "0.12.23", "@firebase/messaging-compat": "0.2.23", "@firebase/performance": "0.7.9", "@firebase/performance-compat": "0.2.22", "@firebase/remote-config": "0.7.0", "@firebase/remote-config-compat": "0.2.20", "@firebase/storage": "0.14.0", "@firebase/storage-compat": "0.4.0", "@firebase/util": "1.13.0" } }, "sha512-Ak8JcpH7FL6kiv0STwkv5+3CYEROO9iFWSx7OCZVvc4kIIABAIyAGs1mPGaHRxGUIApFZdMCXA7baq17uS6Mow=="],
-
     "xrpl/eventemitter3": ["eventemitter3@5.0.1", "", {}, "sha512-GWkBvjiSZK87ELrYOSESUYeVIc9mvLLf/nXalMOS5dYrgZq9o5OVkbZAVM06CVxYsCwH9BDZFPlQTlPA1j4ahA=="],
-
-    "zeroboost/firebase": ["firebase@12.5.0", "", { "dependencies": { "@firebase/ai": "2.5.0", "@firebase/analytics": "0.10.19", "@firebase/analytics-compat": "0.2.25", "@firebase/app": "0.14.5", "@firebase/app-check": "0.11.0", "@firebase/app-check-compat": "0.4.0", "@firebase/app-compat": "0.5.5", "@firebase/app-types": "0.9.3", "@firebase/auth": "1.11.1", "@firebase/auth-compat": "0.6.1", "@firebase/data-connect": "0.3.11", "@firebase/database": "1.1.0", "@firebase/database-compat": "2.1.0", "@firebase/firestore": "4.9.2", "@firebase/firestore-compat": "0.4.2", "@firebase/functions": "0.13.1", "@firebase/functions-compat": "0.4.1", "@firebase/installations": "0.6.19", "@firebase/installations-compat": "0.2.19", "@firebase/messaging": "0.12.23", "@firebase/messaging-compat": "0.2.23", "@firebase/performance": "0.7.9", "@firebase/performance-compat": "0.2.22", "@firebase/remote-config": "0.7.0", "@firebase/remote-config-compat": "0.2.20", "@firebase/storage": "0.14.0", "@firebase/storage-compat": "0.4.0", "@firebase/util": "1.13.0" } }, "sha512-Ak8JcpH7FL6kiv0STwkv5+3CYEROO9iFWSx7OCZVvc4kIIABAIyAGs1mPGaHRxGUIApFZdMCXA7baq17uS6Mow=="],
 
     "zod-to-json-schema/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
 
@@ -5580,22 +5565,6 @@
     "wrap-ansi-cjs/string-width/is-fullwidth-code-point": ["is-fullwidth-code-point@3.0.0", "", {}, "sha512-zymm5+u+sCsSWyD9qNaejV3DFvhCKclKdizYaJUuHA83RLjb7nSuGnddCHGv0hk+KY7BMAlsWeK4Ueg6EV6XQg=="],
 
     "wrap-ansi/strip-ansi/ansi-regex": ["ansi-regex@6.2.2", "", {}, "sha512-Bq3SmSpyFHaWjPk8If9yc6svM8c56dB5BAtW4Qbw5jHTwwXXcTLoRMkpDJp6VL0XzlWaCHTXrkFURMYmD0sLqg=="],
-
-    "www/firebase/@firebase/ai": ["@firebase/ai@2.5.0", "", { "dependencies": { "@firebase/app-check-interop-types": "0.3.3", "@firebase/component": "0.7.0", "@firebase/logger": "0.5.0", "@firebase/util": "1.13.0", "tslib": "^2.1.0" }, "peerDependencies": { "@firebase/app": "0.x", "@firebase/app-types": "0.x" } }, "sha512-OXv/jZLRjV9jTejWA4KOvW8gM1hNsLvQSCPwKhi2CEfe0Nap3rM6z+Ial0PGqXga0WgzhpypEvJOFvaAUFX3kg=="],
-
-    "www/firebase/@firebase/app": ["@firebase/app@0.14.5", "", { "dependencies": { "@firebase/component": "0.7.0", "@firebase/logger": "0.5.0", "@firebase/util": "1.13.0", "idb": "7.1.1", "tslib": "^2.1.0" } }, "sha512-zyNY77xJOGwcuB+xCxF8z8lSiHvD4ox7BCsqLEHEvgqQoRjxFZ0fkROR6NV5QyXmCqRLodMM8J5d2EStOocWIw=="],
-
-    "www/firebase/@firebase/app-compat": ["@firebase/app-compat@0.5.5", "", { "dependencies": { "@firebase/app": "0.14.5", "@firebase/component": "0.7.0", "@firebase/logger": "0.5.0", "@firebase/util": "1.13.0", "tslib": "^2.1.0" } }, "sha512-lVG/nRnXaot0rQSZazmTNqy83ti9O3+kdwoaE0d5wahRIWNoDirbIMcGVjDDgdmf4IE6FYreWOMh0L3DV1475w=="],
-
-    "www/firebase/@firebase/data-connect": ["@firebase/data-connect@0.3.11", "", { "dependencies": { "@firebase/auth-interop-types": "0.2.4", "@firebase/component": "0.7.0", "@firebase/logger": "0.5.0", "@firebase/util": "1.13.0", "tslib": "^2.1.0" }, "peerDependencies": { "@firebase/app": "0.x" } }, "sha512-G258eLzAD6im9Bsw+Qm1Z+P4x0PGNQ45yeUuuqe5M9B1rn0RJvvsQCRHXgE52Z+n9+WX1OJd/crcuunvOGc7Vw=="],
-
-    "zeroboost/firebase/@firebase/ai": ["@firebase/ai@2.5.0", "", { "dependencies": { "@firebase/app-check-interop-types": "0.3.3", "@firebase/component": "0.7.0", "@firebase/logger": "0.5.0", "@firebase/util": "1.13.0", "tslib": "^2.1.0" }, "peerDependencies": { "@firebase/app": "0.x", "@firebase/app-types": "0.x" } }, "sha512-OXv/jZLRjV9jTejWA4KOvW8gM1hNsLvQSCPwKhi2CEfe0Nap3rM6z+Ial0PGqXga0WgzhpypEvJOFvaAUFX3kg=="],
-
-    "zeroboost/firebase/@firebase/app": ["@firebase/app@0.14.5", "", { "dependencies": { "@firebase/component": "0.7.0", "@firebase/logger": "0.5.0", "@firebase/util": "1.13.0", "idb": "7.1.1", "tslib": "^2.1.0" } }, "sha512-zyNY77xJOGwcuB+xCxF8z8lSiHvD4ox7BCsqLEHEvgqQoRjxFZ0fkROR6NV5QyXmCqRLodMM8J5d2EStOocWIw=="],
-
-    "zeroboost/firebase/@firebase/app-compat": ["@firebase/app-compat@0.5.5", "", { "dependencies": { "@firebase/app": "0.14.5", "@firebase/component": "0.7.0", "@firebase/logger": "0.5.0", "@firebase/util": "1.13.0", "tslib": "^2.1.0" } }, "sha512-lVG/nRnXaot0rQSZazmTNqy83ti9O3+kdwoaE0d5wahRIWNoDirbIMcGVjDDgdmf4IE6FYreWOMh0L3DV1475w=="],
-
-    "zeroboost/firebase/@firebase/data-connect": ["@firebase/data-connect@0.3.11", "", { "dependencies": { "@firebase/auth-interop-types": "0.2.4", "@firebase/component": "0.7.0", "@firebase/logger": "0.5.0", "@firebase/util": "1.13.0", "tslib": "^2.1.0" }, "peerDependencies": { "@firebase/app": "0.x" } }, "sha512-G258eLzAD6im9Bsw+Qm1Z+P4x0PGNQ45yeUuuqe5M9B1rn0RJvvsQCRHXgE52Z+n9+WX1OJd/crcuunvOGc7Vw=="],
 
     "@aws-crypto/sha1-browser/@smithy/util-utf8/@smithy/util-buffer-from/@smithy/is-array-buffer": ["@smithy/is-array-buffer@2.2.0", "", { "dependencies": { "tslib": "^2.6.2" } }, "sha512-GGP3O9QFD24uGeAXYUjwSTXARoqpZykHadOmA8G5vfJPK0/DC67qa//0qvqrJzL1xc8WQWX7/yc7fwudjPHPhA=="],
 

@@ -5,17 +5,16 @@ import { format } from "util";
 import { useMemo, use } from "react";
 import { useQuery } from "@tanstack/react-query";
 
-import type { AppProps } from "@/types/props";
 import Header from "@/components/layout/Header";
 import { useTRPC, useTRPCClient } from "@/trpc.client";
 import MessageTab from "@/components/messages/MessageTab";
 
-export default function MessagePage({
-  searchParams,
-}: AppProps<null, { tab: "announcement" | "transaction" | "alert" }>) {
+export default function MessagePage({ searchParams }: PageProps<"/messages">) {
   const trpc = useTRPC();
   const trpcClient = useTRPCClient();
-  const { tab } = use(searchParams);
+  const { tab } = use(
+    searchParams as Promise<{ tab: "announcement" | "transaction" | "alert" }>,
+  );
 
   const { data } = useQuery({
     queryKey: trpc.notification.list.queryKey(),

@@ -3,21 +3,21 @@ import type { z } from "zod/mini";
 import type Dex from "@rhiva-ag/dex";
 import { tickIndexToPrice } from "@orca-so/whirlpools-sdk/whirlpools-core";
 import { openPositionInstructions } from "@orca-so/whirlpools-sdk/whirlpools";
+import { fromLegacyPublicKey, fromVersionedTransaction } from "@solana/compat";
+import { getAssociatedTokenAddressSync, NATIVE_MINT } from "@solana/spl-token";
 import {
   isNative,
   mapFilter,
   throwBundleSimulationError,
   type SendTransaction,
 } from "@rhiva-ag/shared";
-import { fromLegacyPublicKey, fromVersionedTransaction } from "@solana/compat";
-import { getAssociatedTokenAddressSync, NATIVE_MINT } from "@solana/spl-token";
 import {
   fetchPosition,
   fetchWhirlpool,
 } from "@orca-so/whirlpools-sdk/whirlpools-client";
 import {
-  type Keypair,
   PublicKey,
+  type Keypair,
   type VersionedTransaction,
 } from "@solana/web3.js";
 import type {
@@ -70,7 +70,6 @@ export const createPosition = async (
     tokenYMint = pool.data.tokenMintB;
 
   const poolToken = [pool.data.tokenMintA, pool.data.tokenMintB];
-
   if (isNative(inputMint)) {
     for (const token of poolToken) {
       const amount = inputAmount / 2;
@@ -153,6 +152,7 @@ export const createPosition = async (
     replaceRecentBlockhash: true,
     transactions: transactions.map(getBase64EncodedWireTransaction),
   });
+
   throwBundleSimulationError(bundleSimulationResponse.result.value);
 
   return {

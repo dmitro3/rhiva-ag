@@ -161,7 +161,7 @@ export class SendTransaction {
       }
 
       retries++;
-      await sleep(2000);
+      await sleep(retries * 2000);
     }
 
     retries = 0;
@@ -174,7 +174,7 @@ export class SendTransaction {
         };
 
       retries++;
-      await sleep(2000);
+      await sleep(retries * 2000);
     }
 
     throw new Error("Bundle did not land");

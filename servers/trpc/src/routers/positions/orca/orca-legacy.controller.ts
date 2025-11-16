@@ -1,20 +1,23 @@
 import Decimal from "decimal.js";
 import type { z } from "zod/mini";
 import { address } from "@solana/kit";
-import { TickUtil } from "@orca-so/whirlpools-sdk";
+import { Percentage } from "@orca-so/whirlpools-sdk/common-sdk";
 import { PublicKey, type VersionedTransaction } from "@solana/web3.js";
 import { fetchWhirlpool } from "@orca-so/whirlpools-sdk/whirlpools-client";
 import { getAssociatedTokenAddressSync, NATIVE_MINT } from "@solana/spl-token";
+import { getTokenBalanceChangesFromBundleSimulation } from "@rhiva-ag/dex/utils";
+import {
+  TickUtil,
+  PriceMath,
+  TokenExtensionUtil,
+  increaseLiquidityQuoteByInputToken,
+  type IncreaseLiquidityQuote,
+} from "@orca-so/whirlpools-sdk";
 import type {
   positionSelectSchema,
   settingsSelectSchema,
 } from "@rhiva-ag/datasource";
 import {
-  getPreTokenBalanceForAccounts,
-  getTokenBalanceChangesFromBatchSimulation,
-} from "@rhiva-ag/dex/utils";
-import {
-  batchSimulateTransactions,
   isNative,
   throwBundleSimulationError,
   type SendTransaction,
@@ -46,50 +49,106 @@ export const createPosition = async (
   const tokenAInfo = pool.getTokenAInfo();
   const tokenBInfo = pool.getTokenBInfo();
 
-  let tokenA = BigInt(0),
-    tokenB = BigInt(0);
+  let addLiquidityAmount = BigInt(0);
+  const addLiquidityMint = isNative(poolData.tokenMintA)
+    ? poolData.tokenMintA
+    : isNative(poolData.tokenMintB)
+      ? poolData.tokenMintB
+      : poolData.tokenMintA;
+  const baseIn = poolData.tokenMintA.equals(addLiquidityMint);
 
   const swapV0Transactions: VersionedTransaction[] = [];
-  const tokenXMint = poolData.tokenMintA,
-    tokenYMint = poolData.tokenMintB;
 
-  const poolToken = [tokenXMint, tokenYMint];
+  const tokenExtension = await TokenExtensionUtil.buildTokenExtensionContext(
+    dex.dlmm.orcaLegacy.fetcher,
+    poolData,
+  );
+
+  let lowerTick: number, upperTick: number;
+  if (args.strategyType === "Custom") {
+    const [lowerPriceChange, upperPriceChange] = args.priceChanges;
+
+    const currentPrice = PriceMath.tickIndexToPrice(
+      poolData.tickCurrentIndex,
+      tokenAInfo.decimals,
+      tokenBInfo.decimals,
+    ).toNumber();
+
+    lowerTick = TickUtil.getInitializableTickIndex(
+      PriceMath.priceToTickIndex(
+        new Decimal(currentPrice + currentPrice * lowerPriceChange),
+        tokenAInfo.decimals,
+        tokenBInfo.decimals,
+      ),
+      poolData.tickSpacing,
+    );
+    upperTick = TickUtil.getInitializableTickIndex(
+      PriceMath.priceToTickIndex(
+        new Decimal(currentPrice + currentPrice * upperPriceChange),
+        tokenAInfo.decimals,
+        tokenBInfo.decimals,
+      ),
+      poolData.tickSpacing,
+    );
+  } else
+    [lowerTick, upperTick] = TickUtil.getFullRangeTickIndex(
+      poolData.tickSpacing,
+    );
+
+  let quote: IncreaseLiquidityQuote;
 
   if (isNative(inputMint)) {
-    for (const token of poolToken) {
-      const amount = inputAmount / 2;
-      const bigAmount = BigInt(
-        new Decimal(amount).mul(Math.pow(10, 9)).toFixed(0),
-      );
+    const amount = BigInt(
+      new Decimal(inputAmount / 2).mul(Math.pow(10, 9)).toFixed(0),
+    );
 
-      if (isNative(token)) {
-        if (token === tokenXMint) {
-          tokenA = bigAmount;
-        } else if (token === tokenYMint) tokenB = bigAmount;
-      } else {
-        const { quote, transaction } = await dex.swap.jupiter.buildSwap({
-          slippage,
-          inputMint,
-          amount: bigAmount,
-          owner: wallet.publicKey,
-          outputMint: new PublicKey(token),
-        });
+    if (isNative(addLiquidityMint)) addLiquidityAmount = amount;
+    else {
+      const { transaction, quoteResponse } = await dex.swap.jupiter.buildSwap({
+        inputMint,
+        slippage,
+        amount,
+        skipSimulation: true,
+        owner: wallet.publicKey,
+        outputMint: tokenAInfo.address,
+      });
 
-        if (token === tokenXMint) {
-          const quoteAmount = quote[tokenXMint.toBase58()] ?? BigInt(0);
-          if (quoteAmount > BigInt(0)) {
-            tokenA = quoteAmount;
-            swapV0Transactions.push(transaction);
-          }
-        } else if (token === tokenYMint) {
-          const quoteAmount = quote[tokenYMint.toBase58()] ?? BigInt(0);
-          if (quoteAmount > BigInt(0)) {
-            tokenB = quoteAmount;
-            swapV0Transactions.push(transaction);
-          }
-        }
-      }
+      addLiquidityAmount = BigInt(quoteResponse.inAmount);
+      swapV0Transactions.push(transaction);
     }
+    const decimals = baseIn ? tokenAInfo.decimals : tokenBInfo.decimals;
+    quote = increaseLiquidityQuoteByInputToken(
+      addLiquidityMint,
+      new Decimal(addLiquidityAmount.toString()).div(Math.pow(10, decimals)),
+      lowerTick,
+      upperTick,
+      Percentage.fromDecimal(new Decimal(slippage)),
+      pool,
+      tokenExtension,
+    );
+
+    // tokenB -> nativeMint
+    // nativeMint -> tokenB
+    const quoteResponse = await dex.swap.jupiter.jupiter.quoteGet({
+      outputMint: NATIVE_MINT.toBase58(),
+      inputMint: (baseIn
+        ? poolData.tokenMintB
+        : poolData.tokenMintA
+      ).toString(),
+      //@ts-expect-error
+      amount: baseIn ? quote.tokenEstB.toString() : quote.tokenEstA.toString(),
+    });
+
+    const { transaction } = await dex.swap.jupiter.buildSwap({
+      inputMint,
+      slippage,
+      skipSimulation: true,
+      owner: wallet.publicKey,
+      amount: quoteResponse.outAmount,
+      outputMint: baseIn ? poolData.tokenMintB : poolData.tokenMintA,
+    });
+
+    swapV0Transactions.push(transaction);
   } else throw new Error("unsupported input mint");
 
   const tipInstruction = await sender.getJitoTipInstruction(
@@ -100,14 +159,12 @@ export const createPosition = async (
     await dex.dlmm.orcaLegacy.buildCreatePosition({
       ...args,
       pool,
-      slippage,
+      quote,
+      lowerTick,
+      upperTick,
       owner: wallet.publicKey,
+      inputMint: addLiquidityMint,
       appendInstructions: tipInstruction,
-      inputMint: new PublicKey(tokenA > BigInt(0) ? tokenXMint : tokenYMint),
-      inputAmount: (tokenA > BigInt(0)
-        ? new Decimal(tokenA).div(Math.pow(10, tokenAInfo.decimals))
-        : new Decimal(tokenB).div(Math.pow(10, tokenBInfo.decimals))
-      ).toNumber(),
     });
 
   const transactions = await wallet.signAllTransactions([
@@ -171,30 +228,23 @@ export const claimReward = async (
     new PublicKey(tokenB.owner),
   );
 
-  const preTokenBalanceChanges = await getPreTokenBalanceForAccounts(
-    dex.connection,
-    [tokenAAta, tokenBAta],
-  );
+  const accountConfigs = claimRewardV0Transactions.map(() => ({
+    encoding: "base64" as const,
+    addresses: [tokenAAta.toBase58(), tokenBAta.toBase58()],
+  }));
 
-  const simulationResponses = await batchSimulateTransactions(dex.connection, {
+  const simulationResponse = await sender.simulateBundle({
     transactions: claimRewardV0Transactions,
-    options: {
-      sigVerify: false,
-      accounts: {
-        encoding: "base64",
-        addresses: [tokenAAta.toBase58(), tokenBAta.toBase58()],
-      },
-    },
+    skipSigVerify: true,
+    replaceRecentBlockhash: true,
+    postExecutionAccountsConfigs: accountConfigs,
+    preExecutionAccountsConfigs: accountConfigs,
   });
 
-  const errors = simulationResponses
-    .filter((response) => response.err != null)
-    .map((response) => response.err);
-  if (errors.length > 0) throw errors;
+  throwBundleSimulationError(simulationResponse.result.value);
 
-  const tokenBalanceChanges = getTokenBalanceChangesFromBatchSimulation(
-    simulationResponses,
-    preTokenBalanceChanges,
+  const tokenBalanceChanges = getTokenBalanceChangesFromBundleSimulation(
+    simulationResponse.result.value,
   );
 
   const swapV0Transactions = [];
@@ -276,6 +326,8 @@ export const closePosition = async (
     });
 
   const swapV0Transactions = [];
+  let tokenBalanceChanges: Record<string, bigint> = {};
+
   if (swapToNative) {
     const tokenAAta = getAssociatedTokenAddressSync(
       new PublicKey(poolData.tokenMintA),
@@ -289,33 +341,22 @@ export const closePosition = async (
       false,
       new PublicKey(tokenB.owner),
     );
-    const preTokenBalanceChanges = await getPreTokenBalanceForAccounts(
-      dex.connection,
-      [tokenAAta, tokenBAta],
-    );
 
-    const simulationResponses = await batchSimulateTransactions(
-      dex.connection,
-      {
-        transactions: closePositionV0Transactions,
-        options: {
-          sigVerify: false,
-          accounts: {
-            encoding: "base64",
-            addresses: [tokenAAta.toBase58(), tokenBAta.toBase58()],
-          },
-        },
-      },
-    );
+    const accountConfigs = closePositionV0Transactions.map(() => ({
+      encoding: "base64" as const,
+      addresses: [tokenAAta.toBase58(), tokenBAta.toBase58()],
+    }));
+    const simulationResponse = await sender.simulateBundle({
+      transactions: closePositionV0Transactions,
+      skipSigVerify: true,
+      postExecutionAccountsConfigs: accountConfigs,
+      preExecutionAccountsConfigs: accountConfigs,
+    });
 
-    const errors = simulationResponses
-      .filter((response) => response.err != null)
-      .map((response) => response.err);
-    if (errors.length > 0) throw errors;
+    throwBundleSimulationError(simulationResponse.result.value);
 
-    const tokenBalanceChanges = getTokenBalanceChangesFromBatchSimulation(
-      simulationResponses,
-      preTokenBalanceChanges,
+    tokenBalanceChanges = getTokenBalanceChangesFromBundleSimulation(
+      simulationResponse.result.value,
     );
 
     const tokens = [tokenA, tokenB];
@@ -355,6 +396,7 @@ export const closePosition = async (
     pool,
     position,
     transactions,
+    tokenBalanceChanges,
     swapV0Transactions,
     closePositionV0Transactions,
     bundleSimulationResponse,
@@ -378,76 +420,35 @@ export const rebalancePosition = async ({
   position: z.infer<typeof positionSelectSchema>;
   settings: z.infer<typeof settingsSelectSchema>;
 }) => {
-  const { pool, position, swapV0Transactions, closePositionV0Transactions } =
-    await closePosition(dex, sender, wallet, {
-      slippage: settings.slippage,
-      position: address(offchainPosition.id),
-      pair: address(offchainPosition.pool.id),
+  const {
+    pool,
+    position,
+    swapV0Transactions,
+    closePositionV0Transactions,
+    tokenBalanceChanges,
+  } = await closePosition(dex, sender, wallet, {
+    slippage: settings.slippage,
+    position: address(offchainPosition.id),
+    pair: address(offchainPosition.pool.id),
 
-      jitoConfig: { type: "dynamic", priorityFeePercentile: "75" },
-      tokenA: {
-        mint: address(offchainPosition.pool.baseToken.id),
-        owner: address(offchainPosition.pool.baseToken.tokenProgram),
-        decimals: offchainPosition.pool.baseToken.decimals,
-      },
-      tokenB: {
-        mint: address(offchainPosition.pool.quoteToken.id),
-        owner: address(offchainPosition.pool.quoteToken.tokenProgram),
-        decimals: offchainPosition.pool.quoteToken.decimals,
-      },
-    });
+    jitoConfig: { type: "dynamic", priorityFeePercentile: "75" },
+    tokenA: {
+      mint: address(offchainPosition.pool.baseToken.id),
+      owner: address(offchainPosition.pool.baseToken.tokenProgram),
+      decimals: offchainPosition.pool.baseToken.decimals,
+    },
+    tokenB: {
+      mint: address(offchainPosition.pool.quoteToken.id),
+      owner: address(offchainPosition.pool.quoteToken.tokenProgram),
+      decimals: offchainPosition.pool.quoteToken.decimals,
+    },
+  });
 
   const poolData = pool.getData();
   const positionData = position.getData();
   const tokenAInfo = pool.getTokenAInfo();
   const tokenBInfo = pool.getTokenBInfo();
   const transactions = [...closePositionV0Transactions, ...swapV0Transactions];
-
-  const tokenAAta = getAssociatedTokenAddressSync(
-    new PublicKey(offchainPosition.pool.baseToken.id),
-    wallet.publicKey,
-    false,
-    new PublicKey(offchainPosition.pool.baseToken.tokenProgram),
-  );
-  const tokenBAta = getAssociatedTokenAddressSync(
-    new PublicKey(offchainPosition.pool.quoteToken.id),
-    wallet.publicKey,
-    false,
-    new PublicKey(offchainPosition.pool.quoteToken.tokenProgram),
-  );
-
-  const preTokenBalanceChanges = await getPreTokenBalanceForAccounts(
-    dex.connection,
-    [
-      isNative(offchainPosition.pool.baseToken.id)
-        ? wallet.publicKey
-        : tokenAAta,
-      isNative(offchainPosition.pool.quoteToken.id)
-        ? wallet.publicKey
-        : tokenBAta,
-    ],
-  );
-
-  const simulationResponses = await batchSimulateTransactions(dex.connection, {
-    transactions: closePositionV0Transactions,
-    options: {
-      sigVerify: false,
-      accounts: {
-        encoding: "base64",
-        addresses: [tokenAAta.toBase58(), tokenBAta.toBase58()],
-      },
-    },
-  });
-
-  const errors = simulationResponses
-    .filter((response) => response.err != null)
-    .map((response) => response.err);
-  if (errors.length > 0) throw errors;
-
-  const tokenBalanceChanges = getTokenBalanceChangesFromBatchSimulation(
-    simulationResponses,
-    preTokenBalanceChanges,
-  );
 
   const tokenA =
     tokenBalanceChanges[offchainPosition.pool.baseToken.id] || BigInt(0);
@@ -467,19 +468,33 @@ export const rebalancePosition = async ({
     poolData.tickSpacing,
   );
 
+  const tokenExtension = await TokenExtensionUtil.buildTokenExtensionContext(
+    dex.dlmm.orcaLegacy.fetcher,
+    poolData,
+  );
+  const quote = increaseLiquidityQuoteByInputToken(
+    tokenA > BigInt(0) ? poolData.tokenMintA : poolData.tokenMintB,
+    new Decimal(tokenA > BigInt(0) ? tokenA : tokenB).div(
+      Math.pow(
+        10,
+        tokenA > BigInt(0) ? tokenAInfo.decimals : tokenBInfo.decimals,
+      ),
+    ),
+    lowerTick,
+    upperTick,
+    Percentage.fromDecimal(new Decimal(settings.slippage * 100)),
+    pool,
+    tokenExtension,
+  );
+
   const { transactions: createPositionV0Transactions, positionMint } =
     await dex.dlmm.orcaLegacy.buildPreloadedCreatePosition({
       pool,
-
+      quote,
       lowerTick,
       upperTick,
       owner: wallet.publicKey,
-      slippage: settings.slippage,
       inputMint: tokenA > BigInt(0) ? poolData.tokenMintA : poolData.tokenMintB,
-      inputAmount: (tokenA > BigInt(0)
-        ? new Decimal(tokenA).div(Math.pow(10, tokenAInfo.decimals))
-        : new Decimal(tokenB).div(Math.pow(10, tokenBInfo.decimals))
-      ).toNumber(),
     });
 
   transactions.push(

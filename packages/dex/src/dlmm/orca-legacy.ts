@@ -13,25 +13,24 @@ import type {
 import {
   toTx,
   PDAUtil,
-  PriceMath,
-  TickUtil,
   WhirlpoolIx,
   TokenExtensionUtil,
-  increaseLiquidityQuoteByInputToken,
   decreaseLiquidityQuoteByLiquidity,
   type Whirlpool,
   type Position,
   type WhirlpoolClient,
   type WhirlpoolContext,
   type WhirlpoolAccountFetcherInterface,
+  type IncreaseLiquidityQuote,
 } from "@orca-so/whirlpools-sdk";
 
 type SharedBuildCreatePositionArgs = {
   pool: Whirlpool;
   owner: PublicKey;
-  slippage: number;
-  inputAmount: number;
   inputMint: PublicKey;
+  lowerTick: number;
+  upperTick: number;
+  quote: IncreaseLiquidityQuote;
 };
 
 type BuildCreatePositionArgs = (
@@ -40,7 +39,6 @@ type BuildCreatePositionArgs = (
     }
   | {
       strategyType: "Custom";
-      priceChanges: [number, number];
     }
 ) &
   SharedBuildCreatePositionArgs;
@@ -59,23 +57,9 @@ export class OrcaLegacyDLMM {
       appendInstructions?: TransactionInstruction | TransactionInstruction[];
     },
   ) => {
-    const {
-      pool,
-      slippage,
-      inputAmount,
-      inputMint,
-      owner,
-      appendInstructions,
-    } = args;
-    this.context.provider.wallet.publicKey = owner;
-
-    const poolData = pool.getData();
-    const poolTokenAInfo = pool.getTokenAInfo();
-    const poolTokenBInfo = pool.getTokenBInfo();
-
-    let lowerTick: number, upperTick: number;
+    const { pool, quote, owner, lowerTick, upperTick, appendInstructions } =
+      args;
     const transactions: VersionedTransaction[] = [];
-
     const latestBlockhash = await this.context.connection.getLatestBlockhash();
     const txConfig = {
       latestBlockhash,
@@ -85,32 +69,9 @@ export class OrcaLegacyDLMM {
         type: "none",
       },
     } as const;
+    this.context.provider.wallet.publicKey = owner;
 
     if (args.strategyType === "Custom") {
-      const [lowerPriceChange, upperPriceChange] = args.priceChanges;
-
-      const currentPrice = PriceMath.tickIndexToPrice(
-        poolData.tickCurrentIndex,
-        poolTokenAInfo.decimals,
-        poolTokenBInfo.decimals,
-      ).toNumber();
-
-      lowerTick = TickUtil.getInitializableTickIndex(
-        PriceMath.priceToTickIndex(
-          new Decimal(currentPrice + currentPrice * lowerPriceChange),
-          poolTokenAInfo.decimals,
-          poolTokenBInfo.decimals,
-        ),
-        poolData.tickSpacing,
-      );
-      upperTick = TickUtil.getInitializableTickIndex(
-        PriceMath.priceToTickIndex(
-          new Decimal(currentPrice + currentPrice * upperPriceChange),
-          poolTokenAInfo.decimals,
-          poolTokenBInfo.decimals,
-        ),
-        poolData.tickSpacing,
-      );
       const taPdas = [
         PDAUtil.getTickArray(
           this.context.program.programId,
@@ -157,25 +118,7 @@ export class OrcaLegacyDLMM {
           return null;
         }),
       );
-    } else
-      [lowerTick, upperTick] = TickUtil.getFullRangeTickIndex(
-        poolData.tickSpacing,
-      );
-
-    const tokenExtension = await TokenExtensionUtil.buildTokenExtensionContext(
-      this.client.getFetcher(),
-      poolData,
-    );
-
-    const quote = increaseLiquidityQuoteByInputToken(
-      inputMint,
-      new Decimal(inputAmount),
-      lowerTick,
-      upperTick,
-      Percentage.fromDecimal(new Decimal(slippage)),
-      pool,
-      tokenExtension,
-    );
+    }
 
     const { tx, positionMint } = await pool.openPosition(
       lowerTick,
@@ -213,20 +156,11 @@ export class OrcaLegacyDLMM {
       appendInstructions?: TransactionInstruction[];
     },
   ) => {
-    const {
-      pool,
-      slippage,
-      inputAmount,
-      inputMint,
-      owner,
-      lowerTick,
-      upperTick,
-      appendInstructions,
-    } = args;
+    const { pool, quote, owner, lowerTick, upperTick, appendInstructions } =
+      args;
     this.context.provider.wallet.publicKey = owner;
     const fetcher = this.client.getFetcher();
     const context = this.client.getContext();
-    const poolData = pool.getData();
 
     const transactions: VersionedTransaction[] = [];
     const latestBlockhash = await this.context.connection.getLatestBlockhash();
@@ -284,21 +218,6 @@ export class OrcaLegacyDLMM {
 
         return null;
       }),
-    );
-
-    const tokenExtension = await TokenExtensionUtil.buildTokenExtensionContext(
-      this.client.getFetcher(),
-      poolData,
-    );
-
-    const quote = increaseLiquidityQuoteByInputToken(
-      inputMint,
-      new Decimal(inputAmount),
-      lowerTick,
-      upperTick,
-      Percentage.fromDecimal(new Decimal(slippage)),
-      pool,
-      tokenExtension,
     );
 
     const { tx, positionMint } = await pool.openPosition(

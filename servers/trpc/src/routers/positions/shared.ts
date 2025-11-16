@@ -9,7 +9,7 @@ export const createQueue = (options?: DefaultJobOptions) =>
     connection: createRedis(),
     defaultJobOptions: {
       attempts: 8,
-      backoff: { type: "exponential", delay: 3000 },
+      backoff: { type: "exponential", delay: 10_000 },
       ...options,
     },
   });

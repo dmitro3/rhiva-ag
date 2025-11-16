@@ -1,4 +1,5 @@
 import superjson from "superjson";
+import { XiorError } from "xior";
 import { SimulationError } from "@rhiva-ag/shared";
 import { initTRPC, TRPCError } from "@trpc/server";
 
@@ -8,6 +9,16 @@ const t = initTRPC.context<Context>().create({
   transformer: superjson,
   errorFormatter(opts) {
     const { shape, error } = opts;
+    if (error.cause instanceof XiorError) {
+      return {
+        ...shape,
+        message: error.cause.response?.data,
+        data: {
+          ...shape.data,
+          code: "INTERNAL_SERVER_ERROR",
+        },
+      };
+    }
     if (error.cause instanceof SimulationError)
       return {
         ...shape,

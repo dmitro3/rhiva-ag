@@ -4,6 +4,7 @@ import {
   isSystemProgram,
   isTokenProgram,
   mapFilter,
+  type SimulateBundleResponse,
 } from "@rhiva-ag/shared";
 import { AccountLayout, NATIVE_MINT, type RawAccount } from "@solana/spl-token";
 import type {
@@ -86,6 +87,63 @@ export const getTokenBalanceChangesFromBatchSimulation = (
   }
 
   return globalTokenBalanceChanges;
+};
+
+export const getTokenBalanceChangesFromBundleSimulation = (
+  result: SimulateBundleResponse,
+) => {
+  const tokenBalanceChanges: Record<string, bigint> = {};
+
+  for (const transaction of result.transactionResults) {
+    const preTokenBalanceChanges: Record<string, bigint> = {};
+    const postTokenBalanceChanges: Record<string, bigint> = {};
+
+    for (const account of transaction.preExecutionAccounts) {
+      if (isTokenProgram(account.owner)) {
+        const data = AccountLayout.decode(Buffer.from(account.data, "base64"));
+        preTokenBalanceChanges[data.mint.toBase58()] = data.amount;
+      } else if (
+        isSystemProgram(account.owner) &&
+        "space" in account &&
+        account.space === 0
+      ) {
+        preTokenBalanceChanges[NATIVE_MINT.toBase58()] = BigInt(
+          account.lamports,
+        );
+      }
+    }
+    for (const account of transaction.postExecutionAccounts) {
+      if (isTokenProgram(account.owner)) {
+        const data = AccountLayout.decode(Buffer.from(account.data, "base64"));
+        postTokenBalanceChanges[data.mint.toBase58()] = data.amount;
+      } else if (
+        isSystemProgram(account.owner) &&
+        "space" in account &&
+        account.space === 0
+      ) {
+        postTokenBalanceChanges[NATIVE_MINT.toBase58()] = BigInt(
+          account.lamports,
+        );
+      }
+    }
+
+    const tokens = [
+      ...new Set([
+        ...Object.keys(preTokenBalanceChanges),
+        ...Object.keys(postTokenBalanceChanges),
+      ]),
+    ];
+
+    for (const token of tokens) {
+      const pre = preTokenBalanceChanges[token] ?? BigInt(0);
+      const post = postTokenBalanceChanges[token] ?? BigInt(0);
+      const previous = tokenBalanceChanges[token] ?? BigInt(0);
+
+      tokenBalanceChanges[token] = previous + post - pre;
+    }
+  }
+
+  return tokenBalanceChanges;
 };
 
 export function getPreTokenBalanceForAccounts(

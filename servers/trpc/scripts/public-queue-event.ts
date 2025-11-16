@@ -1,25 +1,54 @@
 import { Work } from "@rhiva-ag/cron";
+import { createDB, wallets } from "@rhiva-ag/datasource";
+
+import { sendTransaction } from "../src/instances";
 import { createQueue } from "../src/routers/positions/shared";
+import { getEnv } from "../src/env";
+import { eq } from "drizzle-orm";
 
 const queue = createQueue();
+const db = createDB(getEnv("DATABASE_URL"));
 
 (async () => {
-  const response = await queue.add(
-    Work.syncTransaction,
-    {
-      bundleId:
-        "b91f3eee2422753dd6b9a746e5b5efcd58d1d783056fc5024321afa9cc07ba2a",
-      dex: "meteora",
-      type: "create-position",
-      wallet: {
-        user: "3c797e4e-bb9b-4a12-af37-23eb4bd2b4d6",
-        id: "B9smu3m37Zh3rhLbaAovXVBUyQxK5SBte5i1NBxjDnm2",
+  const bundleId =
+    "26177f51e4def67b0aaddde6369e7711e3bb74d7038ba491a92d1d53ac10ac09";
+  const job = await queue.getJob(bundleId);
+  console.log("job", job);
+
+  if (job?.isFailed) await queue.remove(bundleId);
+
+  const wallet = await db.query.wallets.findFirst({
+    with: {
+      user: true,
+    },
+    where: eq(wallets.id, "GQFJibdqFGdNXm5PKvm4MmEDgNXHP1JcXNonedi2Z7kT"),
+  });
+
+  if (wallet) {
+    const response = await queue.add(
+      Work.syncTransaction,
+      {
+        bundleId,
+        dex: "meteora",
+        type: "create-position",
+        wallet: {
+          user: wallet.user.id,
+          id: wallet.id,
+        },
       },
-    },
-    {
-      jobId: "b91f3eee2422753dd6b9a746e5b5efcd58d1d783056fc5024321afa9cc07ba2a",
-      removeOnComplete: true,
-    },
-  );
-  console.log(await response.getState(), { depth: null });
+      {
+        jobId: bundleId,
+        removeOnComplete: true,
+      },
+    );
+    console.log(response.data);
+    console.log(
+      (
+        await queue.getJob(
+          "26177f51e4def67b0aaddde6369e7711e3bb74d7038ba491a92d1d53ac10ac09",
+        )
+      )?.failedReason,
+      { depth: null },
+    );
+  }
 })();

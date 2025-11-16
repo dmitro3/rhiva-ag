@@ -9,24 +9,26 @@ import type {
   settingsSelectSchema,
 } from "@rhiva-ag/datasource";
 import {
-  batchSimulateTransactions,
   isNative,
   throwBundleSimulationError,
+  throwSimulationError,
   type SendTransaction,
   type WalletAdapter,
 } from "@rhiva-ag/shared";
 import {
   getPreTokenBalanceForAccounts,
-  getTokenBalanceChangesFromBatchSimulation,
+  getTokenBalanceChangesFromBundleSimulation,
   getTokenBalanceChangesFromSimulation,
 } from "@rhiva-ag/dex/utils";
 import {
-  CLMM_PROGRAM_ID,
-  getPdaPersonalPositionAddress,
-  PositionInfoLayout,
   TickUtils,
   TxVersion,
+  PoolUtils,
+  CLMM_PROGRAM_ID,
+  PositionInfoLayout,
+  getPdaPersonalPositionAddress,
   type ApiV3PoolInfoConcentratedItem,
+  type ReturnTypeGetLiquidityAmountOut,
 } from "@raydium-io/raydium-sdk-v2";
 
 import type {
@@ -55,61 +57,104 @@ export const createPosition = async (
     { transactions: string[] }
   >,
 ) => {
-  const pool = await dex.clmm.raydium.raydium.clmm.getRpcClmmPoolInfo({
-    poolId: pair,
-  });
-  let tokenA = BigInt(0),
-    tokenB = BigInt(0);
+  const pool = await dex.clmm.raydium.raydium.clmm.getPoolInfoFromRpc(
+    pair.toBase58(),
+  );
+  const { poolInfo } = pool;
 
   const swapV0Transactions: VersionedTransaction[] = [];
-  const tokenXMint = pool.mintA,
-    tokenYMint = pool.mintB;
 
-  const poolToken = [pool.mintA, pool.mintB];
+  const [lowerPriceChange, upperPriceChange] = priceChanges;
+  const currentPrice = poolInfo.price;
+  const lowerPrice = currentPrice + currentPrice * lowerPriceChange;
+  const upperPrice = currentPrice + currentPrice * upperPriceChange;
+
+  let addLiquidityAmount = BigInt(0);
+  const addLiquidityMint = isNative(poolInfo.mintA.address)
+    ? poolInfo.mintA.address
+    : isNative(poolInfo.mintB.address)
+      ? poolInfo.mintB.address
+      : poolInfo.mintA.address;
+  const baseIn = poolInfo.mintA.address === addLiquidityMint;
+
+  const { tick: lowerTick } = TickUtils.getPriceAndTick({
+    baseIn,
+    poolInfo,
+    price: new Decimal(lowerPrice),
+  });
+
+  const { tick: upperTick } = TickUtils.getPriceAndTick({
+    baseIn,
+    poolInfo,
+    price: new Decimal(upperPrice),
+  });
+
+  let quote: ReturnTypeGetLiquidityAmountOut;
+  const epochInfo = await dex.clmm.raydium.raydium.fetchEpochInfo();
 
   if (isNative(inputMint)) {
-    for (const token of poolToken) {
-      const amount = inputAmount / 2;
-      const bigAmount = BigInt(
-        new Decimal(amount).mul(Math.pow(10, 9)).toFixed(0),
-      );
-      if (isNative(token)) {
-        if (token === tokenXMint) {
-          tokenA = bigAmount;
-        } else if (token === tokenYMint) tokenB = bigAmount;
-      } else {
-        const { quote, transaction } = await dex.swap.jupiter.buildSwap({
-          slippage,
-          inputMint,
-          amount: bigAmount,
-          owner: wallet.publicKey,
-          outputMint: new PublicKey(token),
-        });
+    const amount = BigInt(
+      new Decimal(inputAmount / 2).mul(Math.pow(10, 9)).toFixed(0),
+    );
 
-        if (token === tokenXMint) {
-          const quoteAmount = quote[tokenXMint.toBase58()] ?? BigInt(0);
-          if (quoteAmount > BigInt(0)) {
-            tokenA = quoteAmount;
-            swapV0Transactions.push(transaction);
-          }
-        } else if (token === tokenYMint) {
-          const quoteAmount = quote[tokenYMint.toBase58()] ?? BigInt(0);
-          if (quoteAmount > BigInt(0)) {
-            tokenB = quoteAmount;
-            swapV0Transactions.push(transaction);
-          }
-        }
-      }
+    if (isNative(addLiquidityMint)) addLiquidityAmount = amount;
+    else {
+      const { transaction, quoteResponse } = await dex.swap.jupiter.buildSwap({
+        inputMint,
+        slippage,
+        amount,
+        skipSimulation: true,
+        owner: wallet.publicKey,
+        outputMint: poolInfo.mintA.address,
+      });
+
+      addLiquidityAmount = BigInt(quoteResponse.inAmount);
+      swapV0Transactions.push(transaction);
     }
+
+    quote = await PoolUtils.getLiquidityAmountOutFromAmountIn({
+      slippage,
+      add: true,
+      epochInfo,
+      amountHasFee: true,
+      tickLower: lowerTick,
+      tickUpper: upperTick,
+      poolInfo: pool.poolInfo,
+      amount: new BN(addLiquidityAmount),
+      inputA: addLiquidityMint === poolInfo.mintA.address,
+    });
+
+    // tokenB -> nativeMint
+    // nativeMint -> tokenB
+    const quoteResponse = await dex.swap.jupiter.jupiter.quoteGet({
+      outputMint: NATIVE_MINT.toBase58(),
+      inputMint: baseIn ? poolInfo.mintB.address : poolInfo.mintA.address,
+      //@ts-expect-error
+      amount: baseIn
+        ? quote.amountB.amount.toString()
+        : quote.amountA.amount.toString(),
+    });
+
+    const { transaction } = await dex.swap.jupiter.buildSwap({
+      inputMint,
+      slippage,
+      skipSimulation: true,
+      owner: wallet.publicKey,
+      amount: quoteResponse.outAmount,
+      outputMint: baseIn ? poolInfo.mintB.address : poolInfo.mintA.address,
+    });
+
+    swapV0Transactions.push(transaction);
   } else throw new Error("unsupported input mint");
 
   const { signers, builder, extInfo } =
     await dex.clmm.raydium.buildCreatePosition({
+      quote,
       slippage,
-      priceChanges,
-      pool: pair.toBase58(),
-      inputMint: (tokenB > BigInt(0) ? tokenYMint : tokenXMint).toBase58(),
-      inputAmount: new BN((tokenB > BigInt(0) ? tokenB : tokenA).toString()),
+      pool,
+      lowerTick,
+      upperTick,
+      inputMint: addLiquidityMint,
     });
 
   const jitoTipInstruction = await sender.getJitoTipInstruction(
@@ -121,11 +166,11 @@ export const createPosition = async (
     builder.addInstruction({ instructions: [jitoTipInstruction] });
 
   const { transaction: createPositionV0Transaction } = await builder.buildV0();
-
-  const transactions = await wallet.signAllTransactions(
-    [createPositionV0Transaction, ...swapV0Transactions],
-    signers,
-  );
+  createPositionV0Transaction.sign(signers);
+  const transactions = await wallet.signAllTransactions([
+    ...swapV0Transactions,
+    createPositionV0Transaction,
+  ]);
 
   const bundleSimulationResponse = await sender.simulateBundle({
     transactions,
@@ -200,30 +245,22 @@ export const claimReward = async (
     new PublicKey(poolInfo.mintB.programId),
   );
 
-  const preTokenBalanceChanges = await getPreTokenBalanceForAccounts(
-    dex.connection,
-    [tokenAAta, tokenBAta],
-  );
-
-  const simulationResponses = await batchSimulateTransactions(dex.connection, {
+  const accountConfigs = claimRewardV0Transactions.map(() => ({
+    encoding: "base64" as const,
+    addresses: [tokenAAta.toBase58(), tokenBAta.toBase58()],
+  }));
+  const simulationResponse = await sender.simulateBundle({
+    skipSigVerify: false,
+    replaceRecentBlockhash: true,
     transactions: claimRewardV0Transactions,
-    options: {
-      sigVerify: false,
-      replaceRecentBlockhash: true,
-      accounts: {
-        addresses: [tokenAAta.toBase58(), tokenBAta.toBase58()],
-        encoding: "base64",
-      },
-    },
+    preExecutionAccountsConfigs: accountConfigs,
+    postExecutionAccountsConfigs: accountConfigs,
   });
-  const errors = simulationResponses
-    .filter((response) => response.err != null)
-    .map((response) => response.err);
-  if (errors.length > 0) throw errors;
 
-  const tokenBalanceChanges = getTokenBalanceChangesFromBatchSimulation(
-    simulationResponses,
-    preTokenBalanceChanges,
+  throwBundleSimulationError(simulationResponse.result.value);
+
+  const tokenBalanceChanges = getTokenBalanceChangesFromBundleSimulation(
+    simulationResponse.result.value,
   );
 
   const swapV0Transactions = [];
@@ -314,6 +351,7 @@ export const closePosition = async (
 
   const swapV0Transactions = [];
   let nativeAmount = new BN(0);
+  let tokenBalanceChanges: Record<string, bigint> = {};
 
   if (swapToNative) {
     const tokenAAta = getAssociatedTokenAddressSync(
@@ -346,9 +384,9 @@ export const closePosition = async (
       },
     );
 
-    if (simulationResponse.value.err) throw simulationResponse.value.err;
+    throwSimulationError(simulationResponse.value);
 
-    const tokenBalanceChanges = getTokenBalanceChangesFromSimulation(
+    tokenBalanceChanges = getTokenBalanceChangesFromSimulation(
       simulationResponse.value,
       preTokenBalanceChanges,
     );
@@ -398,6 +436,7 @@ export const closePosition = async (
     poolInfo,
     transactions,
     nativeAmount,
+    tokenBalanceChanges,
     closePositionV0Transaction,
     swapV0Transactions,
     bundleSimulationResponse,
@@ -421,51 +460,20 @@ export const rebalancePosition = async ({
   position: z.infer<typeof positionSelectSchema>;
   settings: z.infer<typeof settingsSelectSchema>;
 }) => {
-  const { poolInfo, swapV0Transactions, closePositionV0Transaction, position } =
-    await closePosition(dex, wallet, sender, {
-      position: new PublicKey(offchainPosition.id),
-      pair: new PublicKey(offchainPosition.pool.id),
-      slippage: settings.slippage,
-      jitoConfig: { type: "dynamic", priorityFeePercentile: "75" },
-    });
+  const {
+    poolInfo,
+    swapV0Transactions,
+    closePositionV0Transaction,
+    position,
+    tokenBalanceChanges,
+  } = await closePosition(dex, wallet, sender, {
+    position: new PublicKey(offchainPosition.id),
+    pair: new PublicKey(offchainPosition.pool.id),
+    slippage: settings.slippage,
+    jitoConfig: { type: "dynamic", priorityFeePercentile: "75" },
+  });
   const transactions = [closePositionV0Transaction, ...swapV0Transactions];
 
-  const tokenAAta = getAssociatedTokenAddressSync(
-    new PublicKey(poolInfo.mintA.address),
-    wallet.publicKey,
-    false,
-    new PublicKey(poolInfo.mintA.programId),
-  );
-  const tokenBAta = getAssociatedTokenAddressSync(
-    new PublicKey(poolInfo.mintB.address),
-    wallet.publicKey,
-    false,
-    new PublicKey(poolInfo.mintB.programId),
-  );
-
-  const preTokenBalanceChanges = await getPreTokenBalanceForAccounts(
-    dex.connection,
-    [
-      isNative(poolInfo.mintA.address) ? wallet.publicKey : tokenAAta,
-      isNative(poolInfo.mintB.address) ? wallet.publicKey : tokenBAta,
-    ],
-  );
-
-  const simulateResponse = await dex.connection.simulateTransaction(
-    closePositionV0Transaction,
-    {
-      sigVerify: false,
-      accounts: {
-        encoding: "base64",
-        addresses: [tokenAAta.toBase58(), tokenBAta.toBase58()],
-      },
-    },
-  );
-
-  const tokenBalanceChanges = getTokenBalanceChangesFromSimulation(
-    simulateResponse.value,
-    preTokenBalanceChanges,
-  );
   const amountMaxA = new BN(
     tokenBalanceChanges[poolInfo.mintA.address] || BigInt(0),
   );

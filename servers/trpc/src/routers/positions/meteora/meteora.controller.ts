@@ -3,16 +3,12 @@ import Decimal from "decimal.js";
 import type { z } from "zod/mini";
 import DLMM, { StrategyType } from "@meteora-ag/dlmm";
 import { getAssociatedTokenAddressSync, NATIVE_MINT } from "@solana/spl-token";
+import { getTokenBalanceChangesFromBundleSimulation } from "@rhiva-ag/dex/utils";
 import type {
   positionSelectSchema,
   settingsSelectSchema,
 } from "@rhiva-ag/datasource";
 import {
-  getPreTokenBalanceForAccounts,
-  getTokenBalanceChangesFromBatchSimulation,
-} from "@rhiva-ag/dex/utils";
-import {
-  batchSimulateTransactions,
   isNative,
   throwBundleSimulationError,
   type SendTransaction,
@@ -67,36 +63,32 @@ export const createPosition = async (
   if (isNative(inputMint)) {
     for (const [index, side] of sides.entries()) {
       const ratio = liquidityRatio ? liquidityRatio[index]! : 1;
-      const amount = inputAmount * ratio;
-      const bigAmount = new BN(
-        new Decimal(amount).mul(Math.pow(10, 9)).toFixed(0),
+      const amount = new BN(
+        new Decimal(inputAmount * ratio).mul(Math.pow(10, 9)).toFixed(0),
       );
       if (isNative(side)) {
-        if (side.equals(tokenXMint)) {
-          totalXAmount = bigAmount;
-        } else if (side.equals(tokenYMint)) totalYAmount = bigAmount;
+        if (side.equals(tokenXMint)) totalXAmount = amount;
+        else if (side.equals(tokenYMint)) totalYAmount = amount;
       } else {
-        const { quote, transaction } = await dex.swap.jupiter.buildSwap({
-          slippage,
-          inputMint,
-          outputMint: side,
-          owner: wallet.publicKey,
-          amount: BigInt(bigAmount.toString()),
-        });
-
-        if (side.equals(tokenXMint)) {
-          const quoteAmount = quote[tokenXMint.toBase58()] ?? BigInt(0);
-          if (quoteAmount > BigInt(0)) {
-            totalXAmount = new BN(quoteAmount.toString());
+        const { quoteResponse, transaction } = await dex.swap.jupiter.buildSwap(
+          {
+            slippage,
+            inputMint,
+            outputMint: side,
+            skipSimulation: true,
+            owner: wallet.publicKey,
+            amount: BigInt(amount.toString()),
+          },
+        );
+        const inputAmount = BigInt(quoteResponse.outAmount);
+        if (inputAmount > BigInt(0))
+          if (side.equals(tokenXMint)) {
+            totalXAmount = new BN(inputAmount);
+            swapV0Transactions.push(transaction);
+          } else if (side.equals(tokenYMint)) {
+            totalYAmount = new BN(inputAmount.toString());
             swapV0Transactions.push(transaction);
           }
-        } else if (side.equals(tokenYMint)) {
-          const quoteAmount = quote[tokenYMint.toBase58()] ?? BigInt(0);
-          if (quoteAmount > BigInt(0)) {
-            totalYAmount = new BN(quoteAmount.toString());
-            swapV0Transactions.push(transaction);
-          }
-        }
       }
     }
   } else throw new Error("unsupported input mint");
@@ -132,12 +124,14 @@ export const createPosition = async (
     createPositionV0Message,
   );
 
-  let transactions = [...swapV0Transactions, createPositionV0Transaction];
-  transactions = await wallet.signAllTransactions(transactions);
+  createPositionV0Transaction.sign([position]);
+  const transactions = await wallet.signAllTransactions([
+    ...swapV0Transactions,
+    createPositionV0Transaction,
+  ]);
+
   const bundleSimulationResponse = await sender.simulateBundle({
     transactions,
-    skipSigVerify: true,
-    replaceRecentBlockhash: true,
   });
 
   throwBundleSimulationError(bundleSimulationResponse.result.value);
@@ -207,30 +201,22 @@ export const claimReward = async (
     pool.tokenY.owner,
   );
 
-  const preTokenBalanceChanges = await getPreTokenBalanceForAccounts(
-    dex.connection,
-    [tokenAAta, tokenBAta],
-  );
+  const accountConfigs = claimRewardTransactions.map(() => ({
+    encoding: "base64" as const,
+    addresses: [tokenAAta.toBase58(), tokenBAta.toBase58()],
+  }));
 
-  const simulationResponses = await batchSimulateTransactions(dex.connection, {
+  const simulationResponse = await sender.simulateBundle({
     transactions: claimRewardV0Transactions,
-    options: {
-      sigVerify: false,
-      accounts: {
-        encoding: "base64",
-        addresses: [tokenAAta.toBase58(), tokenBAta.toBase58()],
-      },
-    },
+    skipSigVerify: false,
+    preExecutionAccountsConfigs: accountConfigs,
+    postExecutionAccountsConfigs: accountConfigs,
   });
 
-  const errors = simulationResponses
-    .filter((response) => response.err != null)
-    .map((response) => response.err);
-  if (errors.length > 0) throw errors;
+  throwBundleSimulationError(simulationResponse.result.value);
 
-  const tokenBalanceChanges = getTokenBalanceChangesFromBatchSimulation(
-    simulationResponses,
-    preTokenBalanceChanges,
+  const tokenBalanceChanges = getTokenBalanceChangesFromBundleSimulation(
+    simulationResponse.result.value,
   );
 
   const swapV0Transactions = [];
@@ -339,33 +325,23 @@ export const closePosition = async (
       pool.tokenY.owner,
     );
 
-    const preTokenBalanceChanges = await getPreTokenBalanceForAccounts(
-      dex.connection,
-      [tokenAAta, tokenBAta],
-    );
+    const accountConfigs = closePositionTransactions.map(() => ({
+      encoding: "base64" as const,
+      addresses: [tokenAAta.toBase58(), tokenBAta.toBase58()],
+    }));
 
-    const simulationResponses = await batchSimulateTransactions(
-      dex.connection,
-      {
-        transactions: closePositionV0Transactions,
-        options: {
-          sigVerify: false,
-          accounts: {
-            encoding: "base64",
-            addresses: [tokenAAta.toBase58(), tokenBAta.toBase58()],
-          },
-        },
-      },
-    );
+    const simulationResponse = await sender.simulateBundle({
+      skipSigVerify: true,
+      replaceRecentBlockhash: true,
+      transactions: closePositionV0Transactions,
+      preExecutionAccountsConfigs: accountConfigs,
+      postExecutionAccountsConfigs: accountConfigs,
+    });
 
-    const errors = simulationResponses
-      .filter((response) => response.err != null)
-      .map((response) => response.err);
-    if (errors.length > 0) throw errors;
+    throwBundleSimulationError(simulationResponse.result.value);
 
-    const tokenBalanceChanges = getTokenBalanceChangesFromBatchSimulation(
-      simulationResponses,
-      preTokenBalanceChanges,
+    const tokenBalanceChanges = getTokenBalanceChangesFromBundleSimulation(
+      simulationResponse.result.value,
     );
 
     const tokenConfigs: [PublicKey, number][] = [

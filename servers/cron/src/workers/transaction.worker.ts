@@ -203,13 +203,13 @@ export default async function createWorker({
   worker.on("completed", (job) => {
     logger.info(
       { id: job.id, data: job.data },
-      "worker.transaction.sync.successful",
+      "worker.transaction.successful",
     );
   });
   worker.on("failed", (job, error) => {
     logger.error(
       { error, job: { id: job?.id, data: job?.data } },
-      "worker.transaction.sync.failed",
+      "worker.transaction.failed",
     );
   });
   worker.on("error", (error) => {

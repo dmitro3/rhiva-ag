@@ -3,7 +3,12 @@ import type { z } from "zod/mini";
 import type Dex from "@rhiva-ag/dex";
 import { tickIndexToPrice } from "@orca-so/whirlpools-sdk/whirlpools-core";
 import { openPositionInstructions } from "@orca-so/whirlpools-sdk/whirlpools";
-import { isNative, mapFilter, type SendTransaction } from "@rhiva-ag/shared";
+import {
+  isNative,
+  mapFilter,
+  throwBundleSimulationError,
+  type SendTransaction,
+} from "@rhiva-ag/shared";
 import { fromLegacyPublicKey, fromVersionedTransaction } from "@solana/compat";
 import { getAssociatedTokenAddressSync, NATIVE_MINT } from "@solana/spl-token";
 import {
@@ -148,6 +153,7 @@ export const createPosition = async (
     replaceRecentBlockhash: true,
     transactions: transactions.map(getBase64EncodedWireTransaction),
   });
+  throwBundleSimulationError(bundleSimulationResponse.result.value);
 
   return {
     transactions,
@@ -275,6 +281,8 @@ export const claimReward = async (
     replaceRecentBlockhash: true,
     transactions: transactions.map(getBase64EncodedWireTransaction),
   });
+
+  throwBundleSimulationError(bundleSimulationResponse.result.value);
 
   return {
     transactions,
@@ -408,6 +416,8 @@ export const closePosition = async (
     replaceRecentBlockhash: true,
     transactions: transactions.map(getBase64EncodedWireTransaction),
   });
+
+  throwBundleSimulationError(bundleSimulationResponse.result.value);
 
   return {
     pool,
@@ -561,6 +571,8 @@ export const rebalancePosition = async ({
     replaceRecentBlockhash: true,
     transactions: transactions.map(getBase64EncodedWireTransaction),
   });
+
+  throwBundleSimulationError(bundleSimulationResponse.result.value);
 
   return {
     transactions,

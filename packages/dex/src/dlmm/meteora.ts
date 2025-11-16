@@ -2,11 +2,8 @@ import BN from "bn.js";
 import Decimal from "decimal.js";
 import type DLMM from "@meteora-ag/dlmm";
 import { Transaction, type PublicKey } from "@solana/web3.js";
-import {
-  MAX_BINS_PER_POSITION,
-  type LbPosition,
-  type StrategyType,
-} from "@meteora-ag/dlmm";
+import type { LbPosition, StrategyType } from "@meteora-ag/dlmm";
+import { getUniqueInstructions } from "@rhiva-ag/shared";
 
 export class MeteoraDLMM {
   readonly buildCreatePosition = async ({
@@ -43,9 +40,13 @@ export class MeteoraDLMM {
     const minBinId = Math.min(...binIds);
     const maxBinId = Math.max(...binIds);
 
+    const maxBinPerPosition = 69;
     const binCount = maxBinId - minBinId;
 
-    if (binCount > MAX_BINS_PER_POSITION.toNumber()) {
+    if (binCount > maxBinPerPosition) {
+      const midpoint = Math.floor(maxBinPerPosition / 2);
+      const lowerBinId = activeBin.binId - midpoint;
+      const upperBinId = activeBin.binId + midpoint;
       const transactions = await Promise.all([
         pool.createExtendedEmptyPosition(minBinId, maxBinId, position, owner),
         pool.addLiquidityByStrategy({
@@ -55,15 +56,14 @@ export class MeteoraDLMM {
           totalYAmount,
           positionPubKey: position,
           strategy: {
-            maxBinId,
-            minBinId,
             strategyType,
-            singleSidedX: totalXAmount.isZero() || totalYAmount.isZero(),
+            minBinId: lowerBinId,
+            maxBinId: upperBinId,
           },
         }),
       ]);
 
-      return transactions.flatMap((transaction) => transaction.instructions);
+      return getUniqueInstructions(1_400_000, ...transactions);
     } else {
       const transaction =
         await pool.initializePositionAndAddLiquidityByStrategy({

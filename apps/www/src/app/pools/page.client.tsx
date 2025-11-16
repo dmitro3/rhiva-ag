@@ -69,9 +69,9 @@ export default function PoolClientPage({ searchParams }: PoolClientPageProps) {
               </div>
               <PoolInfoList className="lg:self-end" />
             </div>
-            <div className="flex lt-lg:flex-col lg:items-center lg:justify-between lg:space-x-4">
-              <PoolTab className="lt-lg:hidden" />
-              <div className="lg:flex lg:items-center lg:space-x-2 lt-lg:flex-1 ">
+            <div className="flex lt-sm:flex-col sm:items-center sm:justify-between sm:space-x-4">
+              <PoolTab className="lt-sm:hidden" />
+              <div className="sm:flex sm:items-center sm:space-x-2 lt-sm:flex-1 ">
                 <PoolSort />
                 <PoolFilter className="lt-lg:hidden" />
               </div>

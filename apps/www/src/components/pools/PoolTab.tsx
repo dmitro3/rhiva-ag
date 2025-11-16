@@ -16,38 +16,44 @@ export default function PoolTab(props: React.ComponentProps<"div">) {
   const dex = searchParams.get("dexes");
 
   return (
-    <div
-      {...props}
-      className={clsx("flex flex-nowrap space-x-4", props.className)}
-    >
-      {dexes.map((tab) => {
-        const selected = tab.value === dex;
-        const urlSearchParams = new URLSearchParams(searchParams);
-        if (tab.value) urlSearchParams.set("dexes", tab.value);
-        else urlSearchParams.delete("dexes");
+    <>
+      <div
+        {...props}
+        className={clsx(
+          "flex flex-nowrap space-x-4 lt-lg:hidden",
+          props.className,
+        )}
+      >
+        {dexes.map((tab) => {
+          const selected = tab.value === dex;
+          const urlSearchParams = new URLSearchParams(searchParams);
+          if (tab.value) urlSearchParams.set("dexes", tab.value);
+          else urlSearchParams.delete("dexes");
 
-        return (
-          <Link
-            key={tab.title}
-            href={format("?%s", urlSearchParams.toString())}
-            className={clsx(
-              "shrink-0 flex items-center space-x-2 border-b-4 px-2",
-              selected ? "border-primary" : "border-b-transparent",
-            )}
-          >
-            {tab.value && (
-              <IcDex
-                dex={tab.value}
-                width={24}
-                height={24}
-                className="rounded-full"
-              />
-            )}
-            <span>{tab.title}</span>
-          </Link>
-        );
-      })}
-    </div>
+          return (
+            <Link
+              key={tab.title}
+              href={format("?%s", urlSearchParams.toString())}
+              className={clsx(
+                "shrink-0 flex items-center space-x-2 border-b-4 px-2",
+                selected ? "border-primary" : "border-b-transparent",
+              )}
+            >
+              {tab.value && (
+                <IcDex
+                  dex={tab.value}
+                  width={24}
+                  height={24}
+                  className="rounded-full"
+                />
+              )}
+              <span>{tab.title}</span>
+            </Link>
+          );
+        })}
+      </div>
+      <PoolTabSmall className="text-gray lt-sm:hidden lg:hidden" />
+    </>
   );
 }
 
@@ -103,7 +109,7 @@ export function PoolTabSmall(props: React.ComponentProps<typeof Menu>) {
                     className="rounded-full"
                   />
                 )}
-                <span>{tab.title}</span>
+                <span className="text-nowrap">{tab.title}</span>
                 {selected && <MdCheck />}
               </Link>
             </MenuItem>

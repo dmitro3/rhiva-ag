@@ -23,7 +23,10 @@ export default function Decimal<T extends React.ElementType>({
   ...props
 }: DecimalProps<T>) {
   const As = as || "span";
-  const intl = new Intl.NumberFormat("en-US", intlArgs);
+  const intl = new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 6,
+    ...intlArgs,
+  });
 
   const [wholeNumber, fractionalNumber] = value.toString().split(/\./g);
   if (minValue && Number(value) < minValue && Number(value) > 0)

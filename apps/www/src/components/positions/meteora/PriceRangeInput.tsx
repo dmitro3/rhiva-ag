@@ -26,14 +26,24 @@ export default function MeteoraPriceRangeInput({
   activeBin,
   ...props
 }: PriceRangeInputProps) {
-  const currentPrice = useMemo(() => parseFloat(activeBin.price), [activeBin]);
+  const currentPrice = useMemo(
+    () => parseFloat(activeBin.pricePerToken),
+    [activeBin],
+  );
 
   const priceToIndex = useCallback(
     (price: number) => DLMM.getBinIdFromPrice(price, pool.binStep, false),
     [pool],
   );
   const indexToPrice = useCallback(
-    (tick: number) => getPriceOfBinByBinId(tick, pool.binStep).toNumber(),
+    (tick: number) =>
+      parseFloat(
+        DLMM.getPricePerLamport(
+          pool.baseToken.decimals,
+          pool.quoteToken.decimals,
+          getPriceOfBinByBinId(tick, pool.binStep).toNumber(),
+        ),
+      ),
     [pool],
   );
 

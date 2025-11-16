@@ -69,6 +69,7 @@ export default function PortfolioTokenList({
                 <p className="text-base font-medium">{token.name}</p>
                 <div className="flex items-center space-x-2 lg:hidden">
                   <Decimal
+                    disableTruncate
                     value={token.usdPrice}
                     intlArgs={currencyIntlArgs}
                     className="text-gray text-sm"

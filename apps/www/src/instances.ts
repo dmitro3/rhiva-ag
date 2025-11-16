@@ -7,6 +7,12 @@ export const dexApi = new DexApi();
 export const solanaConnection = new Connection(
   process.env.NEXT_PUBLIC_SOLANA_RPC_URL!,
 );
+console.log(
+  process.env.NEXT_PUBLIC_HELIUS_API_URL!,
+  process.env.NEXT_PUBLIC_HELIUS_API_KEY!,
+  process.env.NEXT_PUBLIC_JITO_API_URL!,
+  process.env.NEXT_PUBLIC_JITO_UUID,
+);
 export const sendTransaction = new SendTransaction(
   process.env.NEXT_PUBLIC_HELIUS_API_URL!,
   process.env.NEXT_PUBLIC_HELIUS_API_KEY!,

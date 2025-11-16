@@ -11,6 +11,7 @@ import type {
 import {
   batchSimulateTransactions,
   isNative,
+  throwBundleSimulationError,
   type SendTransaction,
   type WalletAdapter,
 } from "@rhiva-ag/shared";
@@ -121,18 +122,18 @@ export const createPosition = async (
 
   const { transaction: createPositionV0Transaction } = await builder.buildV0();
 
-  const transactions = (
-    await Promise.all([
-      wallet.signTransaction(createPositionV0Transaction, signers),
-      wallet.signAllTransactions(swapV0Transactions),
-    ])
-  ).flat();
+  const transactions = await wallet.signAllTransactions(
+    [createPositionV0Transaction, ...swapV0Transactions],
+    signers,
+  );
 
   const bundleSimulationResponse = await sender.simulateBundle({
     transactions,
     skipSigVerify: true,
     replaceRecentBlockhash: true,
   });
+
+  throwBundleSimulationError(bundleSimulationResponse.result.value);
 
   return {
     transactions,
@@ -257,6 +258,8 @@ export const claimReward = async (
     replaceRecentBlockhash: true,
   });
 
+  throwBundleSimulationError(bundleSimulationResponse.result.value);
+
   return {
     transactions,
     swapV0Transactions,
@@ -377,18 +380,18 @@ export const closePosition = async (
     }
   }
 
-  const transactions = (
-    await Promise.all([
-      wallet.signTransaction(closePositionV0Transaction),
-      wallet.signAllTransactions(swapV0Transactions),
-    ])
-  ).flat();
+  const transactions = await wallet.signAllTransactions([
+    closePositionV0Transaction,
+    ...swapV0Transactions,
+  ]);
 
   const bundleSimulationResponse = await sender.simulateBundle({
     transactions,
     skipSigVerify: true,
     replaceRecentBlockhash: true,
   });
+
+  throwBundleSimulationError(bundleSimulationResponse.result.value);
 
   return {
     position,
@@ -504,6 +507,8 @@ export const rebalancePosition = async ({
     transactions,
     skipSigVerify: true,
   });
+
+  throwBundleSimulationError(bundleSimulationResponse.result.value);
 
   return {
     transactions,

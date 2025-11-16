@@ -16,6 +16,7 @@ import {
 import {
   batchSimulateTransactions,
   isNative,
+  throwBundleSimulationError,
   type SendTransaction,
   type WalletAdapter,
 } from "@rhiva-ag/shared";
@@ -119,6 +120,8 @@ export const createPosition = async (
     skipSigVerify: true,
     replaceRecentBlockhash: true,
   });
+
+  throwBundleSimulationError(bundleSimulationResponse.result.value);
 
   return {
     transactions,
@@ -225,6 +228,8 @@ export const claimReward = async (
     skipSigVerify: true,
     replaceRecentBlockhash: true,
   });
+
+  throwBundleSimulationError(bundleSimulationResponse.result.value);
 
   return {
     transactions,
@@ -333,18 +338,18 @@ export const closePosition = async (
     }
   }
 
-  const transactions = (
-    await Promise.all([
-      wallet.signAllTransactions(closePositionV0Transactions),
-      wallet.signAllTransactions(swapV0Transactions),
-    ])
-  ).flat();
+  const transactions = await wallet.signAllTransactions([
+    ...closePositionV0Transactions,
+    ...swapV0Transactions,
+  ]);
 
   const bundleSimulationResponse = await sender.simulateBundle({
     transactions,
     skipSigVerify: true,
     replaceRecentBlockhash: true,
   });
+
+  throwBundleSimulationError(bundleSimulationResponse.result.value);
 
   return {
     pool,
@@ -484,6 +489,8 @@ export const rebalancePosition = async ({
     transactions,
     skipSigVerify: true,
   });
+
+  throwBundleSimulationError(bundleSimulationResponse.result.value);
 
   return {
     positionMint,

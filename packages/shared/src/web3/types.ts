@@ -3,26 +3,29 @@ import type {
   TransactionError,
 } from "@solana/web3.js";
 
+type AccountConfig = {
+  addresses: string[];
+  encoding: "base64" | "binary" | "base58" | "jsonParsed" | "base64+zstd";
+};
+
 export type SimulateBundleRequest = {
   method: "simulateBundle";
-  params: {
-    simulationBank?: string;
-    skipSigVerify?: boolean;
-    replaceRecentBlockhash?: boolean;
-    accounts?: {
-      encoding: "base64";
-      addresses: string[];
-    };
-    preExecutionAccountsConfigs?: {
-      accountIndex?: number;
-      address: string[];
-    }[];
-    postExecutionAccountsConfigs?: {
-      accountIndex?: number;
-      address: string[];
-    }[];
-    encodedTransactions: string[];
-  }[];
+  params: [
+    {
+      encodedTransactions: string[];
+    },
+    {
+      simulationBank?: string;
+      skipSigVerify?: boolean;
+      replaceRecentBlockhash?: boolean;
+      accounts?: {
+        encoding: "base64";
+        addresses: string[];
+      };
+      preExecutionAccountsConfigs?: (AccountConfig | null)[];
+      postExecutionAccountsConfigs?: (AccountConfig | null)[];
+    },
+  ];
 };
 
 export type SimulateBundleResponse = {
@@ -45,6 +48,7 @@ export type SimulateBundleResponse = {
 type AccountState = {
   lamports: number;
   owner: string;
+  space: number;
   data: string;
   executable: boolean;
   rentEpoch: number;

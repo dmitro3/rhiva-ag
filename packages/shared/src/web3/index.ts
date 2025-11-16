@@ -84,7 +84,7 @@ export class SendTransaction {
     transactions,
     ...params
   }: { transactions: (VersionedTransaction | string)[] } & Omit<
-    SimulateBundleRequest["params"][number],
+    SimulateBundleRequest["params"][1],
     "encodedTransactions"
   >) => {
     return this.sendRPCRequest<
@@ -93,12 +93,20 @@ export class SendTransaction {
       method: "simulateBundle",
       params: [
         {
-          ...params,
           encodedTransactions: transactions.map((transaction) =>
             transaction instanceof VersionedTransaction
               ? transaction.serialize().toBase64()
               : transaction,
           ),
+        },
+        {
+          preExecutionAccountsConfigs: Array.from<null>({
+            length: transactions.length,
+          }).fill(null),
+          postExecutionAccountsConfigs: Array.from<null>({
+            length: transactions.length,
+          }).fill(null),
+          ...params,
         },
       ],
     }).then(({ data }) => data);

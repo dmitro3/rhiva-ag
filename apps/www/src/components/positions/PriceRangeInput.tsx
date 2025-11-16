@@ -162,7 +162,11 @@ export default function PriceRangeInput({
       {label && <p className="text-light-secondary">Price Range</p>}
       <div className="flex flex-col space-y-4 sm:space-y-8">
         <p className="text-xs text-white/75 text-center">
-          Current Price: <Decimal value={currentPrice} />
+          Current Price:{" "}
+          <Decimal
+            disableTruncate
+            value={currentPrice}
+          />
           &nbsp;
           {pool.quoteToken.symbol}/{pool.baseToken.symbol}
         </p>
@@ -268,7 +272,6 @@ export default function PriceRangeInput({
                     padding: 0,
                     font: { size: 12 },
                   },
-
                   stacked: true,
                 },
                 y: {

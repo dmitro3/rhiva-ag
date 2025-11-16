@@ -4,13 +4,13 @@ import {
   range,
   createProgram,
   binIdToBinArrayIndex,
-  type BinArray,
-  type BinLiquidity,
   getBinArrayLowerUpperBinId,
   enumerateBins,
   deriveBinArray,
   type Bin,
+  type BinArray,
   type ClmmProgram,
+  type BinLiquidity,
 } from "@meteora-ag/dlmm";
 
 export const getActiveBin = async (

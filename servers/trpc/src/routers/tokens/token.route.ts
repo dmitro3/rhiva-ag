@@ -81,7 +81,11 @@ export const tokenRoute = router({
       if ("transactions" in input) {
         bundleId = await ctx.sendTransaction
           .sendBundle(input.transactions)
-          .then(({ result }) => result);
+          .then(({ result }) => result)
+          .catch((error) => {
+            console.error(error);
+            return Promise.reject(error);
+          });
       } else {
         if (ctx.user.wallet.external)
           throw new TRPCError({
@@ -91,10 +95,15 @@ export const tokenRoute = router({
 
         const dex = new Dex(ctx.connection);
         const wallet = await loadWallet(ctx.user.wallet, ctx.secret);
-
+        const jitoTipLamports = Number(
+          ctx.sendTransaction.recentJitoTip("50ema"),
+        );
         const { quote, transaction } = await dex.swap.jupiter.buildSwap({
           ...input,
           owner: wallet.publicKey,
+          prioritizationFeeLamports: {
+            jitoTipLamports,
+          },
           amount:
             BigInt(input.amount) * BigInt(Math.pow(10, input.inputDecimals)),
         });
@@ -140,79 +149,87 @@ export const tokenRoute = router({
   send: privateProcedure
     .input(tokenSendSchema)
     .mutation(async ({ ctx, input }) => {
-      if (ctx.user.wallet.external)
-        throw new TRPCError({
-          code: "NOT_IMPLEMENTED",
-          message: "external wallet not supported",
-        });
+      if ("transactions" in input) {
+        const [transaction] = input.transactions as [string];
+        const v0Transaction = VersionedTransaction.deserialize(
+          Buffer.from(transaction, "base64"),
+        );
+        return await ctx.connection.sendTransaction(v0Transaction);
+      } else {
+        if (ctx.user.wallet.external)
+          throw new TRPCError({
+            code: "NOT_IMPLEMENTED",
+            message: "external wallet not supported",
+          });
 
-      const transferInstructions: TransactionInstruction[] = [];
-      const owner = new PublicKey(ctx.user.wallet.id);
-      const wallet = await loadWallet(ctx.user.wallet, ctx.secret);
+        const transferInstructions: TransactionInstruction[] = [];
+        const owner = new PublicKey(ctx.user.wallet.id);
+        const wallet = await loadWallet(ctx.user.wallet, ctx.secret);
 
-      if (isNative(input.inputMint))
-        transferInstructions.push(
-          SystemProgram.transfer({
-            fromPubkey: owner,
-            toPubkey: input.recipient,
-            lamports: input.inputAmount,
-          }),
-        );
-      else {
-        const fromAta = getAssociatedTokenAddressSync(
-          input.inputMint,
-          owner,
-          false,
-          input.inputTokenProgram,
-        );
-        const toAta = getAssociatedTokenAddressSync(
-          input.inputMint,
-          input.recipient,
-          false,
-          input.inputTokenProgram,
-        );
-        transferInstructions.push(
-          createAssociatedTokenAccountIdempotentInstruction(
-            owner,
-            toAta,
-            owner,
+        if (isNative(input.inputMint))
+          transferInstructions.push(
+            SystemProgram.transfer({
+              fromPubkey: owner,
+              toPubkey: input.recipient,
+              lamports: input.inputAmount,
+            }),
+          );
+        else {
+          const fromAta = getAssociatedTokenAddressSync(
             input.inputMint,
-            input.inputTokenProgram,
-          ),
-        );
-        transferInstructions.push(
-          createTransferCheckedInstruction(
-            fromAta,
-            input.inputMint,
-            toAta,
             owner,
-            input.inputAmount,
-            input.inputDecimals,
-            undefined,
+            false,
             input.inputTokenProgram,
-          ),
+          );
+          const toAta = getAssociatedTokenAddressSync(
+            input.inputMint,
+            input.recipient,
+            false,
+            input.inputTokenProgram,
+          );
+          transferInstructions.push(
+            createAssociatedTokenAccountIdempotentInstruction(
+              owner,
+              toAta,
+              owner,
+              input.inputMint,
+              input.inputTokenProgram,
+            ),
+          );
+          transferInstructions.push(
+            createTransferCheckedInstruction(
+              fromAta,
+              input.inputMint,
+              toAta,
+              owner,
+              input.inputAmount,
+              input.inputDecimals,
+              undefined,
+              input.inputTokenProgram,
+            ),
+          );
+        }
+        const { blockhash: recentBlockhash } =
+          await ctx.connection.getLatestBlockhash();
+        const v0Message = new TransactionMessage({
+          payerKey: owner,
+          recentBlockhash,
+          instructions: transferInstructions,
+        }).compileToV0Message();
+        const v0Transaction = new VersionedTransaction(v0Message);
+
+        const simulateResponse = await ctx.connection.simulateTransaction(
+          v0Transaction,
+          {
+            sigVerify: false,
+            replaceRecentBlockhash: true,
+          },
         );
+        if (simulateResponse.value.err) throw simulateResponse.value.err;
+
+        v0Transaction.sign([wallet]);
+
+        return ctx.connection.sendTransaction(v0Transaction);
       }
-      const { blockhash: recentBlockhash } =
-        await ctx.connection.getLatestBlockhash();
-      const v0Message = new TransactionMessage({
-        payerKey: owner,
-        recentBlockhash,
-        instructions: transferInstructions,
-      }).compileToV0Message();
-      const v0Transaction = new VersionedTransaction(v0Message);
-
-      const simulateResponse = await ctx.connection.simulateTransaction(
-        v0Transaction,
-        {
-          sigVerify: false,
-          replaceRecentBlockhash: true,
-        },
-      );
-      if (simulateResponse.value.err) throw simulateResponse.value.err;
-
-      v0Transaction.sign([wallet]);
-
-      return ctx.connection.sendTransaction(v0Transaction);
     }),
 });

@@ -33,7 +33,7 @@ import {
 export * from "./utils";
 export * from "./errors";
 export * from "./sign-message";
-export type { SimulateBundleResponse };
+export type { SimulateBundleResponse, JitoFeeConfig };
 
 export class SendTransaction {
   private readonly heliusURL: string;
@@ -237,7 +237,7 @@ export class SendTransaction {
 
     if (jitoConfig.type === "exact") jitoTipLamports = jitoConfig.amountLamport;
     else if (jitoConfig.type === "dynamic")
-      jitoTipLamports = await this.recentJitoTop(
+      jitoTipLamports = await this.recentJitoTip(
         jitoConfig.priorityFeePercentitle,
       );
     if (jitoTipLamports > BigInt(0)) {
@@ -281,7 +281,7 @@ export class SendTransaction {
 
     if (jitoConfig.type === "exact") jitoTipLamports = jitoConfig.amountLamport;
     else if (jitoConfig.type === "dynamic")
-      jitoTipLamports = await this.recentJitoTop(
+      jitoTipLamports = await this.recentJitoTip(
         jitoConfig.priorityFeePercentitle,
       );
     if (jitoTipLamports > BigInt(0))
@@ -292,7 +292,9 @@ export class SendTransaction {
       });
   }
 
-  recentJitoTop = async (priorityFeePercentitle: Percentile = "50") => {
+  readonly recentJitoTip = async (
+    priorityFeePercentitle: Percentile = "50",
+  ) => {
     const url = format(
       "%s%s",
       SendTransaction.blockEngineURL,

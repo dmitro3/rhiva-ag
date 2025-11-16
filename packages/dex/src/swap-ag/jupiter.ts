@@ -1,5 +1,5 @@
-import { mapFilter, throwSimulationError } from "@rhiva-ag/shared";
 import type { QuoteResponse, SwapApi } from "@jup-ag/api";
+import { mapFilter, throwSimulationError } from "@rhiva-ag/shared";
 import {
   AccountLayout,
   getAssociatedTokenAddressSync,
@@ -15,6 +15,9 @@ import { getTokenBalanceChangesFromSimulation } from "../utils";
 type SwapArgs = {
   owner: PublicKey;
   slippage: number;
+  prioritizationFeeLamports?: {
+    jitoTipLamports: number;
+  };
   amount: string | bigint;
   inputMint: PublicKey | string;
   outputMint: PublicKey | string;

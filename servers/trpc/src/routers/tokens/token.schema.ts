@@ -28,10 +28,13 @@ export const tokenSwapSchema = z.union([
   externalTransactionSchema,
 ]);
 
-export const tokenSendSchema = z.object({
-  inputMint: publicKey(),
-  recipient: publicKey(),
-  inputDecimals: z.number(),
-  inputTokenProgram: publicKey(),
-  inputAmount: z.union([z.number(), z.bigint()]),
-});
+export const tokenSendSchema = z.union([
+  z.object({
+    inputMint: publicKey(),
+    recipient: publicKey(),
+    inputDecimals: z.number(),
+    inputTokenProgram: publicKey(),
+    inputAmount: z.union([z.number(), z.bigint()]),
+  }),
+  externalTransactionSchema,
+]);

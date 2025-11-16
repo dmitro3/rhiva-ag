@@ -20,6 +20,7 @@ import {
 import TokenInput from "../TokenInput";
 import { useDex } from "@/hooks/useDex";
 import { useTRPC } from "@/trpc.client";
+import { sendTransaction } from "@/instances";
 import type { Token } from "./SelectTokenModal";
 import SelectTokenModal from "./SelectTokenModal";
 import { DefaultToken } from "@/constants/tokens";
@@ -100,10 +101,16 @@ function SwapForm({
       };
       let data: typeof swapValue | { transactions: string[] } = swapValue;
       if (user.wallet.external) {
+        const jitoTipLamports = Number(
+          await sendTransaction.recentJitoTip("50ema"),
+        );
         if (wallet.publicKey) {
           const { transaction } = await dex.swap.jupiter.buildSwap({
             ...swapValue,
             owner: wallet.publicKey,
+            prioritizationFeeLamports: {
+              jitoTipLamports,
+            },
             amount: BigInt(
               new Decimal(values.inputAmount)
                 .mul(Math.pow(10, values.inputToken.decimals))

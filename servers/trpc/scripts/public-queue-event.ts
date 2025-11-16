@@ -1,7 +1,6 @@
 import { Work } from "@rhiva-ag/cron";
 import { createDB, wallets } from "@rhiva-ag/datasource";
 
-import { sendTransaction } from "../src/instances";
 import { createQueue } from "../src/routers/positions/shared";
 import { getEnv } from "../src/env";
 import { eq } from "drizzle-orm";

@@ -41,5 +41,12 @@
       "binding": "NEXT_INC_CACHE_KV",
       "id": "ed3dd2bb09dd488eb7c7bda8abbea191"
     }
+  ],
+  "d1_databases": [
+    {
+      "binding": "rhiva_ag",
+      "database_name": "rhiva-ag",
+      "database_id": "2131405f-fa52-4e9d-86e4-1db2f1f72f40"
+    }
   ]
 }

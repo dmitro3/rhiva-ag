@@ -47,33 +47,31 @@ export default function ClosePositionTable({
   const totalItems = useMemo(() => (data?.total ? data.total : 0), [data]);
 
   const allPositions = useMemo(() => {
-    return data
-      ? mapFilter(data.items, (position) => {
-          const [pnl] = position.pnls;
-          if (pnl) {
-            const pnlPercentage = pnl.amountUsd
-              ? (pnl.pnlUsd / pnl.amountUsd) * 100
-              : 0;
-            const earnedPercentage = pnl.amountUsd
-              ? (pnl.claimedFeeUsd / pnl.amountUsd) * 100
-              : 0;
+    return mapFilter(data?.items ?? [], (position) => {
+      const [pnl] = position.pnls;
+      if (pnl) {
+        const pnlPercentage = pnl.amountUsd
+          ? (pnl.pnlUsd / pnl.amountUsd) * 100
+          : 0;
+        const earnedPercentage = pnl.amountUsd
+          ? (pnl.claimedFeeUsd / pnl.amountUsd) * 100
+          : 0;
 
-            return {
-              pnlPercentage,
-              earnedPercentage,
-              extra: position,
-              id: position.id,
-              pnl: pnl.pnlUsd,
-              value: pnl.amountUsd,
-              age: position.createdAt,
-              closed: position.updatedAt,
-              earned: pnl.claimedFeeUsd,
-              baseToken: position.pool.baseToken,
-              quoteToken: position.pool.quoteToken,
-            };
-          }
-        })
-      : [];
+        return {
+          pnlPercentage,
+          earnedPercentage,
+          extra: position,
+          id: position.id,
+          pnl: pnl.pnlUsd,
+          value: pnl.amountUsd,
+          age: position.createdAt,
+          closed: position.updatedAt,
+          earned: pnl.claimedFeeUsd,
+          baseToken: position.pool.baseToken,
+          quoteToken: position.pool.quoteToken,
+        };
+      }
+    });
   }, [data]);
 
   return (

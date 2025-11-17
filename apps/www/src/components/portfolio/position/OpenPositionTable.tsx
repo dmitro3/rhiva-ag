@@ -81,37 +81,35 @@ export default function OpenPositionTable({
 
   const totalItems = useMemo(() => (data?.total ? data.total : 0), [data]);
   const [allPositions, positionAggregrate] = useMemo(() => {
-    const positions = data
-      ? mapFilter(data.items, (position) => {
-          const [pnl] = position.pnls;
-          if (pnl) {
-            const pnlPercentage = pnl.amountUsd
-              ? (pnl.pnlUsd / pnl.amountUsd) * 100
-              : 0;
-            const unCollectedFeePercentage = pnl.amountUsd
-              ? (pnl.feeUsd / pnl.amountUsd) * 100
-              : 0;
-            const collectedFeePercentage = pnl.amountUsd
-              ? (pnl.claimedFeeUsd / pnl.amountUsd) * 100
-              : 0;
+    const positions = mapFilter(data?.items ?? [], (position) => {
+      const [pnl] = position.pnls;
+      if (pnl) {
+        const pnlPercentage = pnl.amountUsd
+          ? (pnl.pnlUsd / pnl.amountUsd) * 100
+          : 0;
+        const unCollectedFeePercentage = pnl.amountUsd
+          ? (pnl.feeUsd / pnl.amountUsd) * 100
+          : 0;
+        const collectedFeePercentage = pnl.amountUsd
+          ? (pnl.claimedFeeUsd / pnl.amountUsd) * 100
+          : 0;
 
-            return {
-              pnlPercentage,
-              collectedFeePercentage,
-              unCollectedFeePercentage,
-              extra: position,
-              id: position.id,
-              pnl: pnl.pnlUsd,
-              value: pnl.amountUsd,
-              age: position.createdAt,
-              unCollectedFee: pnl.feeUsd,
-              collectedFee: pnl.claimedFeeUsd,
-              baseToken: position.pool.baseToken,
-              quoteToken: position.pool.quoteToken,
-            };
-          }
-        })
-      : [];
+        return {
+          pnlPercentage,
+          collectedFeePercentage,
+          unCollectedFeePercentage,
+          extra: position,
+          id: position.id,
+          pnl: pnl.pnlUsd,
+          value: pnl.amountUsd,
+          age: position.createdAt,
+          unCollectedFee: pnl.feeUsd,
+          collectedFee: pnl.claimedFeeUsd,
+          baseToken: position.pool.baseToken,
+          quoteToken: position.pool.quoteToken,
+        };
+      }
+    });
 
     const aggregrations = positions.reduce(
       (acc, cur) => ({

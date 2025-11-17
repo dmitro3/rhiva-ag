@@ -83,7 +83,7 @@ export const tokenRoute = router({
           .sendBundle(input.transactions)
           .then(({ result }) => result)
           .catch((error) => {
-            console.error(error);
+            console.error(error.response.data);
             return Promise.reject(error);
           });
       } else {

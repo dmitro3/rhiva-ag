@@ -45,6 +45,7 @@ export class Jupiter {
     inputMint,
     outputMint,
     skipSimulation,
+    prioritizationFeeLamports,
   }: SwapArgs & { skipSimulation?: boolean }) {
     const inputMintPk = new PublicKey(inputMint);
     const outputMintPk = new PublicKey(outputMint);
@@ -64,6 +65,7 @@ export class Jupiter {
       swapRequest: {
         quoteResponse,
         dynamicSlippage: true,
+        prioritizationFeeLamports,
         dynamicComputeUnitLimit: true,
         userPublicKey: owner.toBase58(),
       },

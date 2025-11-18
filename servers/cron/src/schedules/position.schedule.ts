@@ -70,7 +70,15 @@ export default async function createSchedule({
   worker.on("failed", (job, error) => {
     console.error(error);
     logger.error(
-      { error, job: { id: job?.id, data: job?.data } },
+      {
+        error,
+        job: {
+          id: job?.id,
+          data: job?.data,
+          failedReason: job?.failedReason,
+          stack: job?.stacktrace,
+        },
+      },
       "worker.position.schedule.failed",
     );
   });

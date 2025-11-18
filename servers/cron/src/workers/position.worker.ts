@@ -58,10 +58,12 @@ export default async function createWorker({
               coingecko,
               data.wallet,
             );
+          default:
+            return;
         }
 
       logger.error(
-        { data, error: "Invalid job payload" },
+        { data, error: result.error.format() },
         "worker.position.sync.error",
       );
     },
@@ -78,7 +80,15 @@ export default async function createWorker({
   });
   worker.on("failed", (job, error) => {
     logger.error(
-      { error, job: { id: job?.id, data: job?.data } },
+      {
+        error,
+        job: {
+          id: job?.id,
+          data: job?.data,
+          failedReason: job?.failedReason,
+          stack: job?.stacktrace,
+        },
+      },
       "worker.position.sync.failed",
     );
   });

@@ -1,16 +1,18 @@
 import { db, logger } from "../instances";
+import createRetrySchedule from "./retry.schedule";
 import createPositionSyncScheduleWorker from "./position.schedule";
 
 (async () => {
-  const stopPositionSyncScheduleWorker = await createPositionSyncScheduleWorker(
-    {
+  const stopFns = await Promise.all([
+    createRetrySchedule({ logger }),
+    createPositionSyncScheduleWorker({
       db,
       logger,
-    },
-  );
+    }),
+  ]);
 
   const shutdown = async () => {
-    await stopPositionSyncScheduleWorker();
+    await Promise.all(stopFns.map((fn) => fn()));
     process.exit();
   };
 

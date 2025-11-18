@@ -57,7 +57,9 @@ export default function Swap({
 function SwapForm({
   tokens = [DefaultToken.Usdc, DefaultToken.Sol],
   ...props
-}: React.ComponentProps<typeof Form> & Pick<SwapModalProps, "tokens">) {
+}: React.ComponentProps<typeof Form> &
+  Pick<SwapModalProps, "tokens"> &
+  Partial<Pick<SwapModalProps, "onClose">>) {
   const dex = useDex();
   const trpc = useTRPC();
   const wallet = useWallet();
@@ -81,6 +83,8 @@ function SwapForm({
     [inputBalance],
   );
 
+  let refetch: ReturnType<typeof useBalances>["refetch"];
+
   const formikContext = useFormik({
     validationSchema,
     validateOnMount: true,
@@ -89,7 +93,7 @@ function SwapForm({
       outputToken: tokens?.[1],
       inputAmount: undefined as unknown as number,
     },
-    async onSubmit(values) {
+    async onSubmit(values, { resetForm }) {
       if (!isAuthenticated) await signIn();
       const swapValue = {
         amount: values.inputAmount,
@@ -132,12 +136,15 @@ function SwapForm({
         logEvent(analytics, "swap_transaction", { bundleId, ...swapValue });
 
       toast.success("🎉 Token swapped successfully.");
+      props.onClose?.(false);
+      resetForm();
+      refetch?.();
     },
   });
 
   const { values, setFieldValue, isValid, isSubmitting, errors } =
     formikContext;
-  useBalances({
+  const { refetch: _refetch } = useBalances({
     defaultValue: [values.inputToken.balance, values.outputToken.balance],
     mints: [
       { address: values.inputToken.mint, decimals: values.inputToken.decimals },
@@ -148,6 +155,8 @@ function SwapForm({
     ],
     callback: setBalances,
   });
+
+  refetch = _refetch;
 
   const { data: quote } = useQuery({
     refetchInterval: 60_000,

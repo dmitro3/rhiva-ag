@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { cpus } from "os";
+import pRetry from "p-retry";
 import { Worker } from "bullmq";
 import type { Logger } from "pino";
 import { Pipeline } from "@rhiva-ag/decoder";
@@ -183,7 +184,9 @@ export default async function createWorker({
             "positionNftMint" in data ? data.positionNftMint : undefined,
         });
 
-        const bundle = await sender.safeGetBundle(data.bundleId, 6);
+        const bundle = await pRetry(() =>
+          sender.safeGetBundle(data.bundleId, 30),
+        );
         const response = mapFilter(
           await connection.getParsedTransactions(bundle.transactions, {
             maxSupportedTransactionVersion: 0,
@@ -193,6 +196,11 @@ export default async function createWorker({
 
         return pipeline.process(...response);
       }
+
+      logger.error(
+        { data, error: result.error.format() },
+        "worker.position.sync.error",
+      );
     },
     {
       concurrency: cpus().length,
@@ -208,7 +216,15 @@ export default async function createWorker({
   });
   worker.on("failed", (job, error) => {
     logger.error(
-      { error, job: { id: job?.id, data: job?.data } },
+      {
+        error,
+        job: {
+          id: job?.id,
+          data: job?.data,
+          failedReason: job?.failedReason,
+          stack: job?.stacktrace,
+        },
+      },
       "worker.transaction.failed",
     );
   });

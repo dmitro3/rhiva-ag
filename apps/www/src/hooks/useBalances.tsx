@@ -22,7 +22,7 @@ export const useBalances = <T extends number[]>({
   const { connection } = useConnection();
   const { user, isAuthenticated } = useAuth();
 
-  const { data } = useQuery({
+  const { data, refetch } = useQuery({
     staleTime: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
@@ -62,5 +62,8 @@ export const useBalances = <T extends number[]>({
     if (data) callback?.(data as T);
   }, [data, callback]);
 
-  return data ?? defaultValue;
+  return {
+    refetch,
+    data: data ?? defaultValue,
+  };
 };

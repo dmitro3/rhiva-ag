@@ -1,4 +1,3 @@
-import Decimal from "decimal.js";
 import { mapFilter } from "@rhiva-ag/shared";
 import {
   isVersionedTransaction,
@@ -346,7 +345,7 @@ export class OrcaLegacyDLMM {
     );
     const decreaseQuote = decreaseLiquidityQuoteByLiquidity(
       positionData.liquidity,
-      Percentage.fromDecimal(new Decimal(slippage)),
+      Percentage.fromFraction(1, slippage),
       position,
       pool,
       tokenExtension,
@@ -354,7 +353,7 @@ export class OrcaLegacyDLMM {
 
     const closePositionTxBuilders = await pool.closePosition(
       position.getAddress(),
-      Percentage.fromDecimal(new Decimal(slippage)),
+      Percentage.fromFraction(1, slippage),
     );
 
     transactions.push(...claimTxs);

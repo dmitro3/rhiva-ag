@@ -75,8 +75,8 @@ export default async function createSchedule({
         job: {
           id: job?.id,
           data: job?.data,
+          stacktrace: job?.stacktrace,
           failedReason: job?.failedReason,
-          stack: job?.stacktrace,
         },
       },
       "worker.position.schedule.failed",

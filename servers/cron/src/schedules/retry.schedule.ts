@@ -36,15 +36,14 @@ export default async function createRetrySchedule({
   });
 
   worker.on("failed", (job, error) => {
-    console.error(error);
     logger.error(
       {
         error,
         job: {
           id: job?.id,
           data: job?.data,
+          stacktrace: job?.stacktrace,
           failedReason: job?.failedReason,
-          stack: job?.stacktrace,
         },
       },
       "worker.retry.failed",

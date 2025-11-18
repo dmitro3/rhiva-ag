@@ -152,9 +152,9 @@ export default function PriceRangeInput({
     const minBinId = Math.min(...binIds);
     const maxBinId = Math.max(...binIds);
     const binStep = maxBinId - minBinId;
-    setBinStep(Math.min(binStep, 128));
     setMaxPrice(maxPrice);
     setMinPrice(minPrice);
+    setBinStep(Math.min(binStep, 128));
   }, [pool, currentPrice, lowerPriceChange, upperPriceChange, priceToIndex]);
 
   return (

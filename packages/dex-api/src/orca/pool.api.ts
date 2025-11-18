@@ -130,7 +130,7 @@ export class PoolApi extends ApiImpl {
     return {
       name: [pool.tokenA.symbol, pool.tokenB.symbol].join("-"),
       address: pool.address,
-      binStep: pool.feeRate / 10_000,
+      binStep: pool.tickSpacing,
       maxFee: 10,
       baseReserveAmount:
         parseFloat(pool.tokenBalanceA) / Math.pow(10, pool.tokenA.decimals),

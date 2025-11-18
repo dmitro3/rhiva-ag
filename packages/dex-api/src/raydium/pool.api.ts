@@ -105,7 +105,7 @@ export class PoolApi extends ApiImpl {
       quoteReserveAmount: pool.mintAmountB,
       price: pool.price,
       apr: dailyYieldPct,
-      baseFee: pool.config.tradeFeeRate / 1e6,
+      baseFee: pool.config.tradeFeeRate / 10_000,
       tvl: parseFloat(pool.tvl),
       fees: pool.month.volumeFee,
       fees24H: pool.day.volumeFee,

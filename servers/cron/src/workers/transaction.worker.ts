@@ -221,8 +221,8 @@ export default async function createWorker({
         job: {
           id: job?.id,
           data: job?.data,
+          stacktrace: job?.stacktrace,
           failedReason: job?.failedReason,
-          stack: job?.stacktrace,
         },
       },
       "worker.transaction.failed",

@@ -10,13 +10,13 @@ import { compactCurrencyIntlArgs } from "@/constants/format";
 
 type TokenCardProps = {
   timestamp?: "5m" | "1h" | "6h" | "24h";
-  stat: "stats1h" | "stats24h" | "stats5m" | "stats6h";
+  stat?: "stats1h" | "stats24h" | "stats5m" | "stats6h";
   token: Awaited<ReturnType<DexApi["jup"]["token"]["list"]>>[number];
 };
 
 export default function TokenCard({
-  stat,
   token,
+  stat = "stats24h",
   timestamp = "24h",
 }: TokenCardProps) {
   return (

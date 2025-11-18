@@ -2,7 +2,7 @@ import Dex from "@rhiva-ag/dex";
 import { eq } from "drizzle-orm";
 import { Work } from "@rhiva-ag/cron";
 import { TRPCError } from "@trpc/server";
-import { loadWallet } from "@rhiva-ag/shared";
+import { fromKeyPairToWalletAdapter, loadWallet } from "@rhiva-ag/shared";
 import {
   mints,
   positions,
@@ -17,7 +17,7 @@ import {
   closePosition,
   createPosition,
   rebalancePosition,
-} from "./orca.controller";
+} from "./orca-legacy.controller";
 import {
   orcaClaimRewardSchema,
   orcaCreatePositionSchema,
@@ -52,7 +52,9 @@ export const orcaRoute = router({
           });
 
         const dex = new Dex(ctx.connection);
-        const owner = await loadWallet(ctx.user.wallet, ctx.secret);
+        const owner = fromKeyPairToWalletAdapter(
+          await loadWallet(ctx.user.wallet, ctx.secret),
+        );
         const { execute } = await createPosition(
           dex,
           ctx.sendTransaction,
@@ -94,7 +96,10 @@ export const orcaRoute = router({
           });
 
         const dex = new Dex(ctx.connection);
-        const owner = await loadWallet(ctx.user.wallet, ctx.secret);
+        const owner = fromKeyPairToWalletAdapter(
+          await loadWallet(ctx.user.wallet, ctx.secret),
+        );
+
         const { execute } = await claimReward(
           dex,
           ctx.sendTransaction,
@@ -126,7 +131,10 @@ export const orcaRoute = router({
           });
 
         const dex = new Dex(ctx.connection);
-        const owner = await loadWallet(ctx.user.wallet, ctx.secret);
+        const owner = fromKeyPairToWalletAdapter(
+          await loadWallet(ctx.user.wallet, ctx.secret),
+        );
+
         const { execute } = await closePosition(
           dex,
           ctx.sendTransaction,
@@ -180,10 +188,13 @@ export const orcaRoute = router({
               message: "external wallet not supported",
             });
           const dex = new Dex(ctx.connection);
-          const owner = await loadWallet(ctx.user.wallet, ctx.secret);
+          const wallet = fromKeyPairToWalletAdapter(
+            await loadWallet(ctx.user.wallet, ctx.secret),
+          );
+
           const { execute } = await rebalancePosition({
             dex,
-            owner,
+            wallet,
             position,
             sender: ctx.sendTransaction,
             settings: ctx.user.settings,

@@ -152,8 +152,8 @@ function OrcaOpenPositionForm({
 
       const createPositionValue = {
         ...values,
-        slippage: 50,
         pair: pool.address,
+        slippage: user.settings.slippage * 100,
         tokenADecimals: pool.baseToken.decimals,
         tokenBDecimals: pool.quoteToken.decimals,
       };

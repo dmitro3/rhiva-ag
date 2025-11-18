@@ -11,8 +11,8 @@ import type {
 } from "@solana/web3.js";
 import {
   toTx,
-  PDAUtil,
   WhirlpoolIx,
+  TickArrayUtil,
   TokenExtensionUtil,
   decreaseLiquidityQuoteByLiquidity,
   type Whirlpool,
@@ -71,40 +71,27 @@ export class OrcaLegacyDLMM {
     this.context.provider.wallet.publicKey = owner;
 
     if (args.strategyType === "Custom") {
-      const taPdas = [
-        PDAUtil.getTickArray(
-          this.context.program.programId,
-          pool.getAddress(),
-          lowerTick,
-        ),
-        PDAUtil.getTickArray(
-          this.context.program.programId,
-          pool.getAddress(),
-          upperTick,
-        ),
-      ];
+      const whirlpool = pool.getAddress();
 
-      const uninitalizedTickArrays = mapFilter(
-        await this.fetcher.getTickArrays(taPdas.map((pda) => pda.publicKey)),
-        (ta, index) => {
-          const pda = taPdas[index];
-          if (pda && !ta)
-            return {
-              pda,
-              startTickIndex: index === 0 ? lowerTick : upperTick,
-            };
-        },
-      );
+      const uninitializedTickArrays =
+        await TickArrayUtil.getUninitializedArraysPDAs(
+          [lowerTick, upperTick],
+          this.context.program.programId,
+          whirlpool,
+          pool.getData().tickSpacing,
+          this.fetcher,
+          {},
+        );
 
       transactions.push(
-        ...mapFilter(uninitalizedTickArrays, (ta) => {
+        ...mapFilter(uninitializedTickArrays, (ta) => {
           const txBuilder = toTx(
             this.context,
             WhirlpoolIx.initTickArrayIx(this.context.program, {
+              whirlpool,
               funder: owner,
               tickArrayPda: ta.pda,
-              whirlpool: pool.getAddress(),
-              startTick: ta.startTickIndex,
+              startTick: ta.startIndex,
             }),
           );
 
@@ -158,8 +145,6 @@ export class OrcaLegacyDLMM {
     const { pool, quote, owner, lowerTick, upperTick, appendInstructions } =
       args;
     this.context.provider.wallet.publicKey = owner;
-    const fetcher = this.client.getFetcher();
-    const context = this.client.getContext();
 
     const transactions: VersionedTransaction[] = [];
     const latestBlockhash = await this.context.connection.getLatestBlockhash();
@@ -172,44 +157,31 @@ export class OrcaLegacyDLMM {
       },
     } as const;
 
-    const taPdas = [
-      PDAUtil.getTickArray(
-        context.program.programId,
-        pool.getAddress(),
-        lowerTick,
-      ),
-      PDAUtil.getTickArray(
-        context.program.programId,
-        pool.getAddress(),
-        upperTick,
-      ),
-    ];
+    const whirlpool = pool.getAddress();
 
-    const uninitalizedTickArrays = mapFilter(
-      await fetcher.getTickArrays(taPdas.map((pda) => pda.publicKey)),
-      (ta, index) => {
-        const pda = taPdas[index];
-        if (pda && !ta)
-          return {
-            pda,
-            startTickIndex: index === 0 ? lowerTick : upperTick,
-          };
-      },
-    );
+    const uninitializedTickArrays =
+      await TickArrayUtil.getUninitializedArraysPDAs(
+        [lowerTick, upperTick],
+        this.context.program.programId,
+        whirlpool,
+        pool.getData().tickSpacing,
+        this.fetcher,
+        {},
+      );
 
     transactions.push(
-      ...mapFilter(uninitalizedTickArrays, (ta) => {
-        const { buildSync } = toTx(
+      ...mapFilter(uninitializedTickArrays, (ta) => {
+        const txBuilder = toTx(
           this.context,
           WhirlpoolIx.initTickArrayIx(this.context.program, {
+            whirlpool,
             funder: owner,
             tickArrayPda: ta.pda,
-            whirlpool: pool.getAddress(),
-            startTick: ta.startTickIndex,
+            startTick: ta.startIndex,
           }),
         );
 
-        const { transaction, signers } = buildSync(txConfig);
+        const { transaction, signers } = txBuilder.buildSync(txConfig);
         if (isVersionedTransaction(transaction)) {
           transaction.sign(signers);
           return transaction;

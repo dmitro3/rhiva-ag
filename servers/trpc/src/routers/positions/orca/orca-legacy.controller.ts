@@ -66,30 +66,24 @@ export const createPosition = async (
 
   let lowerTick: number, upperTick: number;
   if (args.strategyType === "Custom") {
-    const [lowerPriceChange, upperPriceChange] = args.priceChanges;
-
     const currentPrice = PriceMath.tickIndexToPrice(
       poolData.tickCurrentIndex,
       tokenAInfo.decimals,
       tokenBInfo.decimals,
     ).toNumber();
 
-    lowerTick = TickUtil.getInitializableTickIndex(
-      PriceMath.priceToTickIndex(
-        new Decimal(currentPrice + currentPrice * lowerPriceChange),
-        tokenAInfo.decimals,
-        tokenBInfo.decimals,
+    const ticks = args.priceChanges.map((priceChange) =>
+      TickUtil.getInitializableTickIndex(
+        PriceMath.priceToTickIndex(
+          new Decimal(currentPrice + currentPrice * priceChange),
+          tokenAInfo.decimals,
+          tokenBInfo.decimals,
+        ),
+        poolData.tickSpacing,
       ),
-      poolData.tickSpacing,
     );
-    upperTick = TickUtil.getInitializableTickIndex(
-      PriceMath.priceToTickIndex(
-        new Decimal(currentPrice + currentPrice * upperPriceChange),
-        tokenAInfo.decimals,
-        tokenBInfo.decimals,
-      ),
-      poolData.tickSpacing,
-    );
+    lowerTick = Math.min(...ticks);
+    upperTick = Math.max(...ticks);
   } else
     [lowerTick, upperTick] = TickUtil.getFullRangeTickIndex(
       poolData.tickSpacing,
@@ -155,6 +149,7 @@ export const createPosition = async (
     wallet.publicKey,
     jitoConfig,
   );
+
   const { transactions: createPositionV0Transactions, positionMint } =
     await dex.dlmm.orcaLegacy.buildCreatePosition({
       ...args,
@@ -168,8 +163,8 @@ export const createPosition = async (
     });
 
   const transactions = await wallet.signAllTransactions([
-    ...createPositionV0Transactions,
     ...swapV0Transactions,
+    ...createPositionV0Transactions,
   ]);
 
   const bundleSimulationResponse = await sender.simulateBundle({
@@ -177,7 +172,7 @@ export const createPosition = async (
     skipSigVerify: true,
     replaceRecentBlockhash: true,
   });
-
+  console.log(bundleSimulationResponse.result.value);
   throwBundleSimulationError(bundleSimulationResponse.result.value);
 
   return {

@@ -141,8 +141,8 @@ function RaydiumOpenPositionForm({
 
       const createPositionValue = {
         ...values,
-        slippage: 50,
         pair: pool.address,
+        slippage: user.settings.slippage * 100,
       };
       let data: typeof createPositionValue | { transactions: string[] } =
         createPositionValue;

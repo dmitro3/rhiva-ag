@@ -19,8 +19,8 @@ import {
 type CreatePositionArgs = {
   inputMint: string;
   slippage: number;
-  lowerTick: number;
-  upperTick: number;
+  tickLower: number;
+  tickUpper: number;
   quote: ReturnTypeGetLiquidityAmountOut;
   pool: Awaited<ReturnType<Raydium["clmm"]["getPoolInfoFromRpc"]>>;
 };
@@ -36,14 +36,12 @@ export class RaydiumCLMM {
     pool,
     inputMint,
     quote,
-    lowerTick,
-    upperTick,
+    tickUpper,
+    tickLower,
   }: CreatePositionArgs) => {
     assert(this.raydium, "initialize raydium class to use this method");
     const { poolInfo, poolKeys } = pool;
     const baseIn = inputMint === poolInfo.mintA.address;
-    const tickLower = Math.min(lowerTick, upperTick),
-      tickUpper = Math.max(lowerTick, upperTick);
 
     return this.raydium.clmm.openPositionFromBase({
       poolInfo,

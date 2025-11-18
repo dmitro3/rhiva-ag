@@ -61,13 +61,8 @@ export const createPosition = async (
     pair.toBase58(),
   );
   const { poolInfo } = pool;
-
-  const swapV0Transactions: VersionedTransaction[] = [];
-
-  const [lowerPriceChange, upperPriceChange] = priceChanges;
   const currentPrice = poolInfo.price;
-  const lowerPrice = currentPrice + currentPrice * lowerPriceChange;
-  const upperPrice = currentPrice + currentPrice * upperPriceChange;
+  const swapV0Transactions: VersionedTransaction[] = [];
 
   let addLiquidityAmount = BigInt(0);
   const addLiquidityMint = isNative(poolInfo.mintA.address)
@@ -77,17 +72,17 @@ export const createPosition = async (
       : poolInfo.mintA.address;
   const baseIn = poolInfo.mintA.address === addLiquidityMint;
 
-  const { tick: lowerTick } = TickUtils.getPriceAndTick({
-    baseIn,
-    poolInfo,
-    price: new Decimal(lowerPrice),
-  });
+  const ticks = priceChanges.map(
+    (priceChange) =>
+      TickUtils.getPriceAndTick({
+        baseIn,
+        poolInfo,
+        price: new Decimal(currentPrice + currentPrice * priceChange),
+      }).tick,
+  );
 
-  const { tick: upperTick } = TickUtils.getPriceAndTick({
-    baseIn,
-    poolInfo,
-    price: new Decimal(upperPrice),
-  });
+  const tickLower = Math.min(...ticks);
+  const tickUpper = Math.max(...ticks);
 
   let quote: ReturnTypeGetLiquidityAmountOut;
   const epochInfo = await dex.clmm.raydium.raydium.fetchEpochInfo();
@@ -114,11 +109,11 @@ export const createPosition = async (
 
     quote = await PoolUtils.getLiquidityAmountOutFromAmountIn({
       slippage,
-      add: true,
       epochInfo,
+      tickLower,
+      tickUpper,
+      add: false,
       amountHasFee: true,
-      tickLower: lowerTick,
-      tickUpper: upperTick,
       poolInfo: pool.poolInfo,
       amount: new BN(addLiquidityAmount),
       inputA: addLiquidityMint === poolInfo.mintA.address,
@@ -152,8 +147,8 @@ export const createPosition = async (
       quote,
       slippage,
       pool,
-      lowerTick,
-      upperTick,
+      tickUpper,
+      tickLower,
       inputMint: addLiquidityMint,
     });
 
@@ -167,11 +162,11 @@ export const createPosition = async (
 
   const { transaction: createPositionV0Transaction } = await builder.buildV0();
   createPositionV0Transaction.sign(signers);
+
   const transactions = await wallet.signAllTransactions([
     ...swapV0Transactions,
     createPositionV0Transaction,
   ]);
-
   const bundleSimulationResponse = await sender.simulateBundle({
     transactions,
     skipSigVerify: true,

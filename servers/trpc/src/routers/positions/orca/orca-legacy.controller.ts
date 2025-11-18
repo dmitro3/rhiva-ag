@@ -116,7 +116,7 @@ export const createPosition = async (
       new Decimal(addLiquidityAmount.toString()).div(Math.pow(10, decimals)),
       lowerTick,
       upperTick,
-      Percentage.fromFraction(1, slippage),
+      Percentage.fromDecimal(new Decimal(slippage)),
       pool,
       tokenExtension,
     );

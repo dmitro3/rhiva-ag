@@ -259,7 +259,7 @@ function RaydiumOpenPositionForm({
               {isSubmitting ? (
                 <div className="my-2 size-6 border-2 border-black border-t-transparent rounded-full animate-spin" />
               ) : (
-                <span className="my-2">Open Positon</span>
+                <span className="my-2">Open Position</span>
               )}
             </button>
           </div>

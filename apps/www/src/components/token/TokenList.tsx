@@ -14,24 +14,11 @@ type TokenListProps = {
   timestamp?: "5m" | "1h" | "6h" | "24h";
   tokens: Awaited<ReturnType<DexApi["jup"]["token"]["list"]>>;
 };
-export default function TokenList(props: TokenListProps) {
-  return (
-    <>
-      <div className="flex flex-wrap gap-4 lt-sm:hidden sm:grid sm:grid-cols-[repeat(auto-fit,minmax(320px,2fr))]">
-        {props.tokens.map((token) => (
-          <TokenCard
-            key={token.id}
-            token={token}
-            timestamp={props.timestamp}
-          />
-        ))}
-      </div>
-      <TokenListSmall {...props} />
-    </>
-  );
-}
-
-function TokenListSmall({ timestamp = "24h", tokens }: TokenListProps) {
+export default function TokenList({
+  tokens,
+  timestamp = "24h",
+  ...props
+}: TokenListProps) {
   const stats = useMemo(
     () =>
       ({
@@ -43,7 +30,45 @@ function TokenListSmall({ timestamp = "24h", tokens }: TokenListProps) {
     [],
   );
   const stat = useMemo(() => stats[timestamp], [stats, timestamp]);
+  const orderedTokens = useMemo(
+    () =>
+      tokens.sort((a, b) => {
+        const volumeA = a[stat].buyOrganicVolume + a[stat].sellOrganicVolume;
+        const volumeB = b[stat].buyOrganicVolume + b[stat].sellOrganicVolume;
+        return volumeB - volumeA;
+      }),
+    [tokens, stat],
+  );
 
+  return (
+    <>
+      <div className="flex flex-wrap gap-4 lt-sm:hidden sm:grid sm:grid-cols-[repeat(auto-fit,minmax(320px,2fr))]">
+        {orderedTokens.map((token) => (
+          <TokenCard
+            key={token.id}
+            token={token}
+            stat={stat}
+            timestamp={timestamp}
+          />
+        ))}
+      </div>
+      <TokenListSmall
+        {...props}
+        stat={stat}
+        tokens={orderedTokens}
+        timestamp={timestamp}
+      />
+    </>
+  );
+}
+
+function TokenListSmall({
+  stat,
+  tokens,
+  timestamp = "24h",
+}: TokenListProps & {
+  stat: "stats1h" | "stats24h" | "stats5m" | "stats6h";
+}) {
   return (
     <table className="sm:hidden">
       <thead>

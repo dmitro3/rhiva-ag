@@ -14,6 +14,7 @@ export default async function createRetrySchedule({
   });
 
   const retrySchedule = async () => {
+    logger.info("retry.schedule");
     const queues: Queue[] = [
       new Queue(Work.syncTransaction, { connection: createRedis() }),
     ];

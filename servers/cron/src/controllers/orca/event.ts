@@ -13,8 +13,9 @@ import {
 } from "@rhiva-ag/datasource";
 
 import { upsertPool } from "./shared";
-import { getPositionById } from "../shared";
+import { syncOrcaPositions } from "./sync";
 import { sendNotification } from "../send-notification";
+import { getPositionById, getPositionsWhere } from "../shared";
 import type { transactionWorkSchema } from "../../workers/transaction.worker";
 
 export const syncOrcaPositionStateFromEvent = async ({
@@ -92,7 +93,7 @@ export const syncOrcaPositionStateFromEvent = async ({
           },
         };
 
-        const [position] = await Promise.all([
+        const [[position]] = await Promise.all([
           db
             .insert(positions)
             .values(values)
@@ -127,8 +128,18 @@ export const syncOrcaPositionStateFromEvent = async ({
             },
           }),
         ]);
-
-        results.push(position);
+        if (position) {
+          results.push(position);
+          await syncOrcaPositions({
+            rpc,
+            coingecko,
+            db,
+            walletPositions: await getPositionsWhere(
+              db,
+              eq(positions.id, position.id),
+            ),
+          }).catch(() => null);
+        }
       }
     } else if (isClosed && event.name === "liquidityDecreased") {
       const data = event.data;

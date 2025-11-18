@@ -67,6 +67,11 @@ export const poolInsertSchema = createInsertSchema(pools);
 export const poolSelectSchema = createSelectSchema(pools, {
   baseToken: mintSelectSchema,
   quoteToken: mintSelectSchema,
+  rewardTokens: z.array(
+    z.object({
+      mint: mintSelectSchema,
+    }),
+  ),
 });
 
 export const positionInsertSchema = createInsertSchema(positions);

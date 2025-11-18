@@ -1,5 +1,54 @@
-import { eq } from "drizzle-orm";
-import { type Database, pools, positions } from "@rhiva-ag/datasource";
+import type z from "zod";
+import { eq, type SQL } from "drizzle-orm";
+import {
+  type Database,
+  pools,
+  type poolSelectSchema,
+  positions,
+} from "@rhiva-ag/datasource";
+
+export const getPositionsWhere = async (
+  db: Database,
+  where?: SQL,
+  _dex?: z.infer<typeof poolSelectSchema>["dex"],
+) => {
+  return db.query.positions.findMany({
+    columns: {
+      id: true,
+      pool: false,
+      config: true,
+      amountUsd: true,
+    },
+    with: {
+      pool: {
+        columns: {
+          baseToken: false,
+          quoteToken: false,
+          rewardTokens: false,
+        },
+        with: {
+          baseToken: true,
+          quoteToken: true,
+          rewardTokens: {
+            columns: {
+              mint: false,
+            },
+            with: {
+              mint: {
+                columns: {
+                  id: true,
+                  decimals: true,
+                  extensions: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    where,
+  });
+};
 
 export const getPoolById = async (
   db: Database,

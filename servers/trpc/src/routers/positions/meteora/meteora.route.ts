@@ -171,6 +171,11 @@ export const meteoraRoute = router({
             with: {
               baseToken: true,
               quoteToken: true,
+              rewardTokens: {
+                with: {
+                  mint: true,
+                },
+              },
             },
           },
         },

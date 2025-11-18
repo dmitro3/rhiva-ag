@@ -41,58 +41,56 @@ import {
   type GetTokenAccountsByOwnerApi,
   type ProgramDerivedAddress,
 } from "@solana/kit";
+import { getPositionsWhere } from "../shared";
 
-export const syncOrcaPositionsForWallet = async (
+export const syncOrcaPositionsForWallet = async ({
+  rpc,
+  db,
+  coingecko,
+  wallet,
+}: {
+  db: Database;
+  coingecko: Coingecko;
   rpc: Rpc<
     GetTokenAccountsByOwnerApi &
       GetMultipleAccountsApi &
       GetProgramAccountsApi &
       GetEpochInfoApi
-  >,
-  coingecko: Coingecko,
-  db: Database,
-  wallet: Pick<z.infer<typeof walletSchema>, "id">,
-) => {
-  const walletPositions = await db.query.positions.findMany({
-    columns: {
-      id: true,
-      pool: false,
-      config: true,
-      amountUsd: true,
-    },
-    with: {
-      pool: {
-        columns: {
-          baseToken: false,
-          quoteToken: false,
-          rewardTokens: false,
-        },
-        with: {
-          baseToken: true,
-          quoteToken: true,
-          rewardTokens: {
-            columns: {
-              mint: false,
-            },
-            with: {
-              mint: {
-                columns: {
-                  id: true,
-                  decimals: true,
-                  extensions: true,
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-    where: and(
+  >;
+  wallet: Pick<z.infer<typeof walletSchema>, "id">;
+}) => {
+  const walletPositions = await getPositionsWhere(
+    db,
+    and(
       eq(positions.wallet, wallet.id),
       not(inArray(positions.state, ["closed", "idle"])),
     ),
-  });
+  );
 
+  return syncOrcaPositions({
+    db,
+    rpc,
+    coingecko,
+    walletPositions,
+  });
+};
+
+export const syncOrcaPositions = async ({
+  rpc,
+  db,
+  coingecko,
+  walletPositions,
+}: {
+  db: Database;
+  coingecko: Coingecko;
+  walletPositions: Awaited<ReturnType<typeof getPositionsWhere>>;
+  rpc: Rpc<
+    GetTokenAccountsByOwnerApi &
+      GetMultipleAccountsApi &
+      GetProgramAccountsApi &
+      GetEpochInfoApi
+  >;
+}) => {
   const positionsMap = collectionToMap(
     walletPositions,
     (position) => position.id,

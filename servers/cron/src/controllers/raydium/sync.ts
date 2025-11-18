@@ -30,63 +30,64 @@ import {
   getPdaPersonalPositionAddress,
 } from "@raydium-io/raydium-sdk-v2";
 
-export const syncRaydiumPositionsForWallet = async (
-  db: Database,
-  connection: Connection,
-  coingecko: Coingecko,
-  wallet: Pick<z.infer<typeof walletSchema>, "id">,
-) => {
-  const raydium = await Raydium.load({
-    connection,
-    owner: new PublicKey(wallet.id),
-    disableLoadToken: true,
-    disableFeatureCheck: true,
-  });
-  const walletPositions = await db.query.positions.findMany({
-    columns: {
-      id: true,
-      pool: false,
-      config: true,
-      amountUsd: true,
-    },
-    with: {
-      pool: {
-        columns: {
-          baseToken: false,
-          quoteToken: false,
-          rewardTokens: false,
-        },
-        with: {
-          baseToken: true,
-          quoteToken: true,
-          rewardTokens: {
-            columns: {
-              mint: false,
-            },
-            with: {
-              mint: {
-                columns: {
-                  id: true,
-                  decimals: true,
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-    where: and(
-      eq(positions.wallet, wallet.id),
-      not(inArray(positions.state, ["closed", "idle"])),
-    ),
-  });
+import { getPositionsWhere } from "../shared";
 
+export const syncRaydiumPositionsForWallet = async ({
+  db,
+  coingecko,
+  connection,
+  wallet,
+}: {
+  db: Database;
+  connection: Connection;
+  coingecko: Coingecko;
+  wallet: Pick<z.infer<typeof walletSchema>, "id">;
+}) => {
+  const [raydium, walletPositions] = await Promise.all([
+    Raydium.load({
+      connection,
+      owner: new PublicKey(wallet.id),
+      disableLoadToken: true,
+      disableFeatureCheck: true,
+    }),
+    getPositionsWhere(
+      db,
+      and(
+        eq(positions.wallet, wallet.id),
+        not(inArray(positions.state, ["closed", "idle"])),
+      ),
+    ),
+  ]);
+
+  return syncRaydiumPositions({
+    db,
+    raydium,
+    coingecko,
+    connection,
+    walletPositions,
+  });
+};
+
+export const syncRaydiumPositions = async ({
+  db,
+  raydium,
+  coingecko,
+  connection,
+  walletPositions,
+}: {
+  db: Database;
+  raydium: Raydium;
+  coingecko: Coingecko;
+  connection: Connection;
+  walletPositions: Awaited<ReturnType<typeof getPositionsWhere>>;
+}) => {
   const positionsMap = collectionToMap(
     walletPositions,
     (position) => position.id,
   );
 
   if (walletPositions.length < 1) return;
+
   const clmmPositions = await chunkFetchMultipleAccounts(
     walletPositions.map(
       (position) =>

@@ -31,7 +31,6 @@ export default async function createSchedule({
     const wallets = await db.query.wallets.findMany({
       columns: {
         id: true,
-        key: true,
       },
     });
 

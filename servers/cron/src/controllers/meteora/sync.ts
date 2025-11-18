@@ -1,10 +1,10 @@
 import Decimal from "decimal.js";
 import type { z } from "zod/mini";
 import { and, eq, inArray, not } from "drizzle-orm";
+import { flatMapFilter, mapFilter } from "@rhiva-ag/shared";
 import { PublicKey, type Connection } from "@solana/web3.js";
 import type Coingecko from "@coingecko/coingecko-typescript";
 import DLMM, { getPriceOfBinByBinId } from "@meteora-ag/dlmm";
-import { collectionToMap, flatMapFilter } from "@rhiva-ag/shared";
 import {
   pnls,
   pools,
@@ -15,62 +15,73 @@ import {
 } from "@rhiva-ag/datasource";
 
 import { fromPricePerLamport } from "./shared";
+import { getPositionsWhere } from "../shared";
 
-export const syncMeteoraPositionsForWallet = async (
-  db: Database,
-  connection: Connection,
-  coingecko: Coingecko,
-  wallet: Pick<z.infer<typeof walletSchema>, "id">,
-) => {
-  const walletPositions = await db.query.positions.findMany({
-    columns: {
-      id: true,
-      pool: false,
-      config: true,
-      amountUsd: true,
-    },
-    with: {
-      pool: {
-        columns: {
-          baseToken: false,
-          quoteToken: false,
-          rewardTokens: false,
-        },
-        with: {
-          baseToken: true,
-          quoteToken: true,
-          rewardTokens: {
-            columns: {
-              mint: false,
-            },
-            with: {
-              mint: {
-                columns: {
-                  id: true,
-                  decimals: true,
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-    where: and(
+export const syncMeteoraPositionsForWallet = async ({
+  db,
+  coingecko,
+  connection,
+  wallet,
+}: {
+  db: Database;
+  connection: Connection;
+  coingecko: Coingecko;
+  wallet: Pick<z.infer<typeof walletSchema>, "id">;
+}) => {
+  const walletPositions = await getPositionsWhere(
+    db,
+    and(
       eq(positions.wallet, wallet.id),
       not(inArray(positions.state, ["closed", "idle"])),
     ),
-  });
-
-  const positionsMap = collectionToMap(
-    walletPositions,
-    (position) => position.id,
   );
+
+  return syncMeteoraPositions({
+    db,
+    coingecko,
+    connection,
+    walletPositions,
+  });
+};
+
+export const syncMeteoraPositions = async ({
+  db,
+  coingecko,
+  connection,
+  walletPositions,
+}: {
+  db: Database;
+  coingecko: Coingecko;
+  connection: Connection;
+  walletPositions: Awaited<ReturnType<typeof getPositionsWhere>>;
+}) => {
+  const positionsMap = new Map<
+    string,
+    Awaited<ReturnType<typeof getPositionsWhere>>[number]
+  >();
+  const positionPubkeys: PublicKey[] = [];
+
+  for (const position of walletPositions) {
+    positionsMap.set(position.id, position);
+    positionPubkeys.push(new PublicKey(position.id));
+  }
 
   if (walletPositions.length < 1) return;
 
-  const positionsV2 = await DLMM.getAllLbPairPositionsByUser(
+  const positionsV2 = await DLMM.processPositions(
     connection,
-    new PublicKey(wallet.id),
+    mapFilter(
+      await connection.getMultipleAccountsInfo(positionPubkeys),
+      (account, index) => {
+        const pubkey = positionPubkeys[index];
+        if (pubkey && account) {
+          return {
+            pubkey,
+            account,
+          };
+        }
+      },
+    ),
   );
 
   const mints = new Set();

@@ -169,6 +169,11 @@ export const raydiumRoute = router({
             with: {
               baseToken: true,
               quoteToken: true,
+              rewardTokens: {
+                with: {
+                  mint: true,
+                },
+              },
             },
           },
         },

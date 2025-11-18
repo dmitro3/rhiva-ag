@@ -16,7 +16,6 @@ import { syncMeteoraPositionsForWallet } from "../controllers/meteora";
 export const positionWorkSchema = z.object({
   wallet: z.object({
     id: z.string(),
-    key: z.string(),
   }),
   dex: z.enum(["meteora", "orca", "raydium-clmm"]),
 });
@@ -25,12 +24,12 @@ export default async function createWorker({
   db,
   logger,
   coingecko,
-  solanaConnection,
+  connection,
 }: {
-  coingecko: Coingecko;
   db: Database;
   logger: Logger;
-  solanaConnection: Connection;
+  coingecko: Coingecko;
+  connection: Connection;
 }) {
   const worker = new Worker(
     Work.syncPosition,
@@ -41,23 +40,28 @@ export default async function createWorker({
       if (result.success)
         switch (data.dex) {
           case "orca": {
-            const rpc = createSolanaRpc(solanaConnection.rpcEndpoint);
-            return syncOrcaPositionsForWallet(rpc, coingecko, db, data.wallet);
+            const rpc = createSolanaRpc(connection.rpcEndpoint);
+            return syncOrcaPositionsForWallet({
+              rpc,
+              db,
+              coingecko,
+              wallet: data.wallet,
+            });
           }
           case "meteora":
-            return syncMeteoraPositionsForWallet(
+            return syncMeteoraPositionsForWallet({
               db,
-              solanaConnection,
               coingecko,
-              data.wallet,
-            );
+              connection,
+              wallet: data.wallet,
+            });
           case "raydium-clmm":
-            return syncRaydiumPositionsForWallet(
+            return syncRaydiumPositionsForWallet({
               db,
-              solanaConnection,
               coingecko,
-              data.wallet,
-            );
+              connection,
+              wallet: data.wallet,
+            });
           default:
             return;
         }

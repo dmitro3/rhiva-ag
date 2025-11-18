@@ -13,8 +13,9 @@ import {
 } from "@rhiva-ag/datasource";
 
 import { upsertPool } from "./shared";
-import { getPositionById } from "../shared";
+import { syncMeteoraPositions } from "./sync";
 import { sendNotification } from "../send-notification";
+import { getPositionById, getPositionsWhere } from "../shared";
 import type { transactionWorkSchema } from "../../workers/transaction.worker";
 
 export const syncMeteoraPositionStateFromEvent = async ({
@@ -95,7 +96,7 @@ export const syncMeteoraPositionStateFromEvent = async ({
           },
         };
 
-        const [updatedPosition] = await Promise.all([
+        const [[updatedPosition]] = await Promise.all([
           db
             .insert(positions)
             .values(values)
@@ -131,7 +132,18 @@ export const syncMeteoraPositionStateFromEvent = async ({
           }),
         ]);
 
-        results.push(updatedPosition);
+        if (updatedPosition) {
+          results.push(updatedPosition);
+          await syncMeteoraPositions({
+            db,
+            connection,
+            coingecko,
+            walletPositions: await getPositionsWhere(
+              db,
+              eq(positions.id, updatedPosition.id),
+            ),
+          }).catch(() => null);
+        }
       }
     } else if (closedPosition && event.name === "removeLiquidity") {
       const data = event.data;

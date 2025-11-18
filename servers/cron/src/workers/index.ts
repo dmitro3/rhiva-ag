@@ -8,7 +8,7 @@ import { db, logger, sender, coingecko, solanaConnection } from "../instances";
       db,
       logger,
       coingecko,
-      solanaConnection,
+      connection: solanaConnection,
     }),
     createTransactionWorker({
       db,

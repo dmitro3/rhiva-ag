@@ -2,7 +2,7 @@ import type z from "zod";
 import moment from "moment";
 import Decimal from "decimal.js";
 import { eq } from "drizzle-orm";
-import type { Connection } from "@solana/web3.js";
+import { PublicKey, type Connection } from "@solana/web3.js";
 import type { ProgramEventType } from "@rhiva-ag/decoder";
 import type Coingecko from "@coingecko/coingecko-typescript";
 import type { AmmV3 } from "@rhiva-ag/decoder/programs/idls/types/raydium";
@@ -14,9 +14,11 @@ import {
 } from "@rhiva-ag/datasource";
 
 import { upsertPool } from "./shared";
-import { getPositionById } from "../shared";
+import { getPositionById, getPositionsWhere } from "../shared";
+import { syncRaydiumPositions } from "./sync";
 import { sendNotification } from "../send-notification";
 import type { transactionWorkSchema } from "../../workers/transaction.worker";
+import { Raydium } from "@raydium-io/raydium-sdk-v2";
 
 export const syncRaydiumPositionStateFromEvent = async ({
   db,
@@ -95,7 +97,7 @@ export const syncRaydiumPositionStateFromEvent = async ({
         };
         const isRebalanced = type === "rebalanced-position";
 
-        const [position] = await Promise.all([
+        const [[position]] = await Promise.all([
           db
             .insert(positions)
             .values(values)
@@ -136,7 +138,26 @@ export const syncRaydiumPositionStateFromEvent = async ({
           }),
         ]);
 
-        results.push(position);
+        if (position) {
+          results.push(position);
+          const raydium = await Raydium.load({
+            connection,
+            disableLoadToken: true,
+            disableFeatureCheck: true,
+            owner: new PublicKey(wallet.id),
+          }).catch(() => null);
+          if (raydium)
+            await syncRaydiumPositions({
+              db,
+              raydium,
+              connection,
+              coingecko,
+              walletPositions: await getPositionsWhere(
+                db,
+                eq(positions.id, position.id),
+              ),
+            }).catch(() => null);
+        }
       }
     } else if (isClosed && event.name === "decreaseLiquidityEvent") {
       const data = event.data;

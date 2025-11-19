@@ -1,7 +1,7 @@
 import moment from "moment";
 import type { Job } from "bullmq";
 import { Box, Text, useInput } from "ink";
-
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import Cell from "./Cell";
@@ -18,64 +18,77 @@ export type ExtendedJob = {
 } & Job;
 
 export default function JobList({ config }: JobListProps) {
+  const queryClient = useQueryClient();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [jobs, setJobs] = useState<ExtendedJob[]>([]);
   const [focused, setFocused] = useState<"left" | "right">("left");
   const [selectedJob, setSelectedJob] = useState<ExtendedJob | null>(null);
-  const [analytics, setAnalytics] = useState<{
-    completed: number;
-    failed: number;
-  } | null>(null);
 
-  const updateJob = useCallback((selectedJob: ExtendedJob) => {
-    setJobs((jobs) => {
-      return [
-        { ...selectedJob, status: "waiting" },
-        ...jobs.filter((job) => job.id !== selectedJob.id),
-      ] as ExtendedJob[];
-    });
-  }, []);
-  const removeJob = useCallback((selectedJob: ExtendedJob) => {
-    setJobs((jobs) => {
-      return jobs.filter((job) => job.id !== selectedJob.id);
-    });
-  }, []);
+  const queryKey = useMemo(() => ["bullmq"], []);
 
-  useEffect(() => {
-    Promise.all(
-      config.queues.map(async (queue) => {
-        return queue.getJobs().then((jobs) =>
-          Promise.all(
-            jobs.map(
-              async (job) =>
-                ({
-                  ...job,
-                  queueName: job.queueName ?? queue.name,
-                  status: await job.getState().catch(() => "undefined"),
-                }) as ExtendedJob,
-            ),
-          ),
-        );
-      }),
-    ).then((jobs) => setJobs(jobs.flat()));
+  const updateJob = useCallback(
+    (selectedJob: ExtendedJob) => {
+      queryClient.setQueryData<ExtendedJob[]>(queryKey, (jobs) => {
+        return jobs
+          ? ([
+              { ...selectedJob, status: "waiting" },
+              ...jobs.filter((job) => job.id !== selectedJob.id),
+            ] as ExtendedJob[])
+          : [selectedJob];
+      });
+    },
+    [queryKey, queryClient],
+  );
+  const removeJob = useCallback(
+    (selectedJob: ExtendedJob) => {
+      queryClient.setQueryData<ExtendedJob[]>(queryKey, (jobs) => {
+        return jobs?.filter((job) => job.id !== selectedJob.id);
+      });
+    },
+    [queryKey, queryClient],
+  );
 
-    Promise.all(
-      config.queues.map(async (queue) => ({
-        completed: await queue.getCompletedCount(),
-        failed: await queue.getFailedCount(),
-      })),
-    ).then((configs) =>
-      setAnalytics(
-        configs.reduce(
-          (acc, cur) => ({
-            completed: acc.completed + cur.completed,
-            failed: acc.failed + cur.failed,
+  const {
+    data: [jobs, analytics],
+  } = useQuery({
+    queryKey,
+    refetchInterval: 10_000,
+    initialData: [[], { completed: 0, failed: 0 }],
+    queryFn: async () => {
+      return Promise.all([
+        Promise.all(
+          config.queues.map(async (queue) => {
+            return queue.getJobs().then((jobs) =>
+              Promise.all(
+                jobs.map(
+                  async (job) =>
+                    ({
+                      ...job,
+                      queueName: job.queueName ?? queue.name,
+                      status: await job.getState().catch(() => "undefined"),
+                    }) as ExtendedJob,
+                ),
+              ),
+            );
           }),
-          { completed: 0, failed: 0 },
+        ).then((jobs) => jobs.flat()),
+
+        Promise.all(
+          config.queues.map(async (queue) => ({
+            completed: await queue.getCompletedCount(),
+            failed: await queue.getFailedCount(),
+          })),
+        ).then((configs) =>
+          configs.reduce(
+            (acc, cur) => ({
+              completed: acc.completed + cur.completed,
+              failed: acc.failed + cur.failed,
+            }),
+            { completed: 0, failed: 0 },
+          ),
         ),
-      ),
-    );
-  }, [config]);
+      ]);
+    },
+  });
 
   const getQueue = useCallback(
     (queueName: string) => {

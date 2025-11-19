@@ -1,11 +1,13 @@
 import { render as _render } from "ink";
 import { defaultTheme, extendTheme, ThemeProvider } from "@inkjs/ui";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import JobList from "./components/JobList";
 import type { Config } from "./utils/config";
 
 export type { Config } from "./utils/config";
 
+const queryClient = new QueryClient();
 const customTheme = extendTheme(defaultTheme, {
   components: {
     Spinner: {
@@ -32,7 +34,9 @@ const customTheme = extendTheme(defaultTheme, {
 
 export const render = (config: Config) =>
   _render(
-    <ThemeProvider theme={customTheme}>
-      <JobList config={config} />
-    </ThemeProvider>,
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider theme={customTheme}>
+        <JobList config={config} />
+      </ThemeProvider>
+    </QueryClientProvider>,
   );

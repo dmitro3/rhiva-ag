@@ -28,7 +28,7 @@ COPY bunfig.toml ./bunfig.toml
 COPY package.json ./package.json
 
 # Run turbo prune for docker build
-RUN bun x turbo prune @rhiva-ag/trpc @rhiva-ag/cron @rhiva-ag/mcp --docker
+RUN bun x turbo prune @rhiva-ag/trpc @rhiva-ag/cron @rhiva-ag/mcp @rhiva-ag/repl --docker
 
 FROM base as builder
 WORKDIR /usr/src/app

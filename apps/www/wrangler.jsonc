@@ -44,7 +44,7 @@
   ],
   "d1_databases": [
     {
-      "binding": "rhiva_ag",
+      "binding": "NEXT_TAG_CACHE_D1",
       "database_name": "rhiva-ag",
       "database_id": "2131405f-fa52-4e9d-86e4-1db2f1f72f40"
     }

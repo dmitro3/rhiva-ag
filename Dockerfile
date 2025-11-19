@@ -20,13 +20,14 @@ WORKDIR /usr/src/app
 
 # Copy source code
 COPY bin ./bin
-COPY packages ./packages
 COPY tools ./tools
 COPY servers ./servers
-COPY turbo.json ./turbo.json
+COPY packages ./packages
 COPY bun.lock ./bun.lock
+COPY turbo.json ./turbo.json
 COPY bunfig.toml ./bunfig.toml
 COPY package.json ./package.json
+COPY repl.config.ts ./repl.config.ts
 
 # Run turbo prune for docker build
 RUN bun x turbo prune @rhiva-ag/trpc @rhiva-ag/cron @rhiva-ag/mcp @rhiva-ag/repl --docker

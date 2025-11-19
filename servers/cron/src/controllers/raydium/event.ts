@@ -2,9 +2,10 @@ import type z from "zod";
 import moment from "moment";
 import Decimal from "decimal.js";
 import { eq } from "drizzle-orm";
-import { PublicKey, type Connection } from "@solana/web3.js";
+import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import type { ProgramEventType } from "@rhiva-ag/decoder";
 import type Coingecko from "@coingecko/coingecko-typescript";
+import { PublicKey, type Connection } from "@solana/web3.js";
 import type { AmmV3 } from "@rhiva-ag/decoder/programs/idls/types/raydium";
 import {
   type Database,
@@ -18,7 +19,6 @@ import { getPositionById, getPositionsWhere } from "../shared";
 import { syncRaydiumPositions } from "./sync";
 import { sendNotification } from "../send-notification";
 import type { transactionWorkSchema } from "../../workers/transaction.worker";
-import { Raydium } from "@raydium-io/raydium-sdk-v2";
 
 export const syncRaydiumPositionStateFromEvent = async ({
   db,
@@ -27,7 +27,7 @@ export const syncRaydiumPositionStateFromEvent = async ({
   type,
   events,
   wallet,
-  positionNftMint: positionId,
+  positionMint,
   extra: { signature },
 }: {
   db: Database;
@@ -35,7 +35,7 @@ export const syncRaydiumPositionStateFromEvent = async ({
   coingecko: Coingecko;
   extra: { signature: string };
   events: ProgramEventType<AmmV3>[];
-  positionNftMint: string | undefined;
+  positionMint: string | undefined;
   type?: z.infer<typeof transactionWorkSchema>["type"];
   wallet: Pick<z.infer<typeof walletSelectSchema>, "id" | "user">;
 }) => {
@@ -48,7 +48,7 @@ export const syncRaydiumPositionStateFromEvent = async ({
       const data = event.data;
       const pool = await upsertPool(db, connection, data.poolState.toBase58());
 
-      if (pool && positionId) {
+      if (pool && positionMint) {
         let amountUsd = 0;
         const rawAmountX = data.depositAmount0,
           rawAmountY = data.depositAmount1;
@@ -85,7 +85,7 @@ export const syncRaydiumPositionStateFromEvent = async ({
           state: "open",
           wallet: wallet.id,
           status: "successful",
-          id: positionId,
+          id: positionMint,
           config: {
             history: {
               openPrice: {
@@ -122,7 +122,7 @@ export const syncRaydiumPositionStateFromEvent = async ({
               text: isRebalanced ? "position.repositioned" : "position.created",
               params: {
                 signature,
-                position: positionId,
+                position: positionMint,
                 baseToken: {
                   amount: baseAmount,
                   price: baseTokenPrice,

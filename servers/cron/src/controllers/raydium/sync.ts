@@ -56,6 +56,7 @@ export const syncRaydiumPositionsForWallet = async ({
         eq(positions.wallet, wallet.id),
         not(inArray(positions.state, ["closed", "idle"])),
       ),
+      "raydium-clmm",
     ),
   ]);
 

@@ -1,5 +1,5 @@
 import type z from "zod";
-import { eq, type SQL } from "drizzle-orm";
+import { and, eq, inArray, type SQL } from "drizzle-orm";
 import {
   type Database,
   pools,
@@ -10,7 +10,7 @@ import {
 export const getPositionsWhere = async (
   db: Database,
   where?: SQL,
-  _dex?: z.infer<typeof poolSelectSchema>["dex"],
+  dex?: z.infer<typeof poolSelectSchema>["dex"],
 ) => {
   return db.query.positions.findMany({
     columns: {
@@ -46,7 +46,18 @@ export const getPositionsWhere = async (
         },
       },
     },
-    where,
+    where: and(
+      where,
+      dex
+        ? inArray(
+            positions.pool,
+            db
+              .select({ id: pools.id })
+              .from(pools)
+              .where(and(eq(pools.dex, dex), eq(pools.id, positions.pool))),
+          )
+        : undefined,
+    ),
   });
 };
 

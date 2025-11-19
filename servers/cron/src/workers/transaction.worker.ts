@@ -41,7 +41,11 @@ export const transactionWorkSchema = z
           dex: z.enum(["orca", "meteora"]),
         }),
         z.object({
-          positionNftMint: address().optional(),
+          dex: z.enum(["orca"]),
+          positionMint: address().optional(),
+        }),
+        z.object({
+          positionMint: address().optional(),
           dex: z.enum(["raydium-clmm"]),
         }),
       ])
@@ -69,13 +73,13 @@ export const createTransactionPipeline = ({
   wallet,
   coingecko,
   connection,
-  positionNftMint,
+  positionMint,
 }: {
   db: Database;
   coingecko: Coingecko;
   rpc: Rpc<SolanaRpcApi>;
   connection: Connection;
-  positionNftMint?: string;
+  positionMint?: string;
   type?: z.infer<typeof transactionWorkSchema>["type"];
   wallet: Pick<z.infer<typeof walletSelectSchema>, "id" | "user">;
 }) =>
@@ -100,7 +104,7 @@ export const createTransactionPipeline = ({
         wallet,
         coingecko,
         connection,
-        positionNftMint,
+        positionMint,
       }),
     ),
     new WhirlpoolProgramEventProcessor(connection).addConsumer(
@@ -113,6 +117,7 @@ export const createTransactionPipeline = ({
           events,
           extra,
           coingecko,
+          positionMint,
         }),
     ),
     new MeteoraProgramInstructionEventProcessor(connection).addConsumer(
@@ -136,7 +141,7 @@ export const createTransactionPipeline = ({
           wallet,
           coingecko,
           connection,
-          positionNftMint,
+          positionMint,
           events: instructions.map((instruction) => instruction.parsed),
         }),
     ),
@@ -149,6 +154,7 @@ export const createTransactionPipeline = ({
           extra,
           wallet,
           coingecko,
+          positionMint,
           events: instructions.map((instruction) => instruction.parsed),
         }),
     ),
@@ -179,9 +185,9 @@ export default async function createWorker({
           rpc,
           connection,
           coingecko,
+          type: data.type,
           wallet: data.wallet,
-          positionNftMint:
-            "positionNftMint" in data ? data.positionNftMint : undefined,
+          positionMint: "positionMint" in data ? data.positionMint : undefined,
         });
 
         const bundle = await pRetry(() =>

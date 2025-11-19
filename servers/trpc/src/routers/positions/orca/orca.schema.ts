@@ -28,7 +28,12 @@ const orcaInternalCreatePositionSchema = z
   );
 
 export const orcaCreatePositionSchema = z
-  .union([orcaInternalCreatePositionSchema, externalTransactionSchema])
+  .union([
+    orcaInternalCreatePositionSchema,
+    externalTransactionSchema.extend({
+      positionMint: address(),
+    }),
+  ])
   .and(
     z.object({
       jitoConfig: jitoTipConfigSchema.default({

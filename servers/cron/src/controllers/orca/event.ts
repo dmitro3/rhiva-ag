@@ -1,9 +1,11 @@
 import Decimal from "decimal.js";
 import { eq } from "drizzle-orm";
 import type { z } from "zod/mini";
+import { fromLegacyPublicKey } from "@solana/compat";
 import type { Rpc, SolanaRpcApi } from "@solana/kit";
 import type { ProgramEventType } from "@rhiva-ag/decoder";
 import type Coingecko from "@coingecko/coingecko-typescript";
+import { fetchPosition } from "@orca-so/whirlpools-sdk/whirlpools-client";
 import type { Whirlpool } from "@rhiva-ag/decoder/programs/idls/types/orca";
 import {
   rewards,
@@ -25,11 +27,13 @@ export const syncOrcaPositionStateFromEvent = async ({
   wallet,
   events,
   type,
+  positionMint,
   extra: { signature },
 }: {
   db: Database;
   rpc: Rpc<SolanaRpcApi>;
   coingecko: Coingecko;
+  positionMint?: string;
   extra: { signature: string };
   events: ProgramEventType<Whirlpool>[];
   type?: z.infer<typeof transactionWorkSchema>["type"];
@@ -41,7 +45,10 @@ export const syncOrcaPositionStateFromEvent = async ({
   for (const event of events) {
     if (event.name === "liquidityIncreased" && type === "create-position") {
       const data = event.data;
-      const positionId = data.position.toBase58();
+      const positionId = positionMint
+        ? positionMint
+        : (await fetchPosition(rpc, fromLegacyPublicKey(data.position))).data
+            .positionMint;
       const pool = await upsertPool(db, rpc, data.whirlpool.toBase58());
 
       if (pool) {
@@ -64,7 +71,7 @@ export const syncOrcaPositionStateFromEvent = async ({
             .div(Math.pow(10, pool.baseToken.decimals))
             .toNumber();
 
-          if (baseTokenPrice) amountUsd -= baseTokenPrice * baseAmount;
+          if (baseTokenPrice) amountUsd += baseTokenPrice * baseAmount;
         }
 
         if (rawAmountY) {
@@ -72,7 +79,7 @@ export const syncOrcaPositionStateFromEvent = async ({
             .div(Math.pow(10, pool.quoteToken.decimals))
             .toNumber();
 
-          if (quoteTokenPrice) amountUsd -= quoteTokenPrice * quoteAmount;
+          if (quoteTokenPrice) amountUsd += quoteTokenPrice * quoteAmount;
         }
 
         const values: typeof positions.$inferInsert = {
@@ -128,6 +135,7 @@ export const syncOrcaPositionStateFromEvent = async ({
             },
           }),
         ]);
+        console.log(position);
         if (position) {
           results.push(position);
           await syncOrcaPositions({
@@ -138,7 +146,10 @@ export const syncOrcaPositionStateFromEvent = async ({
               db,
               eq(positions.id, position.id),
             ),
-          }).catch(() => null);
+          }).catch((error) => {
+            console.error(error);
+            return null;
+          });
         }
       }
     } else if (isClosed && event.name === "liquidityDecreased") {

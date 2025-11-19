@@ -48,7 +48,6 @@ export class Pipeline<T> {
               return null;
             }),
           );
-        console.log(this.instructionPipes);
         if (this.instructionPipes) {
           promiseJoins.push(
             ...this.instructionPipes.map((pipe) => {

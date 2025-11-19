@@ -11,7 +11,7 @@ module.exports = {
       name: "trpc",
       exec_mode: "fork",
       increment_var: "PORT",
-      script: "trpc/dist/index.cjs",
+      script: "trpc/src/index.ts",
       env: {
         PORT: 8000,
         APP_PORT: 8000,
@@ -23,7 +23,7 @@ module.exports = {
       name: "mcp",
       exec_mode: "fork",
       increment_var: "PORT",
-      script: "mcp/dist/index.cjs",
+      script: "mcp/src/index.ts",
       env: {
         PORT: 8001,
         APP_PORT: 8001,
@@ -34,14 +34,14 @@ module.exports = {
       instances: 1,
       name: "schedules",
       exec_mode: "fork",
-      script: "cron/dist/schedules/index.cjs",
+      script: "cron/src/schedules/index.ts",
     },
     {
       interpreter,
       instances: 2,
       name: "workers",
       exec_mode: "fork",
-      script: "cron/dist/workers/index.cjs",
+      script: "cron/src/workers/index.ts",
     },
   ],
 };

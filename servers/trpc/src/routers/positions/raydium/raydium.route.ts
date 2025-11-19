@@ -74,7 +74,7 @@ export const raydiumRoute = router({
           dex: "raydium-clmm",
           type: "create-position",
           wallet: ctx.user.wallet,
-          positionNftMint: fromLegacyPublicKey(positionNftMint),
+          positionMint: fromLegacyPublicKey(positionNftMint),
         },
         { jobId: bundleId },
       );

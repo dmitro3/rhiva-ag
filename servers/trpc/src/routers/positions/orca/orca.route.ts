@@ -23,6 +23,8 @@ import {
   orcaCreatePositionSchema,
   orcaClosePositionSchema,
 } from "./orca.schema";
+import { fromLegacyPublicKey } from "@solana/compat";
+import type { Address } from "@solana/kit";
 
 const queue = createQueue();
 
@@ -39,8 +41,9 @@ export const orcaRoute = router({
             set: buildConflictUpdateColumns(mints, ["name", "symbol", "image"]),
           });
 
-      let bundleId: string;
+      let bundleId: string, positionMint: Address;
       if ("transactions" in input) {
+        positionMint = input.positionMint;
         bundleId = await ctx.sendTransaction
           .sendBundle(input.transactions)
           .then(({ result }) => result);
@@ -55,7 +58,7 @@ export const orcaRoute = router({
         const owner = fromKeyPairToWalletAdapter(
           await loadWallet(ctx.user.wallet, ctx.secret),
         );
-        const { execute } = await createPosition(
+        const { execute, positionMint: _positionMint } = await createPosition(
           dex,
           ctx.sendTransaction,
           owner,
@@ -63,6 +66,7 @@ export const orcaRoute = router({
         );
 
         bundleId = await execute();
+        positionMint = fromLegacyPublicKey(_positionMint);
       }
       const response = await queue.add(
         Work.syncTransaction,
@@ -71,6 +75,7 @@ export const orcaRoute = router({
           dex: "orca",
           type: "create-position",
           wallet: ctx.user.wallet,
+          positionMint: positionMint,
         },
         { jobId: bundleId },
       );

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
+    "bullmq-repl": "bun ./bullmq.config.ts",
     "prepare": "if [ \"$NODE_ENV\" != \"production\" ]; then husky; fi",
     "lint": "bun x biome format --write && bun x biome lint --fix && biome check ."
   },
@@ -19,6 +20,8 @@
     "@orca-so/whirlpools-sdk"
   ],
   "devDependencies": {
+    "@rhiva-ag/repl": "*",
+    "@rhiva-ag/datasource": "*",
     "@biomejs/biome": "2.2.4",
     "@tsconfig/recommended": "^1.0.10",
     "@types/bun": "^1.3.1",
@@ -36,7 +39,8 @@
     "packages/*",
     "ui/*",
     "servers/*",
-    "apps/*"
+    "apps/*",
+    "tools/*"
   ],
   "module": "index.ts",
   "type": "module"

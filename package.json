@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
-    "bullmq-repl": "bun ./bullmq.config.ts",
+    "repl": "bun ./repl.config.ts",
     "prepare": "if [ \"$NODE_ENV\" != \"production\" ]; then husky; fi",
     "lint": "bun x biome format --write && bun x biome lint --fix && biome check ."
   },

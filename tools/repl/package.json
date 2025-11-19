@@ -11,10 +11,8 @@
   "dependencies": {
     "@inkjs/ui": "^2.0.0",
     "bullmq": "^5.63.2",
-    "color": "^5.0.3",
     "fs": "^0.0.1-security",
     "ink": "^6.5.1",
-    "ink-table": "^3.1.0",
     "moment": "^2.30.1"
   }
 }

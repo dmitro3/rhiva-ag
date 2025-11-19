@@ -2,6 +2,8 @@ import Dex from "@rhiva-ag/dex";
 import { eq } from "drizzle-orm";
 import { Work } from "@rhiva-ag/cron";
 import { TRPCError } from "@trpc/server";
+import type { Address } from "@solana/kit";
+import { fromLegacyPublicKey } from "@solana/compat";
 import { fromKeyPairToWalletAdapter, loadWallet } from "@rhiva-ag/shared";
 import {
   mints,
@@ -23,8 +25,6 @@ import {
   orcaCreatePositionSchema,
   orcaClosePositionSchema,
 } from "./orca.schema";
-import { fromLegacyPublicKey } from "@solana/compat";
-import type { Address } from "@solana/kit";
 
 const queue = createQueue();
 

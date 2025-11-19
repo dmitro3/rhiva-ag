@@ -176,7 +176,7 @@ export default async function createWorker({
   const rpc = createSolanaRpc(connection.rpcEndpoint);
   const worker = new Worker<z.infer<typeof transactionWorkSchema>>(
     Work.syncTransaction,
-    async ({ data }) => {
+    async ({ data, log }) => {
       const result = transactionWorkSchema.safeParse(data);
 
       if (result.success) {
@@ -193,14 +193,17 @@ export default async function createWorker({
         const bundle = await pRetry(() =>
           sender.safeGetBundle(data.bundleId, 30),
         );
+        log(JSON.stringify(bundle));
         const response = mapFilter(
           await connection.getParsedTransactions(bundle.transactions, {
             maxSupportedTransactionVersion: 0,
           }),
           (transaction) => transaction,
         );
-
-        return pipeline.process(...response);
+        log(JSON.stringify(response));
+        const result = pipeline.process(...response);
+        log(JSON.stringify(result));
+        return result;
       }
 
       logger.error(

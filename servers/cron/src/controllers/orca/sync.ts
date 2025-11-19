@@ -104,8 +104,6 @@ export const syncOrcaPositions = async ({
       positionMintFilter(address(position.id)),
     ),
   );
-  console.log(whirlpoolPositions);
-
   const whirlpoolIds = new Set(
     whirlpoolPositions.map((position) => position.data.whirlpool),
   );

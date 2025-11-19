@@ -121,8 +121,6 @@ export const createPosition = async (
       tokenExtension,
     );
 
-    // tokenB -> nativeMint
-    // nativeMint -> tokenB
     const quoteResponse = await dex.swap.jupiter.jupiter.quoteGet({
       outputMint: NATIVE_MINT.toBase58(),
       inputMint: (baseIn
@@ -172,7 +170,7 @@ export const createPosition = async (
     skipSigVerify: true,
     replaceRecentBlockhash: true,
   });
-  console.log(bundleSimulationResponse.result.value);
+
   throwBundleSimulationError(bundleSimulationResponse.result.value);
 
   return {

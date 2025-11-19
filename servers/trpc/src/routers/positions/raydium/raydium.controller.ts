@@ -119,8 +119,6 @@ export const createPosition = async (
       inputA: addLiquidityMint === poolInfo.mintA.address,
     });
 
-    // tokenB -> nativeMint
-    // nativeMint -> tokenB
     const quoteResponse = await dex.swap.jupiter.jupiter.quoteGet({
       outputMint: NATIVE_MINT.toBase58(),
       inputMint: baseIn ? poolInfo.mintB.address : poolInfo.mintA.address,

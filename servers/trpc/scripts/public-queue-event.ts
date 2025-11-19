@@ -13,7 +13,7 @@ const db = createDB(getEnv("DATABASE_URL"));
   // const bundleId =
   //   "26177f51e4def67b0aaddde6369e7711e3bb74d7038ba491a92d1d53ac10ac09"; // meteora
   const bundleId =
-    "1ef4b7ff43983462b10f9dbbb262fab829a2d05982af7172b265db5856b2981f";
+    "fb25bb97835019d039f2450a7649c5b5865d30cccce2750701014a7d5115bc88";
   const job = await queue.getJob(bundleId);
   console.log("job", job);
 

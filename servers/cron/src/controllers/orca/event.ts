@@ -135,7 +135,6 @@ export const syncOrcaPositionStateFromEvent = async ({
             },
           }),
         ]);
-        console.log(position);
         if (position) {
           results.push(position);
           await syncOrcaPositions({

@@ -137,6 +137,7 @@ function RaydiumOpenPositionForm({
       ],
     },
     onSubmit: async (values) => {
+      console.log(isAuthenticated);
       if (!isAuthenticated) await signIn();
 
       const createPositionValue = {
@@ -144,12 +145,13 @@ function RaydiumOpenPositionForm({
         pair: pool.address,
         slippage: user.settings.slippage * 100,
       };
-      let data: typeof createPositionValue | { transactions: string[] } =
+      let data:
+        | typeof createPositionValue
+        | { transactions: string[]; positionNftMint: string } =
         createPositionValue;
-
       if (user.wallet.external) {
         if (wallet.publicKey) {
-          const { transactions } = await createRaydiumPosition(
+          const { transactions, positionNftMint } = await createRaydiumPosition(
             dex,
             sendTransaction,
             fromWebWalletAdapter(wallet),
@@ -162,6 +164,7 @@ function RaydiumOpenPositionForm({
           );
 
           data = {
+            positionNftMint: positionNftMint.toBase58(),
             transactions: transactions.map((transaction) =>
               transaction.serialize().toBase64(),
             ),

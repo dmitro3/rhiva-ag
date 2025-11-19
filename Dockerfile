@@ -21,6 +21,7 @@ WORKDIR /usr/src/app
 # Copy source code
 COPY bin ./bin
 COPY packages ./packages
+COPY packages ./tools
 COPY servers ./servers
 COPY turbo.json ./turbo.json
 COPY bun.lock ./bun.lock

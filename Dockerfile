@@ -36,8 +36,8 @@ FROM base as builder
 WORKDIR /usr/src/app
 
 COPY --from=codegen /usr/src/app/bin ./bin
-COPY --from=codegen repl.config.ts ./repl.config.ts
 COPY --from=codegen /usr/src/app/bunfig.toml .
+COPY --from=codegen /usr/src/app/repl.config.ts ./repl.config.ts
 
 COPY --from=codegen /usr/src/app/out/full .
 RUN --mount=type=cache,target=/root/.bun/cache\

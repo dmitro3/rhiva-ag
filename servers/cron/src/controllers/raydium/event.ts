@@ -15,9 +15,9 @@ import {
 } from "@rhiva-ag/datasource";
 
 import { upsertPool } from "./shared";
-import { getPositionById, getPositionsWhere } from "../shared";
 import { syncRaydiumPositions } from "./sync";
 import { sendNotification } from "../send-notification";
+import { getPositionById, getPositionsWhere } from "../shared";
 import type { transactionWorkSchema } from "../../workers/transaction.worker";
 
 export const syncRaydiumPositionStateFromEvent = async ({
@@ -97,66 +97,71 @@ export const syncRaydiumPositionStateFromEvent = async ({
         };
         const isRebalanced = type === "rebalanced-position";
 
-        const [[position]] = await Promise.all([
-          db
-            .insert(positions)
-            .values(values)
-            .onConflictDoNothing({
-              target: [positions.id],
-            })
-            .returning(),
-          db.insert(rewards).values({
-            user: wallet.user,
-            key: "swap",
-            xp: Math.floor(amountUsd),
-          }),
-          sendNotification(db, {
-            user: wallet.user,
-            type: "transactions",
-            title: {
-              external: true,
-              text: isRebalanced ? "position.repositioned" : "position.created",
-            },
-            detail: {
-              external: true,
-              text: isRebalanced ? "position.repositioned" : "position.created",
-              params: {
-                signature,
-                position: positionMint,
-                baseToken: {
-                  amount: baseAmount,
-                  price: baseTokenPrice,
-                  symbol: pool.baseToken.symbol,
-                },
-                quoteToken: {
-                  amount: quoteAmount,
-                  price: quoteTokenPrice,
-                  symbol: pool.quoteToken.symbol,
-                },
-              },
-            },
-          }),
-        ]);
+        const [position] = await db
+          .insert(positions)
+          .values(values)
+          .onConflictDoNothing({
+            target: [positions.id],
+          })
+          .returning();
 
         if (position) {
           results.push(position);
-          const raydium = await Raydium.load({
-            connection,
-            disableLoadToken: true,
-            disableFeatureCheck: true,
-            owner: new PublicKey(wallet.id),
-          }).catch(() => null);
-          if (raydium)
-            await syncRaydiumPositions({
-              db,
-              raydium,
-              connection,
-              coingecko,
-              walletPositions: await getPositionsWhere(
+          await Promise.allSettled([
+            db.insert(rewards).values({
+              user: wallet.user,
+              key: "swap",
+              xp: Math.floor(amountUsd),
+            }),
+            sendNotification(db, {
+              user: wallet.user,
+              type: "transactions",
+              title: {
+                external: true,
+                text: isRebalanced
+                  ? "position.repositioned"
+                  : "position.created",
+              },
+              detail: {
+                external: true,
+                text: isRebalanced
+                  ? "position.repositioned"
+                  : "position.created",
+                params: {
+                  signature,
+                  position: positionMint,
+                  baseToken: {
+                    amount: baseAmount,
+                    price: baseTokenPrice,
+                    symbol: pool.baseToken.symbol,
+                  },
+                  quoteToken: {
+                    amount: quoteAmount,
+                    price: quoteTokenPrice,
+                    symbol: pool.quoteToken.symbol,
+                  },
+                },
+              },
+            }),
+            async () => {
+              const raydium = await Raydium.load({
+                connection,
+                disableLoadToken: true,
+                disableFeatureCheck: true,
+                owner: new PublicKey(wallet.id),
+              });
+              await syncRaydiumPositions({
                 db,
-                eq(positions.id, position.id),
-              ),
-            }).catch(() => null);
+                raydium,
+                connection,
+                coingecko,
+                walletPositions: await getPositionsWhere(
+                  db,
+                  eq(positions.id, position.id),
+                ),
+              });
+            },
+          ]);
         }
       }
     } else if (isClosed && event.name === "decreaseLiquidityEvent") {

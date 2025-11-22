@@ -11,11 +11,11 @@ const db = createDB(getEnv("DATABASE_URL"));
 
 (async () => {
   // const bundleId =
-  //   "26177f51e4def67b0aaddde6369e7711e3bb74d7038ba491a92d1d53ac10ac09"; // meteora
+  //   "4567e7264fadc3ae42faecc5e6e1b72a2d64d8be9f882f5ae3ce50c9bad29880"; // meteora
   const bundleId =
-    "fb25bb97835019d039f2450a7649c5b5865d30cccce2750701014a7d5115bc88";
+    "3997c11924bca860027febffc7f33ecb9ada246ea936aa355756331c436b0c59"; // orca
   const job = await queue.getJob(bundleId);
-  console.log("job", job);
+  console.log("job", job?.returnvalue);
 
   if (job?.isFailed) await queue.remove(bundleId);
 
@@ -37,7 +37,7 @@ const db = createDB(getEnv("DATABASE_URL"));
           user: wallet.user.id,
           id: wallet.id,
         },
-        positionMint: address("AchUZ3FXRdeMBSouoqTj8bgL2C7UMNdYvBSNNUYwS8ww"),
+        positionMint: address("6KsViydbpqmnfaZd1zsn7QG3AWyiN7CcAQ6f2TPCrjko"),
       },
       {
         jobId: bundleId,
@@ -45,13 +45,6 @@ const db = createDB(getEnv("DATABASE_URL"));
       },
     );
     console.log(response.data);
-    console.log(
-      (
-        await queue.getJob(
-          "26177f51e4def67b0aaddde6369e7711e3bb74d7038ba491a92d1d53ac10ac09",
-        )
-      )?.failedReason,
-      { depth: null },
-    );
+    console.log((await queue.getJob(bundleId))?.failedReason, { depth: null });
   }
 })();

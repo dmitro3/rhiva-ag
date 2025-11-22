@@ -71,7 +71,6 @@ export default function JobList({ config }: JobListProps) {
             );
           }),
         ).then((jobs) => jobs.flat()),
-
         Promise.all(
           config.queues.map(async (queue) => ({
             completed: await queue.getCompletedCount(),
@@ -164,6 +163,7 @@ export default function JobList({ config }: JobListProps) {
     <Box
       flexDirection="column"
       rowGap={0.4}
+      justifyContent="center"
     >
       {analytics && (
         <Box

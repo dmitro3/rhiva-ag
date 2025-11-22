@@ -1,11 +1,9 @@
 import Decimal from "decimal.js";
 import { eq } from "drizzle-orm";
 import type { z } from "zod/mini";
-import { fromLegacyPublicKey } from "@solana/compat";
 import type { Rpc, SolanaRpcApi } from "@solana/kit";
 import type { ProgramEventType } from "@rhiva-ag/decoder";
 import type Coingecko from "@coingecko/coingecko-typescript";
-import { fetchPosition } from "@orca-so/whirlpools-sdk/whirlpools-client";
 import type { Whirlpool } from "@rhiva-ag/decoder/programs/idls/types/orca";
 import {
   rewards,
@@ -27,7 +25,6 @@ export const syncOrcaPositionStateFromEvent = async ({
   wallet,
   events,
   type,
-  positionMint,
   extra: { signature },
 }: {
   db: Database;
@@ -45,10 +42,7 @@ export const syncOrcaPositionStateFromEvent = async ({
   for (const event of events) {
     if (event.name === "liquidityIncreased" && type === "create-position") {
       const data = event.data;
-      const positionId = positionMint
-        ? positionMint
-        : (await fetchPosition(rpc, fromLegacyPublicKey(data.position))).data
-            .positionMint;
+      const positionId = data.position.toBase58();
       const pool = await upsertPool(db, rpc, data.whirlpool.toBase58());
 
       if (pool) {
@@ -99,56 +93,52 @@ export const syncOrcaPositionStateFromEvent = async ({
             },
           },
         };
-
-        const [[position]] = await Promise.all([
-          db
-            .insert(positions)
-            .values(values)
-            .onConflictDoNothing({ target: [positions.id] })
-            .returning(),
-          db.insert(rewards).values({
-            key: "swap",
-            user: wallet.user,
-            xp: Math.floor(amountUsd),
-          }),
-          sendNotification(db, {
-            user: wallet.user,
-            type: "transactions",
-            title: { external: true, text: "position.created" },
-            detail: {
-              external: true,
-              text: "position.created",
-              params: {
-                signature,
-                position: positionId,
-                baseToken: {
-                  amount: baseAmount,
-                  price: baseTokenPrice,
-                  symbol: pool.baseToken.symbol,
-                },
-                quoteToken: {
-                  amount: quoteAmount,
-                  price: quoteTokenPrice,
-                  symbol: pool.quoteToken.symbol,
-                },
-              },
-            },
-          }),
-        ]);
+        const [position] = await db
+          .insert(positions)
+          .values(values)
+          .onConflictDoNothing({ target: [positions.id] })
+          .returning();
         if (position) {
           results.push(position);
-          await syncOrcaPositions({
-            rpc,
-            coingecko,
-            db,
-            walletPositions: await getPositionsWhere(
+          await Promise.allSettled([
+            db.insert(rewards).values({
+              key: "swap",
+              user: wallet.user,
+              xp: Math.floor(amountUsd),
+            }),
+            sendNotification(db, {
+              user: wallet.user,
+              type: "transactions",
+              title: { external: true, text: "position.created" },
+              detail: {
+                external: true,
+                text: "position.created",
+                params: {
+                  signature,
+                  position: positionId,
+                  baseToken: {
+                    amount: baseAmount,
+                    price: baseTokenPrice,
+                    symbol: pool.baseToken.symbol,
+                  },
+                  quoteToken: {
+                    amount: quoteAmount,
+                    price: quoteTokenPrice,
+                    symbol: pool.quoteToken.symbol,
+                  },
+                },
+              },
+            }),
+            syncOrcaPositions({
+              rpc,
+              coingecko,
               db,
-              eq(positions.id, position.id),
-            ),
-          }).catch((error) => {
-            console.error(error);
-            return null;
-          });
+              walletPositions: await getPositionsWhere(
+                db,
+                eq(positions.id, position.id),
+              ),
+            }),
+          ]);
         }
       }
     } else if (isClosed && event.name === "liquidityDecreased") {

@@ -1,7 +1,7 @@
 "use client";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
 import { makeQueryClient } from "@/query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import {
   isServer,
   type QueryClient,
@@ -24,7 +24,10 @@ export default function ReactQueryProvider({
   return (
     <QueryClientProvider client={queryClient}>
       {children}
-      <ReactQueryDevtools initialIsOpen={false} />
+      <ReactQueryDevtools
+        client={queryClient}
+        initialIsOpen={false}
+      />
     </QueryClientProvider>
   );
 }

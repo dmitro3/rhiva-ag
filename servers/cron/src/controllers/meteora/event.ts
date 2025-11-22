@@ -96,53 +96,53 @@ export const syncMeteoraPositionStateFromEvent = async ({
           },
         };
 
-        const [[updatedPosition]] = await Promise.all([
-          db
-            .insert(positions)
-            .values(values)
-            .onConflictDoNothing({ target: [positions.id] })
-            .returning(),
-          db.insert(rewards).values({
-            key: "swap",
-            user: wallet.user,
-            xp: Math.floor(amountUsd),
-          }),
-          sendNotification(db, {
-            user: wallet.user,
-            type: "transactions",
-            title: { external: true, text: "position.created" },
-            detail: {
-              external: true,
-              text: "position.created",
-              params: {
-                signature,
-                position: positionId,
-                baseToken: {
-                  amount: baseAmount,
-                  price: baseTokenPrice,
-                  symbol: pool.baseToken.symbol,
-                },
-                quoteToken: {
-                  amount: quoteAmount,
-                  price: quoteTokenPrice,
-                  symbol: pool.quoteToken.symbol,
+        const [position] = await db
+          .insert(positions)
+          .values(values)
+          .onConflictDoNothing({ target: [positions.id] })
+          .returning();
+
+        if (position) {
+          results.push(position);
+          await Promise.allSettled([
+            db.insert(rewards).values({
+              key: "swap",
+              user: wallet.user,
+              xp: Math.floor(amountUsd),
+            }),
+            sendNotification(db, {
+              user: wallet.user,
+              type: "transactions",
+              title: { external: true, text: "position.created" },
+              detail: {
+                external: true,
+                text: "position.created",
+                params: {
+                  signature,
+                  position: positionId,
+                  baseToken: {
+                    amount: baseAmount,
+                    price: baseTokenPrice,
+                    symbol: pool.baseToken.symbol,
+                  },
+                  quoteToken: {
+                    amount: quoteAmount,
+                    price: quoteTokenPrice,
+                    symbol: pool.quoteToken.symbol,
+                  },
                 },
               },
-            },
-          }),
-        ]);
-
-        if (updatedPosition) {
-          results.push(updatedPosition);
-          await syncMeteoraPositions({
-            db,
-            connection,
-            coingecko,
-            walletPositions: await getPositionsWhere(
+            }),
+            await syncMeteoraPositions({
               db,
-              eq(positions.id, updatedPosition.id),
-            ),
-          }).catch(() => null);
+              connection,
+              coingecko,
+              walletPositions: await getPositionsWhere(
+                db,
+                eq(positions.id, position.id),
+              ),
+            }),
+          ]);
         }
       }
     } else if (closedPosition && event.name === "removeLiquidity") {

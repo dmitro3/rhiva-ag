@@ -4,53 +4,12 @@ import { format } from "util";
 import { ImageResponse } from "next/og";
 import { type NextRequest, NextResponse } from "next/server";
 
+import { loadFonts } from "@/utils";
+import Text from "@/components/Text";
 import {
   compactCurrencyIntlArgs,
   percentageIntlArgs,
 } from "@/constants/format";
-
-let cachedFonts: Array<{
-  name: string;
-  data: ArrayBuffer;
-  weight: 400 | 500 | 600 | 700;
-}> | null = null;
-
-async function loadFonts(origin: string) {
-  if (cachedFonts) return cachedFonts;
-
-  const fontNames = [
-    ["Roboto-Regular.ttf", 400],
-    ["Roboto-Medium.ttf", 500],
-    ["Roboto-SemiBold.ttf", 600],
-    ["Roboto-Bold.ttf", 700],
-  ] as const;
-
-  cachedFonts = await Promise.all(
-    fontNames.map(async ([file, weight]) => {
-      const res = await fetch(new URL(format("/fonts/%s", file), origin));
-      const data = await res.arrayBuffer();
-      return { name: "Roboto", data, weight };
-    }),
-  );
-
-  return cachedFonts;
-}
-
-const Text = <T extends React.ElementType>({
-  children,
-  as = "p",
-  ...props
-}: React.ComponentProps<T> & React.PropsWithChildren & { as?: T }) => {
-  const As = as;
-  return (
-    <As
-      {...props}
-      style={{ fontFamily: "Roboto", ...props.style, margin: 0 }}
-    >
-      {children}
-    </As>
-  );
-};
 
 type TokenData = {
   name: string;

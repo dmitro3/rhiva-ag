@@ -63,7 +63,7 @@ export default function PositionDetailModal({
         <DialogBackdrop className="absolute inset-0 bg-black/75 -z-10" />
         <DialogPanel className="flex flex-col space-y-4 bg-black border-white/10 p-4 pb-8 rounded-xl lt-sm:w-9/10 sm:min-w-md">
           <header className="flex items-center">
-            <div className="flex-1 flex space-x-2">
+            <div className="flex-1 flex items-center space-x-2">
               <div className="relative flex items-center">
                 <Image
                   width={18}
@@ -86,7 +86,7 @@ export default function PositionDetailModal({
               </DialogTitle>
               <IcDex
                 dex={pool.dex}
-                width={24}
+                width={16}
                 height={16}
               />
             </div>
@@ -154,8 +154,8 @@ export default function PositionDetailModal({
             <div>
               <p className="text-sm text-gray">Your Unclaimed Fee</p>
               <div>
-                <p className="text-base">
-                  <span className="text-nowrap">
+                <p>
+                  <span>
                     {pnl.unclaimedBaseFee} {pool.baseToken.symbol}&nbsp;
                   </span>
 
@@ -168,8 +168,8 @@ export default function PositionDetailModal({
                     )
                   </span>
                 </p>
-                <p className="text-base">
-                  <span className="text-nowrap">
+                <p>
+                  <span>
                     {pnl.unclaimedQuoteFee} {pool.quoteToken.symbol}&nbsp;
                   </span>
                   <span className="text-gray">

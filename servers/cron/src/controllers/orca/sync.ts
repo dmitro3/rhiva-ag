@@ -8,6 +8,7 @@ import {
   collectionToMap,
   promiseMapFilter,
   chunkFetchMultipleAccounts,
+  mapFilter,
 } from "@rhiva-ag/shared";
 import {
   pnls,
@@ -21,15 +22,15 @@ import {
   tickIndexToPrice,
   getTickIndexInArray,
   collectRewardsQuote,
+  collectFeesQuote,
   decreaseLiquidityQuote,
   getTickArrayStartTickIndex,
 } from "@orca-so/whirlpools-sdk/whirlpools-core";
 import {
-  positionMintFilter,
   getTickArrayAddress,
   getTickArrayDecoder,
   getWhirlpoolDecoder,
-  fetchAllPositionWithFilter,
+  getPositionDecoder,
 } from "@orca-so/whirlpools-sdk/whirlpools-client";
 import {
   address,
@@ -41,6 +42,7 @@ import {
   type GetTokenAccountsByOwnerApi,
   type ProgramDerivedAddress,
 } from "@solana/kit";
+
 import { getPositionsWhere } from "../shared";
 
 export const syncOrcaPositionsForWallet = async ({
@@ -98,11 +100,26 @@ export const syncOrcaPositions = async ({
   );
 
   if (walletPositions.length < 1) return;
-  const whirlpoolPositions = await fetchAllPositionWithFilter(
-    rpc,
-    ...walletPositions.map((position) =>
-      positionMintFilter(address(position.id)),
-    ),
+  const positionPubkeys = walletPositions.map((position) =>
+    address(position.id),
+  );
+  const decodePosition = getPositionDecoder();
+
+  const whirlpoolPositions = mapFilter(
+    await rpc
+      .getMultipleAccounts(positionPubkeys)
+      .send()
+      .then((response) => response.value),
+    (accountInfo, index) => {
+      const pubkey = positionPubkeys[index];
+      if (accountInfo && pubkey) {
+        const [data, encoding] = accountInfo.data;
+        return {
+          pubkey,
+          data: decodePosition.decode(Buffer.from(data, encoding)),
+        };
+      }
+    },
   );
   const whirlpoolIds = new Set(
     whirlpoolPositions.map((position) => position.data.whirlpool),
@@ -206,7 +223,7 @@ export const syncOrcaPositions = async ({
   const epochInfo = await rpc.getEpochInfo().send();
 
   for (const { pool, ...position } of whirlpoolPositionsWithTickAddress) {
-    const offchainPosition = positionsMap.get(position.data.positionMint);
+    const offchainPosition = positionsMap.get(position.pubkey);
     const lowerTickArray = tickArraysMap.get(position.lowerTickArrayAddress);
     const upperTickArray = tickArraysMap.get(position.upperTickArrayAddress);
 
@@ -216,18 +233,24 @@ export const syncOrcaPositions = async ({
       lowerTickArray.ticks[
         getTickIndexInArray(
           position.data.tickLowerIndex,
-          position.data.tickLowerIndex,
+          getTickArrayStartTickIndex(
+            position.data.tickUpperIndex,
+            pool.tickSpacing,
+          ),
           pool.tickSpacing,
         )
-      ];
+      ]!;
     const upperTickState =
       upperTickArray.ticks[
         getTickIndexInArray(
           position.data.tickUpperIndex,
-          position.data.tickUpperIndex,
+          getTickArrayStartTickIndex(
+            position.data.tickUpperIndex,
+            pool.tickSpacing,
+          ),
           pool.tickSpacing,
         )
-      ];
+      ]!;
     const active =
       pool.tickCurrentIndex >= position.data.tickLowerIndex &&
       pool.tickCurrentIndex <= position.data.tickUpperIndex;
@@ -295,11 +318,19 @@ export const syncOrcaPositions = async ({
       quoteFee,
     );
 
+    const { feeOwedA, feeOwedB } = collectFeesQuote(
+      pool,
+      position.data,
+      lowerTickState,
+      upperTickState,
+      baseFee,
+      quoteFee,
+    );
     const { rewards } = collectRewardsQuote(
       pool,
       position.data,
-      lowerTickState!,
-      upperTickState!,
+      lowerTickState,
+      upperTickState,
       epochInfo.epoch,
       baseFee,
       quoteFee,
@@ -307,10 +338,9 @@ export const syncOrcaPositions = async ({
     );
 
     const rawAmountX = tokenEstA.toString();
-    const rawFeeX = position.data.feeOwedA.toString();
-    const rawFeeY = position.data.feeOwedB.toString();
+    const rawFeeX = feeOwedA.toString();
+    const rawFeeY = feeOwedB.toString();
     const rawAmountY = tokenEstB.toString();
-
     const rawRewardAmount = rewards
       .reduce((acc, curr) => acc + curr.rewardsOwed, BigInt(0))
       .toString();

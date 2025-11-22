@@ -146,7 +146,6 @@ export default function OpenPositionTable({
           decimals: position.pool.quoteToken.decimals,
         },
       };
-
       const mapFunc = {
         "saros-dlmm": undefined,
         orca: trpcClient.position.meteora.close.mutate,
@@ -381,21 +380,21 @@ export default function OpenPositionTable({
                     className="border-b [&_td]:px-4 [&_td]:py-2"
                   >
                     <td>
-                      <div className="flex items-center space-x-2 lt-lg:min-w-32">
+                      <div className="flex flex-nowrap items-center space-x-2 lt-lg:min-w-32">
                         <div className="flex flex-nowrap relative">
                           <Image
                             width={24}
                             height={24}
                             src={position.baseToken.image}
                             alt={position.baseToken.symbol}
-                            className="size-4"
+                            className="size-6 rounded-full"
                           />
                           <Image
                             width={24}
                             height={24}
                             src={position.quoteToken.image}
                             alt={position.quoteToken.symbol}
-                            className="-ml-2 size-4 rounded-full"
+                            className="-ml-2 size-6 rounded-full"
                           />
                         </div>
                         <p className="text-base font-medium text-nowrap">
@@ -456,7 +455,7 @@ export default function OpenPositionTable({
                             padding: 96,
                             to: "bottom start",
                           }}
-                          className="flex flex-col absolute bg-dark z-50 border border-white/10 rounded-md [&_button]:text-start [&_button]:text-xs [&_button]:p-2 [&_button]:text-nowrap [&_button:focus]:bg-white/10"
+                          className="flex flex-col absolute bg-dark z-50 border border-white/10 outline-none rounded-md [&_button]:text-start [&_button]:text-xs [&_button]:p-2 [&_button]:text-nowrap [&_button:focus]:bg-white/10"
                         >
                           <MenuItem
                             as="button"
@@ -486,7 +485,7 @@ export default function OpenPositionTable({
                             as="button"
                             onClick={() => onClosePosition(position.extra)}
                           >
-                            Close Rewards
+                            Close Position
                           </MenuItem>
                         </MenuItems>
                       </Menu>

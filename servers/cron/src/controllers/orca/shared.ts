@@ -74,12 +74,13 @@ export async function upsertPool(
     rewardTokens: rewardPubkeys,
   });
 
-  await db.insert(poolRewardTokens).values(
-    rewardPubkeys.map((pubkey) => ({
-      pool: poolId,
-      mint: pubkey,
-    })),
-  );
+  if (rewardPubkeys.length > 0)
+    await db.insert(poolRewardTokens).values(
+      rewardPubkeys.map((pubkey) => ({
+        pool: poolId,
+        mint: pubkey,
+      })),
+    );
 
   return getPoolById(db, poolId);
 }

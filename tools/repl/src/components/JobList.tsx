@@ -163,7 +163,6 @@ export default function JobList({ config }: JobListProps) {
     <Box
       flexDirection="column"
       rowGap={0.4}
-      justifyContent="center"
     >
       {analytics && (
         <Box
@@ -176,11 +175,13 @@ export default function JobList({ config }: JobListProps) {
       )}
       <Box
         flexDirection="row"
+        justifyContent="center"
         gap={4}
       >
         <Box
           flexDirection="column"
           borderStyle="single"
+          alignSelf="flex-start"
           borderColor={focused === "left" ? "green" : "grey"}
         >
           <Box

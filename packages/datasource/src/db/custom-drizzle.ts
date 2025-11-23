@@ -9,7 +9,7 @@ export const updateJSON = <T extends Column, U extends T["_"]["data"]>(
 
 export const add = <T extends Array<Column | SQL<unknown> | SQL.Aliased>>(
   ...[a, b]: T
-) => sql`${a}::decimal + ${b}::decimal`;
+) => sql`COALESCE(${a}::decimal) + COALESCE(${b}::decimal, 0)`;
 
 export const int = <T extends Column | SQL<unknown> | SQL.Aliased>(column: T) =>
   sql`${column}::int`;

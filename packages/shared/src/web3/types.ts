@@ -49,7 +49,7 @@ type AccountState = {
   lamports: number;
   owner: string;
   space: number;
-  data: string;
+  data: [string, "base64"];
   executable: boolean;
   rentEpoch: number;
 };

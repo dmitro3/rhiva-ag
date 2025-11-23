@@ -67,7 +67,7 @@ export const syncRaydiumPositionStateFromEvent = async ({
             .div(Math.pow(10, pool.baseToken.decimals))
             .toNumber();
 
-          if (baseTokenPrice) amountUsd -= baseTokenPrice * baseAmount;
+          if (baseTokenPrice) amountUsd += baseTokenPrice * baseAmount;
         }
 
         if (rawAmountY) {
@@ -75,7 +75,7 @@ export const syncRaydiumPositionStateFromEvent = async ({
             .div(Math.pow(10, pool.quoteToken.decimals))
             .toNumber();
 
-          if (quoteTokenPrice) amountUsd -= quoteTokenPrice * quoteAmount;
+          if (quoteTokenPrice) amountUsd += quoteTokenPrice * quoteAmount;
         }
 
         const values: typeof positions.$inferInsert = {

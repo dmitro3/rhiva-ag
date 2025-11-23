@@ -38,15 +38,11 @@ export const transactionWorkSchema = z
     z
       .union([
         z.object({
-          dex: z.enum(["orca", "meteora"]),
+          dex: z.literal("meteora"),
         }),
         z.object({
-          dex: z.enum(["orca"]),
-          positionMint: address().optional(),
-        }),
-        z.object({
-          positionMint: address().optional(),
-          dex: z.enum(["raydium-clmm"]),
+          positionMint: address(),
+          dex: z.enum(["orca", "raydium-clmm"]),
         }),
       ])
       .and(
@@ -55,8 +51,8 @@ export const transactionWorkSchema = z
         }),
       ),
     z.object({
-      type: z.enum(["closed-position", "rebalanced-position", "repositioned"]),
       dex: z.enum(["orca", "meteora", "raydium-clmm"]),
+      type: z.enum(["closed-position", "rebalanced-position", "repositioned"]),
     }),
   ])
   .and(

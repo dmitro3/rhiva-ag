@@ -137,7 +137,6 @@ function RaydiumOpenPositionForm({
       ],
     },
     onSubmit: async (values) => {
-      console.log(isAuthenticated);
       if (!isAuthenticated) await signIn();
 
       const createPositionValue = {
@@ -170,8 +169,6 @@ function RaydiumOpenPositionForm({
             ),
           };
         }
-
-        return;
       }
       const bundleId = await mutateAsync(data).then(({ bundleId }) => bundleId);
 

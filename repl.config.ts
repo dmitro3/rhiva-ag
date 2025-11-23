@@ -7,7 +7,10 @@ import { createRedis } from "./servers/cron/src/instances";
 const connection = createRedis();
 
 const config = {
-  queues: [new Queue(Work.syncTransaction, { connection })],
+  queues: [
+    new Queue(Work.syncTransaction, { connection }),
+    new Queue(Work.syncPosition, { connection }),
+  ],
   createConnection: () => createRedis(),
 } satisfies Config;
 

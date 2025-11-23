@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import JobList from "./components/JobList";
 import type { Config } from "./utils/config";
+import minimist from "minimist";
 
 export type { Config } from "./utils/config";
 
@@ -36,7 +37,10 @@ export const render = (config: Config) =>
   _render(
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={customTheme}>
-        <JobList config={config} />
+        <JobList
+          config={config}
+          args={minimist(process.argv)}
+        />
       </ThemeProvider>
     </QueryClientProvider>,
   );

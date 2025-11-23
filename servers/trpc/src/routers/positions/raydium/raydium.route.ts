@@ -136,8 +136,8 @@ export const raydiumRoute = router({
         const wallet = fromKeyPairToWalletAdapter(owner);
         const { execute } = await closePosition(
           dex,
-          wallet,
           ctx.sendTransaction,
+          wallet,
           input,
         );
 

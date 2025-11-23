@@ -170,7 +170,6 @@ export const createPosition = async (
     skipSigVerify: true,
     replaceRecentBlockhash: true,
   });
-
   throwBundleSimulationError(bundleSimulationResponse.result.value);
 
   return {
@@ -243,13 +242,13 @@ export const claimReward = async (
     addresses: [tokenAAta.toBase58(), tokenBAta.toBase58()],
   }));
   const simulationResponse = await sender.simulateBundle({
-    skipSigVerify: false,
+    skipSigVerify: true,
     replaceRecentBlockhash: true,
     transactions: claimRewardV0Transactions,
     preExecutionAccountsConfigs: accountConfigs,
     postExecutionAccountsConfigs: accountConfigs,
   });
-
+  console.log(simulationResponse, { depth: null });
   throwBundleSimulationError(simulationResponse.result.value);
 
   const tokenBalanceChanges = getTokenBalanceChangesFromBundleSimulation(
@@ -303,8 +302,8 @@ export const claimReward = async (
 
 export const closePosition = async (
   dex: Dex,
-  wallet: WalletAdapter,
   sender: SendTransaction,
+  wallet: WalletAdapter,
   {
     pair,
     slippage,
@@ -459,7 +458,7 @@ export const rebalancePosition = async ({
     closePositionV0Transaction,
     position,
     tokenBalanceChanges,
-  } = await closePosition(dex, wallet, sender, {
+  } = await closePosition(dex, sender, wallet, {
     position: new PublicKey(offchainPosition.id),
     pair: new PublicKey(offchainPosition.pool.id),
     slippage: settings.slippage,

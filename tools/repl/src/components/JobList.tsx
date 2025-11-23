@@ -1,4 +1,5 @@
 import moment from "moment";
+import type minimist from "minimist";
 import type { Job } from "bullmq";
 import { Box, Text, useInput } from "ink";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -11,19 +12,29 @@ import type { Config } from "../utils/config";
 
 type JobListProps = {
   config: Config;
+  args: minimist.ParsedArgs;
 };
 
 export type ExtendedJob = {
   status: Awaited<ReturnType<Job["getState"]>>;
 } & Job;
 
-export default function JobList({ config }: JobListProps) {
+export default function JobList({ config, args }: JobListProps) {
   const queryClient = useQueryClient();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [focused, setFocused] = useState<"left" | "right">("left");
   const [selectedJob, setSelectedJob] = useState<ExtendedJob | null>(null);
 
   const queryKey = useMemo(() => ["bullmq"], []);
+  const selectedQueues = useMemo(
+    () =>
+      args.queue
+        ? config.queues.filter(
+            (queue) => queue.name.toLowerCase() === args.queue?.toLowerCase(),
+          )
+        : config.queues,
+    [config.queues, args.queue],
+  );
 
   const updateJob = useCallback(
     (selectedJob: ExtendedJob) => {
@@ -56,7 +67,7 @@ export default function JobList({ config }: JobListProps) {
     queryFn: async () => {
       return Promise.all([
         Promise.all(
-          config.queues.map(async (queue) => {
+          selectedQueues.map(async (queue) => {
             return queue.getJobs().then((jobs) =>
               Promise.all(
                 jobs.map(
@@ -72,9 +83,9 @@ export default function JobList({ config }: JobListProps) {
           }),
         ).then((jobs) => jobs.flat()),
         Promise.all(
-          config.queues.map(async (queue) => ({
-            completed: await queue.getCompletedCount(),
+          selectedQueues.map(async (queue) => ({
             failed: await queue.getFailedCount(),
+            completed: await queue.getCompletedCount(),
           })),
         ).then((configs) =>
           configs.reduce(
@@ -175,7 +186,7 @@ export default function JobList({ config }: JobListProps) {
       )}
       <Box
         flexDirection="row"
-        justifyContent="center"
+        alignItems="flex-start"
         gap={4}
       >
         <Box

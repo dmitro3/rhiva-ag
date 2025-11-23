@@ -425,38 +425,43 @@ export const syncOrcaPositions = async ({
       position: offchainPosition.id,
     });
   }
+  if (pnlUpdates.length > 0) {
+    const result = await Promise.all([
+      db
+        .insert(pnls)
+        .values(pnlUpdates)
+        .onConflictDoUpdate({
+          target: [pnls.position, pnls.createdAt],
+          set: buildConflictUpdateColumns(pnls, [
+            "state",
+            "feeUsd",
+            "pnlUsd",
+            "rewardUsd",
+            "amountUsd",
+            "baseAmount",
+            "quoteAmount",
+            "claimedFeeUsd",
+            "baseAmountUsd",
+            "quoteAmountUsd",
+            "unclaimedBaseFee",
+            "unclaimedQuoteFee",
+            "unclaimedBaseFeeUsd",
+            "unclaimedQuoteFeeUsd",
+          ]),
+        })
+        .returning(),
+      ...poolUpdates.map(({ id, update }) =>
+        db.update(pools).set(update).where(eq(pools.id, id)).returning(),
+      ),
+      ...positionUpdates.flatMap(({ id, update }) =>
+        db
+          .update(positions)
+          .set(update)
+          .where(eq(positions.id, id))
+          .returning(),
+      ),
+    ]);
 
-  const result = await Promise.all([
-    db
-      .insert(pnls)
-      .values(pnlUpdates)
-      .onConflictDoUpdate({
-        target: [pnls.position, pnls.createdAt],
-        set: buildConflictUpdateColumns(pnls, [
-          "state",
-          "feeUsd",
-          "pnlUsd",
-          "rewardUsd",
-          "amountUsd",
-          "baseAmount",
-          "quoteAmount",
-          "claimedFeeUsd",
-          "baseAmountUsd",
-          "quoteAmountUsd",
-          "unclaimedBaseFee",
-          "unclaimedQuoteFee",
-          "unclaimedBaseFeeUsd",
-          "unclaimedQuoteFeeUsd",
-        ]),
-      })
-      .returning(),
-    ...poolUpdates.map(({ id, update }) =>
-      db.update(pools).set(update).where(eq(pools.id, id)).returning(),
-    ),
-    ...positionUpdates.flatMap(({ id, update }) =>
-      db.update(positions).set(update).where(eq(positions.id, id)).returning(),
-    ),
-  ]);
-
-  return result.flat(2);
+    return result.flat(2);
+  }
 };

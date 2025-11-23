@@ -1,4 +1,5 @@
 import { getTokenDecoder } from "@solana-program/token";
+import { AccountLayout, NATIVE_MINT, type RawAccount } from "@solana/spl-token";
 import {
   isNative,
   isSystemProgram,
@@ -6,7 +7,6 @@ import {
   mapFilter,
   type SimulateBundleResponse,
 } from "@rhiva-ag/shared";
-import { AccountLayout, NATIVE_MINT, type RawAccount } from "@solana/spl-token";
 import type {
   Address,
   Rpc,
@@ -100,7 +100,8 @@ export const getTokenBalanceChangesFromBundleSimulation = (
 
     for (const account of transaction.preExecutionAccounts) {
       if (isTokenProgram(account.owner)) {
-        const data = AccountLayout.decode(Buffer.from(account.data, "base64"));
+        const [string, encoding] = account.data;
+        const data = AccountLayout.decode(Buffer.from(string, encoding));
         preTokenBalanceChanges[data.mint.toBase58()] = data.amount;
       } else if (
         isSystemProgram(account.owner) &&
@@ -114,7 +115,8 @@ export const getTokenBalanceChangesFromBundleSimulation = (
     }
     for (const account of transaction.postExecutionAccounts) {
       if (isTokenProgram(account.owner)) {
-        const data = AccountLayout.decode(Buffer.from(account.data, "base64"));
+        const [string, encoding] = account.data;
+        const data = AccountLayout.decode(Buffer.from(string, encoding));
         postTokenBalanceChanges[data.mint.toBase58()] = data.amount;
       } else if (
         isSystemProgram(account.owner) &&

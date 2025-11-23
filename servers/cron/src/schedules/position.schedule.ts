@@ -1,3 +1,4 @@
+import { cpus } from "os";
 import { format } from "util";
 import type { Logger } from "pino";
 import { Queue, Worker } from "bullmq";
@@ -16,6 +17,7 @@ export default async function createSchedule({
   const syncQueue = new Queue(Work.syncPosition, {
     connection: createRedis(),
     defaultJobOptions: {
+      priority: 2,
       removeOnComplete: true,
       backoff: {
         type: "exponential",
@@ -24,6 +26,10 @@ export default async function createSchedule({
   });
   const scheduleQueue = new Queue(Work.syncPositionSchedule, {
     connection: createRedis(),
+    defaultJobOptions: {
+      priority: 2,
+      lifo: true,
+    },
   });
 
   const syncPositionSchedule = async () => {
@@ -62,12 +68,13 @@ export default async function createSchedule({
     Work.syncPositionSchedule,
     async () => syncPositionSchedule(),
     {
+      autorun: true,
+      concurrency: cpus().length,
       connection: createRedis({ maxRetriesPerRequest: null }),
     },
   );
 
   worker.on("failed", (job, error) => {
-    console.error(error);
     logger.error(
       {
         error,

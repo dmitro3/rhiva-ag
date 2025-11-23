@@ -13,7 +13,7 @@ const db = createDB(getEnv("DATABASE_URL"));
   // const bundleId =
   //   "4567e7264fadc3ae42faecc5e6e1b72a2d64d8be9f882f5ae3ce50c9bad29880"; // meteora
   const bundleId =
-    "3997c11924bca860027febffc7f33ecb9ada246ea936aa355756331c436b0c59"; // orca
+    "6fb37bb34e01e99a9545f602df5317d356788e3e78efd1552e22a5f620f0937f"; // orca
   const job = await queue.getJob(bundleId);
   console.log("job", job?.returnvalue);
 
@@ -31,13 +31,13 @@ const db = createDB(getEnv("DATABASE_URL"));
       Work.syncTransaction,
       {
         bundleId,
-        dex: "orca",
-        type: "create-position",
+        dex: "raydium-clmm",
+        type: "closed-position",
         wallet: {
           user: wallet.user.id,
           id: wallet.id,
         },
-        positionMint: address("6KsViydbpqmnfaZd1zsn7QG3AWyiN7CcAQ6f2TPCrjko"),
+        // positionMint: address("6KsViydbpqmnfaZd1zsn7QG3AWyiN7CcAQ6f2TPCrjko"),
       },
       {
         jobId: bundleId,

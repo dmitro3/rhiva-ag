@@ -179,7 +179,7 @@ export const syncMeteoraPositionStateFromEvent = async ({
           .set({
             state: "closed",
             config: {
-              ...positions.config,
+              ...position.config,
               history: {
                 ...position.config.history,
                 closingPrice: {

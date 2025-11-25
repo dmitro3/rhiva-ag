@@ -1,10 +1,11 @@
 import { format } from "util";
+import Link from "next/link";
 import type React from "react";
 import { BsDownload } from "react-icons/bs";
 import { LuRefreshCw } from "react-icons/lu";
 import type { AppRouter } from "@rhiva-ag/trpc";
-import { useCallback, useMemo, useRef, useState } from "react";
 import { MdClose, MdContentCopy } from "react-icons/md";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   Dialog,
   DialogBackdrop,
@@ -28,7 +29,6 @@ export default function PositionDetailModal({
   ...props
 }: PositionDetailModalProps) {
   const [pnl] = pnls;
-  const pnlCardRef = useRef<HTMLDivElement | null>(null);
 
   const [showProfit, setShowProfit] = useState(true);
   const [showBalance, setShowBalance] = useState(true);
@@ -74,13 +74,10 @@ export default function PositionDetailModal({
   }, [pnlUrl]);
 
   const copyCard = useCallback(async () => {
-    const container = pnlCardRef.current;
-    if (container) {
-      const blob = await fetch(pnlUrl).then((response) => response.blob());
-      if (blob) {
-        const item = new ClipboardItem({ [blob.type]: blob });
-        return navigator.clipboard.write([item]);
-      }
+    const blob = await fetch(pnlUrl).then((response) => response.blob());
+    if (blob) {
+      const item = new ClipboardItem({ [blob.type]: blob });
+      return navigator.clipboard.write([item]);
     }
   }, [pnlUrl]);
 
@@ -144,14 +141,17 @@ export default function PositionDetailModal({
                 <MdContentCopy size={18} />
                 <span>Copy</span>
               </button>
-              <button
+              <Link
+                href={pnlUrl}
+                download
                 type="button"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-36 flex items-center justify-center space-x-2 bg-primary text-black px-4 py-2 rounded"
-                onClick={exportCard}
               >
                 <BsDownload size={18} />
                 <span>Download</span>
-              </button>
+              </Link>
             </div>
           </div>
         </DialogPanel>

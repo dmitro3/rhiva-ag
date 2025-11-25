@@ -99,6 +99,7 @@ export default function SideNav({
                 return (
                   <li key={navItem.name}>
                     <Link
+                      prefetch
                       href={navItem.path}
                       className={clsx(
                         "flex items-center p-2 space-x-4 py-4",

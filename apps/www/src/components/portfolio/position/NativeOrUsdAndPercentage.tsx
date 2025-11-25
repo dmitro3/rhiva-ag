@@ -27,13 +27,18 @@ export default function NativeOrUsdAndPerentageValue({
   ...props
 }: NativeOrUsdAndPerentageProps) {
   const percentageIntl = useMemo(
-    () => new Intl.NumberFormat("en-US", percentageIntlArgs),
+    () =>
+      new Intl.NumberFormat("en-US", {
+        ...percentageIntlArgs,
+        maximumFractionDigits: 6,
+      }),
     [],
   );
   const percentageWithoutSignIntl = useMemo(
     () =>
       new Intl.NumberFormat("en-US", {
         ...percentageIntlArgs,
+        maximumFractionDigits: 6,
         signDisplay: "never",
       }),
     [],
@@ -82,7 +87,14 @@ export default function NativeOrUsdAndPerentageValue({
         <Decimal
           as="p"
           value={usdValue}
-          intlArgs={currencyIntlArgs}
+          intlArgs={{
+            ...currencyIntlArgs,
+            maximumFractionDigits: 6,
+          }}
+          className={clsx(
+            "text-nowrap",
+            colorize && percentageValue == null && getNumberColor(nativeValue),
+          )}
         />
       )}
       {percentageValue != null && (

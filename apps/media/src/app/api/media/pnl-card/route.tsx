@@ -5,7 +5,7 @@ import { ImageResponse } from "next/og";
 import { NextResponse, type NextRequest } from "next/server";
 
 import Text from "@/components/Text";
-import { loadFonts } from "@/utils";
+import { getNumberColor, loadFonts } from "@/utils";
 import {
   compactCurrencyIntlArgs,
   currencyIntlArgs,
@@ -28,9 +28,7 @@ type Pnl = {
   hideBalance?: boolean;
 };
 
-const red = "#ef4444";
 const grey = "#737373";
-const primary = "#39FF14";
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
@@ -41,7 +39,7 @@ export async function GET(request: NextRequest) {
   });
   const currencyIntl = Intl.NumberFormat("en-US", {
     ...compactCurrencyIntlArgs,
-    maximumFractionDigits: 2,
+    maximumFractionDigits: 6,
   });
 
   const currencyWithSignIntl = new Intl.NumberFormat("en-US", {
@@ -58,7 +56,6 @@ export async function GET(request: NextRequest) {
     const name = [pnl.baseToken.symbol, pnl.quoteToken.symbol].join("-");
     const pnlPercentage = (pnl.pnlUsd / pnl.amountUsd) * 100;
 
-    const isProfit = pnl.pnlUsd > -1;
     const duration = (() => {
       if (pnl.state === "closed")
         return moment.duration(
@@ -140,7 +137,7 @@ export async function GET(request: NextRequest) {
                 fontSize: 64,
                 fontWeight: 900,
                 fontFamily: "Gobold",
-                color: isProfit ? primary : red,
+                color: getNumberColor(pnl.pnlUsd),
               }}
             >
               {currencyWithSignIntl.format(pnl.pnlUsd)}
@@ -174,7 +171,10 @@ export async function GET(request: NextRequest) {
                 PNL
               </Text>
               <Text
-                style={{ color: isProfit ? primary : red, fontWeight: 600 }}
+                style={{
+                  color: getNumberColor(pnlPercentage),
+                  fontWeight: 600,
+                }}
               >
                 {percentageIntl.format(pnlPercentage)}
               </Text>

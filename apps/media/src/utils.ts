@@ -28,3 +28,6 @@ export async function loadFonts(origin: string) {
 
   return cachedFonts;
 }
+
+export const getNumberColor = (value: number) =>
+  value >= 0 ? (value === 0 ? undefined : "#39FF14") : "#ef4444";

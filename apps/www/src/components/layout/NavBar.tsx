@@ -94,6 +94,7 @@ export default function NavBar(props: React.ComponentProps<"div">) {
               >
                 <Button
                   href={navItem.path}
+                  prefetch
                   className={clsx(
                     "flex items-center p-4 lt-md:flex-col lt-md:space-y-2 sm:space-x-4 sm:p-4",
                     selected

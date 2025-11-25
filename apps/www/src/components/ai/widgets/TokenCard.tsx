@@ -78,7 +78,6 @@ export function TokenCard({ token }: TokenCardProps) {
       </div>
       <Link
         href={format("/tokens/%s/", token.address)}
-        target="_blank"
         className="flex items-center justify-center bg-primary text-black px-4 py-2 rounded"
       >
         <span className="flex-1 text-center">Open Token</span>

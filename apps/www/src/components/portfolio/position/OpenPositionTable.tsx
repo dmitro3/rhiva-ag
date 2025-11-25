@@ -292,7 +292,7 @@ export default function OpenPositionTable({
                     className="border-b [&_td]:px-4 [&_td]:py-2"
                   >
                     <td>
-                      <div className="flex flex-nowrap items-center space-x-2 lt-lg:min-w-32">
+                      <div className="flex flex-nowrap items-center space-x-2 lt-lg:min-w-40">
                         <div className="flex flex-nowrap relative">
                           <Image
                             width={24}
@@ -309,13 +309,13 @@ export default function OpenPositionTable({
                             className="-ml-2 size-6 rounded-full"
                           />
                         </div>
-                        <p className="text-base font-medium text-nowrap">
+                        <p className="text-base font-medium text-nowrap -mr-2">
                           {position.baseToken.symbol}-
                           {position.quoteToken.symbol}
                         </p>
                         <CopyButton
                           content={position.id}
-                          className="text-gray"
+                          className="text-gray mt-2"
                         />
                       </div>
                     </td>
@@ -431,6 +431,7 @@ export default function OpenPositionTable({
                 </td>
                 <td>
                   <NativeOrUsdAndPercentage
+                    colorize
                     isNative={isNative}
                     nativePrice={nativePrice}
                     usdValue={positionAggregrate.pnl}

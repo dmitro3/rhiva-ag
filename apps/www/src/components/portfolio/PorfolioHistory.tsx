@@ -135,7 +135,10 @@ function PortfolioCalender(props: React.ComponentProps<"div">) {
                           <Decimal
                             as="p"
                             value={pnl}
-                            intlArgs={currencyIntlArgs}
+                            intlArgs={{
+                              ...currencyIntlArgs,
+                              maximumFractionDigits: 6,
+                            }}
                             className={clsx(
                               "text-nowrap lt-sm:hidden",
                               pnl >= 0 ? "text-primary" : "text-red-500",
@@ -165,7 +168,10 @@ function PortfolioCalender(props: React.ComponentProps<"div">) {
             <span className="text-sm">TOTAL MONTHLY PROFIT &nbsp;</span>
             <Decimal
               value={totalMonthlyProfit}
-              intlArgs={currencyIntlArgs}
+              intlArgs={{
+                ...currencyIntlArgs,
+                maximumFractionDigits: 6,
+              }}
               className={clsx(
                 "font-bold",
                 totalMonthlyProfit >= 0 ? "text-primary" : "text-red-500",

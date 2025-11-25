@@ -151,6 +151,7 @@ function PortfolioCalender(props: React.ComponentProps<"div">) {
                           </p>
                         </>
                       )}
+                      {!pnl && <p className="invisible">k</p>}
                     </div>
                   )}
                 </div>

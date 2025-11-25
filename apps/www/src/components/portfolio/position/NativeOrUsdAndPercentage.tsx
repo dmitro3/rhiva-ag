@@ -2,6 +2,7 @@ import clsx from "clsx";
 import { format } from "util";
 import { useMemo, useState } from "react";
 
+import { getNumberColor } from "@/lib";
 import Image from "@/components/Image";
 import Decimal from "@/components/Decimal";
 import { DefaultToken } from "@/constants/tokens";
@@ -50,16 +51,6 @@ export default function NativeOrUsdAndPerentageValue({
     return 0;
   });
 
-  const isPositiveValue = useMemo(
-    () => usdValue > -1 || nativePrice > -1,
-    [usdValue, nativePrice],
-  );
-
-  const isPostivePercentage = useMemo(
-    () => percentageValue != null && percentageValue > -1,
-    [percentageValue],
-  );
-
   return (
     <div>
       {isNative ? (
@@ -74,7 +65,7 @@ export default function NativeOrUsdAndPerentageValue({
             }
             className={clsx(
               "text-nowrap",
-              colorize && (isPositiveValue ? "text-primary" : "text-red-500"),
+              colorize && getNumberColor(nativeValue),
             )}
           />
           {showNativeIcon && (
@@ -83,6 +74,7 @@ export default function NativeOrUsdAndPerentageValue({
               width={16}
               height={16}
               alt={DefaultToken.Sol.symbol}
+              className="rounded-full"
             />
           )}
         </div>
@@ -94,11 +86,7 @@ export default function NativeOrUsdAndPerentageValue({
         />
       )}
       {percentageValue != null && (
-        <span
-          className={clsx(
-            colorize && (isPostivePercentage ? "text-primary" : "text-red-500"),
-          )}
-        >
+        <span className={clsx(colorize && getNumberColor(percentageValue))}>
           {colorize
             ? percentageIntl.format(percentageValue)
             : percentageWithoutSignIntl.format(percentageValue)}

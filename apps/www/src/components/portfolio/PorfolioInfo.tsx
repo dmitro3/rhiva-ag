@@ -7,9 +7,10 @@ import { useAuth } from "@rhiva-ag/auth-ui/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import Decimal from "../Decimal";
+import { getNumberColor } from "@/lib";
 import { useTRPC } from "@/trpc.client";
-import type { getWalletPNL } from "@/lib/get-tokens";
 import { useCurrencies } from "@/hooks/useCurrency";
+import type { getWalletPNL } from "@/lib/get-tokens";
 import { currencyIntlArgs, percentageIntlArgs } from "@/constants/format";
 
 export default function PortfolioInfo(props: React.ComponentProps<"div">) {
@@ -116,7 +117,7 @@ export default function PortfolioInfo(props: React.ComponentProps<"div">) {
             <Decimal
               value={winRate}
               intlArgs={percentageIntlArgs}
-              className="text-base font-medium"
+              className={clsx("text-base font-medium", getNumberColor(winRate))}
             />
           </div>
           <div className="flex flex-col">
@@ -133,10 +134,13 @@ export default function PortfolioInfo(props: React.ComponentProps<"div">) {
             </p>
             <Decimal
               value={data.avgMonthlyProfit}
-              intlArgs={currencyIntlArgs}
+              intlArgs={{
+                ...currencyIntlArgs,
+                maximumFractionDigits: 6,
+              }}
               className={clsx(
                 "text-base font-medium",
-                data.avgMonthlyProfit >= 0 ? "text-primary" : "text-red-500",
+                getNumberColor(data.avgMonthlyProfit),
               )}
             />
           </div>

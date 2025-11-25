@@ -3,17 +3,18 @@ import { toast } from "react-toastify";
 import { MdMoreVert } from "react-icons/md";
 import { mapFilter } from "@rhiva-ag/shared";
 import { logEvent } from "firebase/analytics";
-import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@rhiva-ag/auth-ui/client";
 import type { AppRouter } from "@rhiva-ag/trpc/browser";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useCallback, useMemo, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 
 import Image from "@/components/Image";
 import { useDex } from "@/hooks/useDex";
 import PnLCardModal from "./PnLCardModal";
+import type { TDex } from "@/hooks/useDexes";
 import Pagination from "../PositionPagination";
 import CopyButton from "@/components/CopyButton";
 import { useAnalytics } from "@/hooks/useAnalytics";
@@ -42,6 +43,7 @@ export default function OpenPositionTable({
   const dexInstance = useDex();
   const analytics = useAnalytics();
   const trpcClient = useTRPCClient();
+  const queryClient = useQueryClient();
   const closePosition = useClosePosition(dexInstance, wallet, trpcClient, user);
   const claimPositionRewards = useClaimPositionReward(
     dexInstance,
@@ -61,8 +63,10 @@ export default function OpenPositionTable({
   );
 
   const dex = useMemo(() => searchParams.get("dex"), [searchParams]);
-  const { data } = useQuery(
-    trpc.position.list.queryOptions({
+
+  const { data } = useQuery({
+    refetchInterval: 60_000,
+    ...trpc.position.list.queryOptions({
       offset: currentPage,
       limit: itemsPerPage.current,
       filter: {
@@ -70,7 +74,7 @@ export default function OpenPositionTable({
         dex: dex ? { eq: dex } : undefined,
       },
     }),
-  );
+  });
 
   const totalItems = useMemo(() => (data?.total ? data.total : 0), [data]);
   const [allPositions, positionAggregrate] = useMemo(() => {
@@ -122,15 +126,105 @@ export default function OpenPositionTable({
     return [positions, aggregrations];
   }, [data]);
 
+  const setPosition = useCallback(
+    (position: Position, state?: "open" | "closed", dex?: TDex) => {
+      queryClient.setQueryData(
+        trpc.position.list.queryKey({
+          offset: currentPage,
+          limit: itemsPerPage.current,
+          filter: {
+            state: { eq: state },
+            dex: dex ? { eq: dex } : undefined,
+          },
+        }),
+        (previousData) => {
+          if (previousData)
+            previousData.items = [position, ...previousData.items];
+          return previousData;
+        },
+      );
+    },
+    [queryClient, currentPage, trpc],
+  );
+  const updatePosition = useCallback(
+    (
+      position: Partial<Position> & Pick<Position, "id">,
+      state?: "open" | "closed",
+      dex?: TDex,
+    ) => {
+      queryClient.setQueryData(
+        trpc.position.list.queryKey({
+          offset: currentPage,
+          limit: itemsPerPage.current,
+          filter: {
+            state: { eq: state },
+            dex: dex ? { eq: dex } : undefined,
+          },
+        }),
+        (previousData) => {
+          if (previousData) {
+            const index = previousData.items.findIndex(
+              (item) => item.id === position.id,
+            );
+            if (index > -1) {
+              const previous = previousData.items[index];
+              previousData.items[index] = { ...previous, ...position };
+            }
+          }
+
+          return previousData;
+        },
+      );
+    },
+    [queryClient, currentPage, trpc],
+  );
+  const removePosition = useCallback(
+    (position: Position["id"], state?: "open" | "closed", dex?: TDex) => {
+      queryClient.setQueryData(
+        trpc.position.list.queryKey({
+          offset: currentPage,
+          limit: itemsPerPage.current,
+          filter: {
+            state: { eq: state },
+            dex: dex ? { eq: dex } : undefined,
+          },
+        }),
+        (previousData) => {
+          if (previousData)
+            previousData.items = previousData.items.filter(
+              (item) => item.id !== position,
+            );
+
+          return previousData;
+        },
+      );
+    },
+    [queryClient, currentPage, trpc],
+  );
+
   const onClosePosition = useCallback(
     async (position: Position) => {
       const result = await toast.promise(closePosition(position), {
+        error: "Oops! Transaction failed.",
         pending: "Sending close position transaction...",
         success: "🎉 Transaction bundle sent successfully.",
-        error: "Oops! Transaction failed.",
       });
       if (result) {
         const { bundleId } = result;
+        const updatedPosition = {
+          ...position,
+          pnls: position.pnls.map((pnl) => ({
+            ...pnl,
+            feeUsd: 0,
+            claimedFeeUsd: 0,
+          })),
+        };
+
+        removePosition(position.id, "open", undefined);
+        setPosition(updatedPosition, "closed", undefined);
+        removePosition(position.id, "open", position.pool.dex);
+        setPosition(updatedPosition, "closed", position.pool.dex);
+
         if (analytics)
           logEvent(analytics, "position_closed", {
             bundleId,
@@ -138,7 +232,7 @@ export default function OpenPositionTable({
           });
       }
     },
-    [closePosition, dex, analytics],
+    [closePosition, setPosition, removePosition, dex, analytics],
   );
   const onClaimRewards = useCallback(
     async (position: Position) => {
@@ -149,6 +243,18 @@ export default function OpenPositionTable({
       });
       if (result) {
         const { bundleId } = result;
+        const updatedPosition = {
+          ...position,
+          pnls: position.pnls.map((pnl) => ({
+            ...pnl,
+            feeUsd: 0,
+            claimedFeeUsd: 0,
+          })),
+        };
+
+        updatePosition(updatedPosition, "closed", undefined);
+        updatePosition(updatedPosition, "closed", position.pool.dex);
+
         if (analytics)
           logEvent(analytics, "rewards_claimed", {
             bundleId,
@@ -156,7 +262,7 @@ export default function OpenPositionTable({
           });
       }
     },
-    [claimPositionRewards, dex, analytics],
+    [claimPositionRewards, dex, analytics, updatePosition],
   );
 
   return (
@@ -306,7 +412,7 @@ export default function OpenPositionTable({
                   <NativeOrUsdAndPercentage
                     isNative={isNative}
                     nativePrice={nativePrice}
-                    usdValue={positionAggregrate.pnl}
+                    usdValue={positionAggregrate.value}
                   />
                 </td>
                 <td>
@@ -323,7 +429,13 @@ export default function OpenPositionTable({
                     usdValue={positionAggregrate.unCollectedFee}
                   />
                 </td>
-                <td></td>
+                <td>
+                  <NativeOrUsdAndPercentage
+                    isNative={isNative}
+                    nativePrice={nativePrice}
+                    usdValue={positionAggregrate.pnl}
+                  />
+                </td>
                 <td></td>
               </tr>
             </tbody>

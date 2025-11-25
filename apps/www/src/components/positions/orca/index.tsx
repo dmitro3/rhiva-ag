@@ -1,9 +1,8 @@
 import clsx from "clsx";
 import type z from "zod";
 import { format } from "util";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { number, object } from "yup";
-import { toast } from "react-toastify";
 import { PublicKey } from "@solana/web3.js";
 import type { Pair } from "@rhiva-ag/dex-api";
 import { IoArrowBack } from "react-icons/io5";
@@ -29,6 +28,7 @@ import { sendTransaction } from "@/instances";
 import PriceRangeInput from "./PriceRangeInput";
 import PositionOverview from "../PositionOverview";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import ConfirmTransactionToast from "@/components/ConfirmTransactionToast";
 
 type OrcaOpenPositionProps = {
   pool: Pair;
@@ -65,6 +65,7 @@ function OrcaOpenPositionForm({
   const { connection } = useConnection();
   const nativeMint = NATIVE_MINT.toBase58();
   const { user, isAuthenticated, signIn } = useAuth();
+  const [bundleId, setBundleId] = useState<string | undefined>();
 
   const { data: rawBalance } = useQuery({
     refetchOnMount: true,
@@ -191,7 +192,7 @@ function OrcaOpenPositionForm({
           dex: "orca",
           ...createPositionValue,
         });
-      toast.success("🎉 Position opened successfully");
+      setBundleId(bundleId);
     },
   });
 
@@ -276,6 +277,12 @@ function OrcaOpenPositionForm({
               )}
             </button>
           </div>
+          {bundleId && (
+            <ConfirmTransactionToast
+              bundleId={bundleId}
+              setBundleId={setBundleId}
+            />
+          )}
         </Form>
       </FormikContext>
     )

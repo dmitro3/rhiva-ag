@@ -99,8 +99,16 @@ export const getWalletPositionsAggregrate = (
       avgInvestedUsd: coalesce(avg(positions.amountUsd), 0).mapWith(Number),
       networthUsd: coalesce(
         add(
-          sum(decimal(qPnl.amountUsd)),
-          coalesce(sum(caseWhen(gt(qPnl.pnlUsd, 0), qPnl.pnlUsd)), 0),
+          sum(decimal(caseWhen(eq(positions.state, "open"), qPnl.amountUsd))),
+          coalesce(
+            sum(
+              caseWhen(
+                and(gt(qPnl.pnlUsd, 0), eq(positions.state, "open"))!,
+                qPnl.pnlUsd,
+              ),
+            ),
+            0,
+          ),
         ),
         0,
       ).mapWith(Number),

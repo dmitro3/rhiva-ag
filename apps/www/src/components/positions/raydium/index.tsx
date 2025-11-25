@@ -1,9 +1,8 @@
 import clsx from "clsx";
 import type z from "zod";
 import { format } from "util";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { number, object } from "yup";
-import { toast } from "react-toastify";
 import { PublicKey } from "@solana/web3.js";
 import { IoArrowBack } from "react-icons/io5";
 import type { Pair } from "@rhiva-ag/dex-api";
@@ -28,6 +27,7 @@ import PriceRangeInput from "./PriceRangeInput";
 import PositionOverview from "../PositionOverview";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { getPoolState } from "@/lib/web3/raydium-patch";
+import ConfirmTransactionToast from "@/components/ConfirmTransactionToast";
 
 type RaydiumOpenPositionProps = {
   pool: Pair;
@@ -64,6 +64,7 @@ function RaydiumOpenPositionForm({
   const { connection } = useConnection();
   const nativeMint = NATIVE_MINT.toBase58();
   const { isAuthenticated, user, signIn } = useAuth();
+  const [bundleId, setBundleId] = useState<string | undefined>();
 
   const { data: rawBalance } = useQuery({
     refetchOnMount: true,
@@ -178,7 +179,7 @@ function RaydiumOpenPositionForm({
           dex: "raydium",
           ...createPositionValue,
         });
-      toast.success("🎉 Position opened successfully");
+      setBundleId(bundleId);
     },
   });
 
@@ -263,6 +264,12 @@ function RaydiumOpenPositionForm({
               )}
             </button>
           </div>
+          {bundleId && (
+            <ConfirmTransactionToast
+              bundleId={bundleId}
+              setBundleId={setBundleId}
+            />
+          )}
         </Form>
       </FormikContext>
     )

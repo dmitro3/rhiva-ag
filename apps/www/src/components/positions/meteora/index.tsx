@@ -2,10 +2,9 @@ import clsx from "clsx";
 import type z from "zod";
 import { format } from "util";
 import { object, number } from "yup";
-import { toast } from "react-toastify";
 import { useDex } from "@/hooks/useDex";
 import { PublicKey } from "@solana/web3.js";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { sendTransaction } from "@/instances";
 import type { Pair } from "@rhiva-ag/dex-api";
 import { IoArrowBack } from "react-icons/io5";
@@ -30,6 +29,7 @@ import { useTRPC } from "@/trpc.client";
 import PriceRangeInput from "./PriceRangeInput";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { getActiveBin } from "@/lib/web3/meteora-patch";
+import ConfirmTransactionToast from "@/components/ConfirmTransactionToast";
 
 type MeteoraOpenPositionProps = {
   pool: Pair;
@@ -65,6 +65,7 @@ function MeteoraOpenPositionForm({
   const { connection } = useConnection();
   const nativeMint = NATIVE_MINT.toBase58();
   const { user, isAuthenticated, signIn } = useAuth();
+  const [bundleId, setBundleId] = useState<string | undefined>();
 
   const { data: rawBalance } = useQuery({
     refetchOnMount: true,
@@ -200,7 +201,7 @@ function MeteoraOpenPositionForm({
           dex: "meteora",
           ...createPositionValue,
         });
-      toast.success("🎉 Position opened successfully");
+      setBundleId(bundleId);
     },
   });
 
@@ -346,6 +347,12 @@ function MeteoraOpenPositionForm({
             <span className="my-2">Open Position</span>
           )}
         </button>
+        {bundleId && (
+          <ConfirmTransactionToast
+            bundleId={bundleId}
+            setBundleId={setBundleId}
+          />
+        )}
       </Form>
     </FormikContext>
   );

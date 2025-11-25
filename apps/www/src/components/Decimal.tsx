@@ -18,7 +18,7 @@ export default function Decimal<T extends React.ElementType>({
   minValue,
   prefix,
   suffix,
-  disableTruncate,
+  disableTruncate = true,
   truncateStyle,
   ...props
 }: DecimalProps<T>) {

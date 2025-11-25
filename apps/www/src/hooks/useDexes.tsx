@@ -1,8 +1,10 @@
 import { useMemo } from "react";
 
+export type TDex = "orca" | "meteora" | "saros-dlmm" | "raydium-clmm";
+
 export type Dex = {
   title: string;
-  value: "orca" | "meteora" | "saros-dlmm" | "raydium-clmm" | null;
+  value: TDex | null;
 };
 
 export function useDexes() {

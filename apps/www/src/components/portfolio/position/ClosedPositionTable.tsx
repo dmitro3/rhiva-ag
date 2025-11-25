@@ -33,8 +33,9 @@ export default function ClosePositionTable({
     Awaited<ReturnType<AppRouter["position"]["list"]>>["items"][number] | null
   >(null);
 
-  const { data } = useQuery(
-    trpc.position.list.queryOptions({
+  const { data } = useQuery({
+    refetchInterval: 60_000,
+    ...trpc.position.list.queryOptions({
       offset: currentPage,
       limit: itemsPerPage.current,
       filter: {
@@ -42,7 +43,7 @@ export default function ClosePositionTable({
         dex: dex ? { eq: dex } : undefined,
       },
     }),
-  );
+  });
 
   const totalItems = useMemo(() => (data?.total ? data.total : 0), [data]);
 

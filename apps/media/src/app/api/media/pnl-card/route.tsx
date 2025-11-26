@@ -5,7 +5,7 @@ import { ImageResponse } from "next/og";
 import { NextResponse, type NextRequest } from "next/server";
 
 import Text from "@/components/Text";
-import { getNumberColor, loadFonts } from "@/utils";
+import { getCardBackground, getNumberColor, loadFonts } from "@/utils";
 import {
   compactCurrencyIntlArgs,
   currencyIntlArgs,
@@ -86,7 +86,12 @@ export async function GET(request: NextRequest) {
           style={{
             objectFit: "fill",
           }}
-          src={format("%s/bg/pnls/profit/%d.jpeg", origin, randomId)}
+          src={format(
+            "%s/bg/pnls/%s/%d.jpeg",
+            origin,
+            getCardBackground(pnl.pnlUsd),
+            randomId,
+          )}
         />
         <div
           style={{

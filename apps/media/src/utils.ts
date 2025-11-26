@@ -31,3 +31,5 @@ export async function loadFonts(origin: string) {
 
 export const getNumberColor = (value: number) =>
   value >= 0 ? (value === 0 ? undefined : "#39FF14") : "#ef4444";
+export const getCardBackground = (value: number) =>
+  value >= 0 ? "proft" : "loss";

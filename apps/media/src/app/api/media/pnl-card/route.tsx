@@ -191,6 +191,11 @@ export async function GET(request: NextRequest) {
         width: 576,
         height: 288,
         fonts: await loadFonts(origin),
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        },
       },
     );
   }

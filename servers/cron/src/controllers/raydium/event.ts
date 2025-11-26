@@ -10,6 +10,7 @@ import type { AmmV3 } from "@rhiva-ag/decoder/programs/idls/types/raydium";
 import {
   type Database,
   type walletSelectSchema,
+  pnls,
   positions,
   rewards,
 } from "@rhiva-ag/datasource";
@@ -169,7 +170,7 @@ export const syncRaydiumPositionStateFromEvent = async ({
       const positionId = data.positionNftMint.toBase58();
       const position = await getPositionById(db, positionId);
 
-      if (!position) return;
+      if (!position || position.state === "closed") return;
 
       const { pool } = position;
       const price = (await coingecko.simple.tokenPrice.getID("solana", {
@@ -177,10 +178,10 @@ export const syncRaydiumPositionStateFromEvent = async ({
         contract_addresses: [pool.baseToken.id, pool.quoteToken.id].join(","),
       })) as Record<string, { usd: number }>;
 
-      const baseTokenPrice = price[pool.baseToken.id]?.usd;
-      const quoteTokenPrice = price[pool.quoteToken.id]?.usd;
       const rawBaseAmount = data.decreaseAmount0;
       const rawQuoteAmount = data.decreaseAmount1;
+      const baseTokenPrice = price[pool.baseToken.id]?.usd;
+      const quoteTokenPrice = price[pool.quoteToken.id]?.usd;
 
       let baseAmount = 0,
         quoteAmount = 0;
@@ -211,6 +212,11 @@ export const syncRaydiumPositionStateFromEvent = async ({
           })
           .where(eq(positions.id, positionId))
           .returning(),
+        db
+          .update(pnls)
+          .set({ state: "closed" })
+          .where(eq(pnls.position, positionId))
+          .returning(),
         sendNotification(db, {
           user: wallet.user,
           type: "transactions",
@@ -238,6 +244,8 @@ export const syncRaydiumPositionStateFromEvent = async ({
       ]);
 
       results.push(updatedPosition);
+    } else if (event.name === "collectPersonalFeeEvent") {
+      // todo
     }
   }
 

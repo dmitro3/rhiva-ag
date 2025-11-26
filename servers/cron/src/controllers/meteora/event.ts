@@ -6,6 +6,7 @@ import type { ProgramEventType } from "@rhiva-ag/decoder";
 import type Coingecko from "@coingecko/coingecko-typescript";
 import type { LbClmm } from "@rhiva-ag/decoder/programs/idls/types/meteora";
 import {
+  pnls,
   positions,
   rewards,
   type walletSelectSchema,
@@ -150,7 +151,7 @@ export const syncMeteoraPositionStateFromEvent = async ({
       const positionId = data.position.toBase58();
       const position = await getPositionById(db, positionId);
 
-      if (!position) return;
+      if (!position || position.state === "closed") return;
 
       const { pool } = position;
       const price = (await coingecko.simple.tokenPrice.getID("solana", {
@@ -190,6 +191,11 @@ export const syncMeteoraPositionStateFromEvent = async ({
             },
           })
           .where(eq(positions.id, positionId))
+          .returning(),
+        db
+          .update(pnls)
+          .set({ state: "closed" })
+          .where(eq(pnls.position, positionId))
           .returning(),
         sendNotification(db, {
           user: wallet.user,

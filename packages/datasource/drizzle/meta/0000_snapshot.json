@@ -1,5 +1,5 @@
 {
-  "id": "3c7b798a-71b8-40c3-ac3a-ba8df712ab08",
+  "id": "27b98ac4-2bd6-4356-85be-82a09d510ef7",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -8,17 +8,24 @@
       "name": "pnls",
       "schema": "",
       "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
         "position": {
           "name": "position",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "state": {
-          "name": "state",
-          "type": "text",
+        "config": {
+          "name": "config",
+          "type": "jsonb",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "feeUsd": {
           "name": "feeUsd",
@@ -38,21 +45,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "createdAt": {
-          "name": "createdAt",
-          "type": "date",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
         "amountUsd": {
           "name": "amountUsd",
-          "type": "double precision",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "claimedFeeUsd": {
-          "name": "claimedFeeUsd",
           "type": "double precision",
           "primaryKey": false,
           "notNull": true
@@ -85,15 +79,15 @@
           "notNull": true,
           "default": 0
         },
-        "unclaimedBaseFee": {
-          "name": "unclaimedBaseFee",
+        "claimedFeeUsd": {
+          "name": "claimedFeeUsd",
           "type": "double precision",
           "primaryKey": false,
           "notNull": true,
           "default": 0
         },
-        "unclaimedBaseFeeUsd": {
-          "name": "unclaimedBaseFeeUsd",
+        "unclaimedBaseFee": {
+          "name": "unclaimedBaseFee",
           "type": "double precision",
           "primaryKey": false,
           "notNull": true,
@@ -106,6 +100,13 @@
           "notNull": true,
           "default": 0
         },
+        "unclaimedBaseFeeUsd": {
+          "name": "unclaimedBaseFeeUsd",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
         "unclaimedQuoteFeeUsd": {
           "name": "unclaimedQuoteFeeUsd",
           "type": "double precision",
@@ -113,11 +114,26 @@
           "notNull": true,
           "default": 0
         },
-        "config": {
-          "name": "config",
-          "type": "jsonb",
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp with time zone",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "state": {
+          "name": "state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'opened'"
         }
       },
       "indexes": {},
@@ -134,10 +150,10 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "pnls_position_createdAt_unique": {
-          "name": "pnls_position_createdAt_unique",
+        "pnls_position_unique": {
+          "name": "pnls_position_unique",
           "nullsNotDistinct": false,
-          "columns": ["position", "createdAt"]
+          "columns": ["position"]
         }
       },
       "policies": {},

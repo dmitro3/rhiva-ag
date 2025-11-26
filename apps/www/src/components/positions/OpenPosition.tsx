@@ -1,5 +1,4 @@
 import type { Pair } from "@rhiva-ag/dex-api";
-import "es-arraybuffer-base64/Uint8Array.prototype.toBase64";
 
 import OrcaOpenPosition from "./orca";
 import RaydiumOpenPosition from "./raydium";

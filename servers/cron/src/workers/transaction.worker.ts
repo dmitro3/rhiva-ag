@@ -61,6 +61,28 @@ export const transactionWorkSchema = z
       wallet: walletSchema.pick({ id: true, user: true }),
     }),
   );
+export const transactionEventSchema = z
+  .union([
+    z.object({
+      status: z.enum(["queued", "pending", "completed"]),
+    }),
+    z.object({
+      status: z.literal("error"),
+      failedReason: z.string().optional(),
+      stacktrace: z.array(z.string()).optional(),
+    }),
+  ])
+  .and(
+    z.object({
+      jobId: z.string(),
+      type: z.enum([
+        "create-position",
+        "closed-position",
+        "rebalanced-position",
+        "repositioned",
+      ]),
+    }),
+  );
 
 export const createTransactionPipeline = ({
   db,
@@ -172,7 +194,7 @@ export default async function createWorker({
   const rpc = createSolanaRpc(connection.rpcEndpoint);
   const worker = new Worker<z.infer<typeof transactionWorkSchema>>(
     Work.syncTransaction,
-    async ({ data, log }) => {
+    async ({ data }) => {
       const result = transactionWorkSchema.safeParse(data);
 
       if (result.success) {
@@ -185,21 +207,16 @@ export default async function createWorker({
           wallet: data.wallet,
           positionMint: "positionMint" in data ? data.positionMint : undefined,
         });
-
         const bundle = await pRetry(() =>
           sender.safeGetBundle(data.bundleId, 30),
         );
-        log(JSON.stringify(bundle));
         const response = mapFilter(
           await connection.getParsedTransactions(bundle.transactions, {
             maxSupportedTransactionVersion: 0,
           }),
           (transaction) => transaction,
         );
-        log(JSON.stringify(response));
-        const result = pipeline.process(...response);
-        log(JSON.stringify(result));
-        return result;
+        return pipeline.process(...response);
       }
 
       logger.error(
@@ -213,13 +230,47 @@ export default async function createWorker({
     },
   );
 
-  worker.on("completed", (job) => {
+  worker.on("active", async (job) => {
+    const redis = await worker.client;
+    await redis.publish(
+      Work.syncTransaction,
+      JSON.stringify({
+        jobId: job.id,
+        status: "pending",
+        type: job.data.type,
+      }),
+    );
+  });
+
+  worker.on("completed", async (job) => {
+    const redis = await worker.client;
+    await redis.publish(
+      Work.syncTransaction,
+      JSON.stringify({
+        jobId: job.id,
+        type: job.data.type,
+        status: "completed",
+      }),
+    );
+
     logger.info(
       { id: job.id, data: job.data },
       "worker.transaction.successful",
     );
   });
-  worker.on("failed", (job, error) => {
+  worker.on("failed", async (job, error) => {
+    const redis = await worker.client;
+    await redis.publish(
+      Work.syncTransaction,
+      JSON.stringify({
+        jobId: job?.id,
+        status: "error",
+        type: job?.data.type,
+        stacktrace: job?.stacktrace,
+        failedReason: job?.failedReason,
+      }),
+    );
+
     logger.error(
       {
         error,

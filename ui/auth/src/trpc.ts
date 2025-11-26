@@ -1,7 +1,12 @@
 import { format } from "util";
 import superjson from "superjson";
 import type { AppRouter } from "@rhiva-ag/trpc";
-import { createTRPCClient, httpBatchLink } from "@trpc/client";
+import {
+  createTRPCClient,
+  httpBatchLink,
+  httpSubscriptionLink,
+  splitLink,
+} from "@trpc/client";
 
 export const makeTRPCClient = (
   token?: string,
@@ -10,20 +15,25 @@ export const makeTRPCClient = (
 ) =>
   createTRPCClient<AppRouter>({
     links: [
-      httpBatchLink({
-        url,
-        fetch(url, options) {
-          return fetch(url, {
-            ...options,
-            credentials: "include",
-          });
-        },
-        transformer: superjson,
-        async headers() {
-          const headers = new Headers();
-          if (token) headers.set("authorization", format("%s %s", tag, token));
-          return headers;
-        },
+      splitLink({
+        condition: (op) => op.type === "subscription",
+        true: httpSubscriptionLink({ url, transformer: superjson }),
+        false: httpBatchLink({
+          url,
+          fetch(url, options) {
+            return fetch(url, {
+              ...options,
+              credentials: "include",
+            });
+          },
+          transformer: superjson,
+          async headers() {
+            const headers = new Headers();
+            if (token)
+              headers.set("authorization", format("%s %s", tag, token));
+            return headers;
+          },
+        }),
       }),
     ],
   });

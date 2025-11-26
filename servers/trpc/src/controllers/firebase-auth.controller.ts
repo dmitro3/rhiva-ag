@@ -27,6 +27,9 @@ export class FirebaseAuthMiddleware extends AuthMiddleware {
             uid: payload.uid,
             email: payload.email,
           },
+          {
+            skipCreateWallet: true,
+          },
         );
 
         const sessionId = request.session.sessionId;

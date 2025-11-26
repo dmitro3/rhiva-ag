@@ -4,8 +4,8 @@ import type React from "react";
 import { BsDownload } from "react-icons/bs";
 import { LuRefreshCw } from "react-icons/lu";
 import type { AppRouter } from "@rhiva-ag/trpc";
+import { useCallback, useMemo, useState } from "react";
 import { MdClose, MdContentCopy } from "react-icons/md";
-import { useCallback, useMemo, useRef, useState } from "react";
 import {
   Dialog,
   DialogBackdrop,
@@ -68,10 +68,6 @@ export default function PositionDetailModal({
     position.updatedAt,
     position.createdAt,
   ]);
-
-  const exportCard = useCallback(() => {
-    window.open(pnlUrl, "_blank");
-  }, [pnlUrl]);
 
   const copyCard = useCallback(async () => {
     const blob = await fetch(pnlUrl).then((response) => response.blob());

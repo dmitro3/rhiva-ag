@@ -16,7 +16,7 @@ import {
 } from "@rhiva-ag/trpc/browser";
 
 import { sendTransaction } from "@/instances";
-import type { Position } from "../components/portfolio/position/OpenPositionTable";
+import type { Position } from "./usePosition";
 
 export const useClaimPositionReward = (
   dex: Dex,

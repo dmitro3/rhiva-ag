@@ -265,9 +265,10 @@ export const syncMeteoraPositions = async ({
       rewardUsd,
       amountUsd,
       claimedFeeUsd,
-      state: "opened",
       baseAmountUsd,
       quoteAmountUsd,
+      state: "opened",
+      updatedAt: new Date(),
       baseAmount: amountX,
       quoteAmount: amountY,
       unclaimedBaseFee: feeX,
@@ -284,11 +285,12 @@ export const syncMeteoraPositions = async ({
         .insert(pnls)
         .values(pnlUpdates)
         .onConflictDoUpdate({
-          target: [pnls.position, pnls.createdAt],
+          target: [pnls.position],
           set: buildConflictUpdateColumns(pnls, [
             "state",
             "feeUsd",
             "pnlUsd",
+            "updatedAt",
             "rewardUsd",
             "amountUsd",
             "baseAmount",

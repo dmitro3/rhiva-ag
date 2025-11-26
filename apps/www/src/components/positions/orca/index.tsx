@@ -28,7 +28,7 @@ import { sendTransaction } from "@/instances";
 import PriceRangeInput from "./PriceRangeInput";
 import PositionOverview from "../PositionOverview";
 import { useAnalytics } from "@/hooks/useAnalytics";
-import ConfirmTransactionToast from "@/components/ConfirmTransactionToast";
+import ConfirmBundleToast from "@/components/ConfirmBundleToast";
 
 type OrcaOpenPositionProps = {
   pool: Pair;
@@ -278,9 +278,15 @@ function OrcaOpenPositionForm({
             </button>
           </div>
           {bundleId && (
-            <ConfirmTransactionToast
+            <ConfirmBundleToast
               bundleId={bundleId}
               setBundleId={setBundleId}
+              title="⚡Bundle Sent"
+              message={{
+                success: "🎉 Position Created",
+                error: "Oops! Can't confirm this bundle.",
+                pending: "Confirming Transaction Bundle...",
+              }}
             />
           )}
         </Form>

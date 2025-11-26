@@ -5,6 +5,7 @@ import { Roboto } from "next/font/google";
 import { Auth } from "@rhiva-ag/auth-ui/server";
 import { ToastContainer } from "react-toastify";
 import { NextIntlClientProvider } from "next-intl";
+import "es-arraybuffer-base64/Uint8Array.prototype.toBase64";
 
 import "@unocss/reset/tailwind.css";
 import "rc-slider/assets/index.css";

@@ -39,6 +39,7 @@ export abstract class AuthMiddleware {
     values: z.infer<typeof userInsertSchema>,
     opts?: {
       externalWallet?: boolean;
+      skipCreateWallet?: boolean;
     },
   ) {
     let user = await drizzle.query.users.findFirst({
@@ -51,7 +52,7 @@ export abstract class AuthMiddleware {
         where: eq(wallets.user, user.id),
       });
 
-      if (!wallet) {
+      if (!wallet && !opts?.skipCreateWallet) {
         let values: typeof wallets.$inferInsert;
         if (opts?.externalWallet) {
           assertIsAddress(user.uid);

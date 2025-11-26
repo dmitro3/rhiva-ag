@@ -76,13 +76,15 @@ export default async function createWorker({
       connection: createRedis({ maxRetriesPerRequest: null }),
     },
   );
+
   worker.on("completed", (job) => {
     logger.info(
       { id: job.id, data: job.data },
       "worker.position.sync.successful",
     );
   });
-  worker.on("failed", (job, error) => {
+
+  worker.on("failed", async (job, error) => {
     logger.error(
       {
         error,

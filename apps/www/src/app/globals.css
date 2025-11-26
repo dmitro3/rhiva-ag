@@ -100,3 +100,31 @@ input[type="number"] {
 .animate-bounce-dot {
   animation: bounceDots 1.3s infinite;
 }
+
+@keyframes slide-x {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+@keyframes shrink-x {
+  0% {
+    width: 100%;
+  }
+  100% {
+    width: 0;
+  }
+}
+
+@layer utilities {
+  .animate-slide-x {
+    animation: slide-x 1.4s linear infinite;
+  }
+}
+@layer utilities {
+  .animate-shrink-x {
+    animation: shrink-x 5s linear infinite;
+  }
+}

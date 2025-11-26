@@ -4,7 +4,6 @@ import { format } from "util";
 import { object, number } from "yup";
 import { useDex } from "@/hooks/useDex";
 import { PublicKey } from "@solana/web3.js";
-import { useCallback, useMemo, useState } from "react";
 import { sendTransaction } from "@/instances";
 import type { Pair } from "@rhiva-ag/dex-api";
 import { IoArrowBack } from "react-icons/io5";
@@ -12,6 +11,7 @@ import { logEvent } from "firebase/analytics";
 import { NATIVE_MINT } from "@solana/spl-token";
 import { POSITION_FEE } from "@meteora-ag/dlmm";
 import { useAuth } from "@rhiva-ag/auth-ui/client";
+import { useCallback, useMemo, useState } from "react";
 import { fromWebWalletAdapter } from "@rhiva-ag/shared";
 import { Form, FormikContext, useFormik } from "formik";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -29,7 +29,7 @@ import { useTRPC } from "@/trpc.client";
 import PriceRangeInput from "./PriceRangeInput";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { getActiveBin } from "@/lib/web3/meteora-patch";
-import ConfirmTransactionToast from "@/components/ConfirmTransactionToast";
+import ConfirmBundleToast from "@/components/ConfirmBundleToast";
 
 type MeteoraOpenPositionProps = {
   pool: Pair;
@@ -348,9 +348,15 @@ function MeteoraOpenPositionForm({
           )}
         </button>
         {bundleId && (
-          <ConfirmTransactionToast
+          <ConfirmBundleToast
             bundleId={bundleId}
             setBundleId={setBundleId}
+            title="⚡Bundle Sent"
+            message={{
+              success: "🎉 Position Created",
+              error: "Oops! Can't confirm this bundle.",
+              pending: "Confirming Transaction Bundle...",
+            }}
           />
         )}
       </Form>

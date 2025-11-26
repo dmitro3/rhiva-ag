@@ -412,17 +412,17 @@ export const syncOrcaPositions = async ({
       pnlUsd,
       rewardUsd,
       amountUsd,
-      claimedFeeUsd: 0,
-      state: "opened",
       baseAmountUsd,
       quoteAmountUsd,
+      state: "opened",
+      updatedAt: new Date(),
       baseAmount: amountX,
       quoteAmount: amountY,
       unclaimedBaseFee: feeX,
       unclaimedQuoteFee: feeY,
+      position: offchainPosition.id,
       unclaimedBaseFeeUsd: baseFeeUsd,
       unclaimedQuoteFeeUsd: quoteFeeUsd,
-      position: offchainPosition.id,
     });
   }
   if (pnlUpdates.length > 0) {
@@ -431,7 +431,7 @@ export const syncOrcaPositions = async ({
         .insert(pnls)
         .values(pnlUpdates)
         .onConflictDoUpdate({
-          target: [pnls.position, pnls.createdAt],
+          target: [pnls.position],
           set: buildConflictUpdateColumns(pnls, [
             "state",
             "feeUsd",

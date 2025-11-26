@@ -9,6 +9,7 @@ const t = initTRPC.context<Context>().create({
   transformer: superjson,
   errorFormatter(opts) {
     const { shape, error } = opts;
+    console.log(error);
     if (error.cause instanceof XiorError) {
       return {
         ...shape,

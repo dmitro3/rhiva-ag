@@ -5,7 +5,6 @@ import { mapFilter } from "@rhiva-ag/shared";
 import { logEvent } from "firebase/analytics";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@rhiva-ag/auth-ui/client";
-import type { AppRouter } from "@rhiva-ag/trpc/browser";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -14,13 +13,13 @@ import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import Image from "@/components/Image";
 import { useDex } from "@/hooks/useDex";
 import PnLCardModal from "./PnLCardModal";
-import type { TDex } from "@/hooks/useDexes";
 import Pagination from "../PositionPagination";
 import CopyButton from "@/components/CopyButton";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useTRPC, useTRPCClient } from "@/trpc.client";
 import PositionDetailModal from "./PositionDetailModal";
 import { useClosePosition } from "@/hooks/useClosePosition";
+import { usePosition, type Position } from "@/hooks/usePosition";
 import NativeOrUsdAndPercentage from "./NativeOrUsdAndPercentage";
 import { useClaimPositionReward } from "@/hooks/useClaimPositionReward";
 
@@ -28,10 +27,6 @@ type OpenPositionTableProps = {
   isNative?: boolean;
   nativePrice: number;
 };
-
-export type Position = Awaited<
-  ReturnType<AppRouter["position"]["list"]>
->["items"][number];
 
 export default function OpenPositionTable({
   isNative,
@@ -126,88 +121,18 @@ export default function OpenPositionTable({
     return [positions, aggregrations];
   }, [data]);
 
-  const setPosition = useCallback(
-    (position: Position, state?: "open" | "closed", dex?: TDex) => {
-      queryClient.setQueryData(
-        trpc.position.list.queryKey({
-          offset: currentPage,
-          limit: itemsPerPage.current,
-          filter: {
-            state: { eq: state },
-            dex: dex ? { eq: dex } : undefined,
-          },
-        }),
-        (previousData) => {
-          if (previousData)
-            previousData.items = [position, ...previousData.items];
-          return previousData;
-        },
-      );
-    },
-    [queryClient, currentPage, trpc],
+  const { setPosition, updatePosition, removePosition } = usePosition(
+    currentPage,
+    itemsPerPage,
+    queryClient,
+    trpc,
   );
-  const updatePosition = useCallback(
-    (
-      position: Partial<Position> & Pick<Position, "id">,
-      state?: "open" | "closed",
-      dex?: TDex,
-    ) => {
-      queryClient.setQueryData(
-        trpc.position.list.queryKey({
-          offset: currentPage,
-          limit: itemsPerPage.current,
-          filter: {
-            state: { eq: state },
-            dex: dex ? { eq: dex } : undefined,
-          },
-        }),
-        (previousData) => {
-          if (previousData) {
-            const index = previousData.items.findIndex(
-              (item) => item.id === position.id,
-            );
-            if (index > -1) {
-              const previous = previousData.items[index];
-              previousData.items[index] = { ...previous, ...position };
-            }
-          }
-
-          return previousData;
-        },
-      );
-    },
-    [queryClient, currentPage, trpc],
-  );
-  const removePosition = useCallback(
-    (position: Position["id"], state?: "open" | "closed", dex?: TDex) => {
-      queryClient.setQueryData(
-        trpc.position.list.queryKey({
-          offset: currentPage,
-          limit: itemsPerPage.current,
-          filter: {
-            state: { eq: state },
-            dex: dex ? { eq: dex } : undefined,
-          },
-        }),
-        (previousData) => {
-          if (previousData)
-            previousData.items = previousData.items.filter(
-              (item) => item.id !== position,
-            );
-
-          return previousData;
-        },
-      );
-    },
-    [queryClient, currentPage, trpc],
-  );
-
   const onClosePosition = useCallback(
     async (position: Position) => {
       const result = await toast.promise(closePosition(position), {
         error: "Oops! Transaction failed.",
         pending: "Sending close position transaction...",
-        success: "🎉 Transaction bundle sent successfully.",
+        success: "🎉 Position closed successfully.",
       });
       if (result) {
         const { bundleId } = result;
@@ -239,7 +164,7 @@ export default function OpenPositionTable({
       const result = await toast.promise(claimPositionRewards(position), {
         error: "Oops! Transaction failed.",
         pending: "Sending claim reward transaction...",
-        success: "Transaction bundle sent successfully.",
+        success: "🎉 Rewards claimed successfully.",
       });
       if (result) {
         const { bundleId } = result;

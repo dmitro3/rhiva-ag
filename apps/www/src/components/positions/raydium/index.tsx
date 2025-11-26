@@ -27,7 +27,7 @@ import PriceRangeInput from "./PriceRangeInput";
 import PositionOverview from "../PositionOverview";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { getPoolState } from "@/lib/web3/raydium-patch";
-import ConfirmTransactionToast from "@/components/ConfirmTransactionToast";
+import ConfirmBundleToast from "@/components/ConfirmBundleToast";
 
 type RaydiumOpenPositionProps = {
   pool: Pair;
@@ -265,9 +265,15 @@ function RaydiumOpenPositionForm({
             </button>
           </div>
           {bundleId && (
-            <ConfirmTransactionToast
+            <ConfirmBundleToast
               bundleId={bundleId}
               setBundleId={setBundleId}
+              title="⚡Bundle Sent"
+              message={{
+                success: "🎉 Position Created Successfully",
+                error: "Oops! Unable confirm this bundle.",
+                pending: "Confirming Transaction Bundle...",
+              }}
             />
           )}
         </Form>

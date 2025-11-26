@@ -61,7 +61,7 @@ function PortfolioCalender(props: React.ComponentProps<"div">) {
 
   const mapDailyPnlData = useMemo(
     () =>
-      data ? collectionToMap(data, (pnl) => pnl.day) : new Map<string, PNL>(),
+      data ? collectionToMap(data, (pnl) => pnl.date) : new Map<string, PNL>(),
     [data],
   );
 

@@ -20,6 +20,9 @@ export class JWTAuthMiddleware extends AuthMiddleware {
           {
             uid: payload.user,
           },
+          {
+            skipCreateWallet: true,
+          },
         );
 
         const sessionId = request.session.sessionId;

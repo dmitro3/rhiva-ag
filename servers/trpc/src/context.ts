@@ -14,7 +14,7 @@ import {
 
 const redis = createRedis();
 const authMiddlewares = [
-  new JWTAuthMiddleware(redis, secret, drizzle, {
+  new JWTAuthMiddleware(redis, drizzle, {
     ttl: 86400,
   }),
 ];

@@ -1,3 +1,4 @@
+import z from "zod";
 import {
   settingsSelectSchema,
   userSelectSchema,
@@ -5,7 +6,7 @@ import {
 } from "@rhiva-ag/datasource";
 
 export const extendedUserSelectSchema = userSelectSchema
-  .omit({ lastLogin: true })
+  .omit({ lastLogin: true, wallet: true })
   .extend({
     settings: settingsSelectSchema
       .omit({ user: true })
@@ -14,6 +15,12 @@ export const extendedUserSelectSchema = userSelectSchema
       key: true,
       user: true,
       wrappedDek: true,
-      createdAt: true,
     }),
+    wallets: z.array(
+      walletSchema.omit({
+        key: true,
+        user: true,
+        wrappedDek: true,
+      }),
+    ),
   });

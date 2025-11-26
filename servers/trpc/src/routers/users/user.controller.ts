@@ -68,19 +68,26 @@ export const getUserById = async (
     .leftJoin(qRewards, eq(qRewards.user, users.id))
     .as("qRanks");
 
-  const [user] = await db
-    .select({
-      ...qRanks._.selectedFields,
-      ...getTableColumns(users),
-      wallet: getTableColumns(wallets),
-      settings: getTableColumns(settings),
-    })
-    .from(users)
-    .limit(1)
-    .where(eq(users.id, userId))
-    .leftJoin(qRanks, eq(qRanks.id, users.id))
-    .innerJoin(settings, eq(settings.user, users.id))
-    .innerJoin(wallets, eq(wallets.user, users.id));
+  const [[user], userWallets] = await Promise.all([
+    db
+      .select({
+        ...qRanks._.selectedFields,
+        ...getTableColumns(users),
+        settings: getTableColumns(settings),
+      })
+      .from(users)
+      .limit(1)
+      .where(eq(users.id, userId))
+      .leftJoin(qRanks, eq(qRanks.id, users.id))
+      .innerJoin(settings, eq(settings.user, users.id)),
+    db.select().from(wallets).where(eq(wallets.user, userId)),
+  ]);
+  if (user)
+    return {
+      ...user,
+      wallets: userWallets,
+      wallet: userWallets.find((wallet) => wallet.primary)!,
+    };
 
-  return user;
+  return null;
 };

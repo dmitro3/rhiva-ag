@@ -15,9 +15,9 @@ import { poolRewardTokens, pools } from "./pools";
 
 export const userRelations = relations(users, ({ many, one }) => ({
   rewards: many(rewards),
+  wallets: many(wallets),
   poolFilters: many(poolFilters),
   notifications: many(notifications),
-  wallet: one(wallets, { fields: [users.id], references: [wallets.user] }),
   referer: many(referrers, { relationName: "referrers" }),
   settings: one(settings, { fields: [users.id], references: [settings.user] }),
 }));

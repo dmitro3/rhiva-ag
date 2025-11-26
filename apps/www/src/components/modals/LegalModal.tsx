@@ -137,7 +137,6 @@ export default function LegalModal() {
               </li>
               <li>
                 <span className="text-white text-lg font-semibold">
-                  {" "}
                   Updates
                 </span>
                 <p>
@@ -148,13 +147,39 @@ export default function LegalModal() {
               </li>
               <li>
                 <span className="text-white text-lg font-semibold">
-                  Data Collection
+                  Data Collection &amp; Usage
                 </span>
                 <p>
                   We value your privacy and are committed to being transparent
                   about the information we client and how it is used.
                 </p>
                 <ol className="flex flex-col px-4 space-y-2 list-decimal list-inside">
+                  <li>
+                    <span className="text-white text-base font-semibold">
+                      Google Sign In
+                    </span>
+                    <p>
+                      We receive your email address and full name from Google,
+                      which are used as unique identifiers in our database for
+                      future authentication. We will never share your email or
+                      send newsletters without your explicit consent. Your email
+                      address and full name will never be shared with any third
+                      party.
+                    </p>
+                  </li>
+                  <li>
+                    <span className="text-white text-base font-semibold">
+                      Facebook Sign In
+                    </span>
+                    <p>
+                      We receive your email address and full name from Facebook,
+                      which are used as unique identifiers in our database for
+                      future authentication. We will never share your email or
+                      send newsletters without your explicit consent. Your email
+                      address and full name will never be shared with any third
+                      party.
+                    </p>
+                  </li>
                   <li>
                     <span className="text-white text-base font-semibold">
                       Cookies for Authentication
@@ -179,10 +204,13 @@ export default function LegalModal() {
                       Analytics may record information such as your device type,
                       browser, approximate geographic location, and pages
                       visited. All data is aggregated and does not include
-                      personally identifiable information. We do not collect or
-                      store any other personal data beyond what is necessary for
-                      authentication and analytics. You can manage or disable
-                      cookies through your browser settings at any time.
+                      personally identifiable information.
+                    </p>
+                    <p>
+                      We do not collect or store any other personal data beyond
+                      what is necessary for authentication and analytics. You
+                      can manage or disable cookies through your browser
+                      settings at any time.
                     </p>
                   </li>
                 </ol>

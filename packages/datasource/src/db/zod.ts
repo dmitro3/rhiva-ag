@@ -2,6 +2,7 @@ import z from "zod";
 import { createUpdateSchema } from "drizzle-zod";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 
+import { address } from "./zod-custom";
 import {
   mints,
   notifications,
@@ -22,6 +23,9 @@ export * from "./zod-custom";
 
 export const walletSchema = createSelectSchema(wallets).extend({
   external: z.boolean(),
+});
+export const walletInsertSchema = createInsertSchema(wallets, {
+  id: address(),
 });
 export const walletSelectSchema = walletSchema
   .extend({ external: z.literal(false) })

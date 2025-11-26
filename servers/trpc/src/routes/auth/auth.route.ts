@@ -9,6 +9,7 @@ import { getEnv } from "../../env";
 import { secret } from "../../instances";
 import { getUserById } from "../../routers/users/user.controller";
 import { AuthMiddleware } from "../../controllers/auth.controller";
+import { createWallet } from "../../controllers/wallet.controller";
 import {
   firebaseTokenAuthSchema,
   safeAuthUserSchema,
@@ -25,16 +26,15 @@ const walletSignInRoute = async (
   const signInMessage = new SignMessage(data.message);
   const isValid = await signInMessage.validate(data.signature);
   if (isValid) {
-    const user = await AuthMiddleware.upsertUser(
-      db,
-      secret,
-      {
-        uid: data.message.publicKey,
-      },
-      { externalWallet: true },
-    );
+    const user = await AuthMiddleware.upsertUser(db, {
+      uid: data.message.publicKey,
+    });
 
     if (user) {
+      await createWallet(db, secret, {
+        primary: true,
+        user: user.id,
+      });
       const extendedUser = await getUserById(db, user.id);
       const token = jwt.sign({ user: user.uid }, getEnv<string>("SECRET_KEY"), {
         expiresIn: 25_200,
@@ -54,12 +54,16 @@ const firebaseTokenSignInRoute = async (
   const data = firebaseTokenAuthSchema.parse(request.body);
   const auth = getAuth();
   const decodedUser = await auth.verifyIdToken(data.token, true);
-  const user = await AuthMiddleware.upsertUser(db, secret, {
+  const user = await AuthMiddleware.upsertUser(db, {
     uid: decodedUser.uid,
     email: decodedUser.email,
   });
 
   if (user) {
+    await createWallet(db, secret, {
+      primary: true,
+      user: user.id,
+    });
     const extendedUser = await getUserById(db, user.id);
     const token = jwt.sign({ user: user.uid }, getEnv<string>("SECRET_KEY"), {
       expiresIn: 25200,

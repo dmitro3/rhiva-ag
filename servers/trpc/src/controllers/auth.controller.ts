@@ -4,13 +4,9 @@ import moment from "moment";
 import { format } from "util";
 import type Redis from "ioredis";
 import { eq } from "drizzle-orm";
-import { Keypair } from "@solana/web3.js";
-import { assertIsAddress } from "@solana/kit";
 import type { FastifyRequest } from "fastify";
-import { KMSSecret, type Secret } from "@rhiva-ag/shared";
 import {
   users,
-  wallets,
   settings,
   rewards,
   type Database,
@@ -22,7 +18,6 @@ import type { User } from "./types";
 export abstract class AuthMiddleware {
   constructor(
     protected readonly redis: Redis,
-    protected readonly secret: KMSSecret | Secret,
     protected readonly drizzle: Database,
     protected readonly options?: {
       ttl?: number;
@@ -35,72 +30,13 @@ export abstract class AuthMiddleware {
 
   static async upsertUser(
     drizzle: Database,
-    secret: KMSSecret | Secret,
     values: z.infer<typeof userInsertSchema>,
-    opts?: {
-      externalWallet?: boolean;
-      skipCreateWallet?: boolean;
-    },
   ) {
     let user = await drizzle.query.users.findFirst({
       where: eq(users.uid, values.uid),
     });
 
-    const setupUserAccount = async (user: typeof users.$inferSelect) => {
-      const promises = [];
-      const wallet = await drizzle.query.wallets.findFirst({
-        where: eq(wallets.user, user.id),
-      });
-
-      if (!wallet && !opts?.skipCreateWallet) {
-        let values: typeof wallets.$inferInsert;
-        if (opts?.externalWallet) {
-          assertIsAddress(user.uid);
-          values = {
-            user: user.id,
-            id: user.uid,
-            external: true,
-          };
-        } else {
-          const keypair = Keypair.generate();
-          let wrappedDek: string | undefined, encryptedText: string | undefined;
-
-          if (secret instanceof KMSSecret) {
-            const keypair = Keypair.generate();
-
-            const { wrappedDek: dek, encryptedText: key } =
-              await secret.encrypt(keypair.secretKey.toBase64());
-            wrappedDek = dek;
-            encryptedText = key;
-          } else encryptedText = secret.encrypt(keypair.secretKey.toBase64());
-
-          values = {
-            wrappedDek,
-            user: user.id,
-            external: false,
-            key: encryptedText,
-            id: keypair.publicKey.toBase58(),
-          };
-        }
-
-        promises.push(
-          drizzle
-            .insert(wallets)
-            .values(values)
-            .onConflictDoNothing({ target: [wallets.user] }),
-        );
-      }
-
-      return Promise.all([
-        ...promises,
-        drizzle
-          .insert(settings)
-          .values({
-            user: user.id,
-          })
-          .onConflictDoNothing({ target: [settings.user] }),
-      ]);
-    };
+    const maxStreak = moment(user?.lastLogin).daysInMonth();
     const yesterday = moment().startOf("day").subtract(1, "day");
     const resetStreak = user
       ? !moment(user.lastLogin, "day").isSame(yesterday, "day")
@@ -114,33 +50,44 @@ export abstract class AuthMiddleware {
         target: users.uid,
         set: {
           lastLogin: new Date(),
-          currentStreak: currentStreak === 30 ? 1 : currentStreak,
+          currentStreak: currentStreak >= maxStreak ? 1 : currentStreak,
         },
       })
       .returning();
 
     if (user) {
-      await setupUserAccount(user);
+      await drizzle
+        .insert(settings)
+        .values({
+          user: user.id,
+        })
+        .onConflictDoNothing({ target: [settings.user] });
       if (currentStreak === 7)
         await drizzle.insert(rewards).values({
           xp: 50,
           user: user.id,
           key: "7_days_streak",
         });
-      if (currentStreak === 30)
+      else if (currentStreak >= maxStreak)
         await drizzle.insert(rewards).values({
           xp: 100,
           user: user.id,
           key: "1_month_streak",
         });
 
-      return drizzle.query.users.findFirst({
+      const result = await drizzle.query.users.findFirst({
         with: {
-          wallet: true,
+          wallets: true,
           settings: true,
         },
         where: eq(users.uid, values.uid),
       });
+      if (result) {
+        return {
+          ...result,
+          wallet: result.wallets.find((wallet) => wallet.primary)!,
+        };
+      }
     }
 
     return null;

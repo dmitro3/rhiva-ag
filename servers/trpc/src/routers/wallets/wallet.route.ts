@@ -1,17 +1,30 @@
 import { TRPCError } from "@trpc/server";
-import { walletInsertSchema } from "@rhiva-ag/datasource";
+import { walletInsertSchema, walletSchema } from "@rhiva-ag/datasource";
 
 import { router, privateProcedure } from "../../trpc";
 import { createWallet } from "../../controllers/wallet.controller";
 
 export const walletRoute = router({
   create: privateProcedure
-    .input(walletInsertSchema.pick({ id: true, primary: true }))
+    .input(walletInsertSchema.pick({ id: true, primary: true }).partial())
+    .output(
+      walletSchema.pick({
+        id: true,
+        primary: true,
+        external: true,
+        createdAt: true,
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
-      const wallet = await createWallet(ctx.drizzle, ctx.secret, {
-        ...input,
-        user: ctx.user.id,
-      });
+      const wallet = await createWallet(
+        ctx.drizzle,
+        ctx.secret,
+        {
+          ...input,
+          user: ctx.user.id,
+        },
+        { updatePrimary: true },
+      );
       if (wallet) return wallet;
 
       throw new TRPCError({

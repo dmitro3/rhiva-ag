@@ -14,16 +14,9 @@ export class JWTAuthMiddleware extends AuthMiddleware {
 
       if (token) payload = jwt.decode(token, getEnv("SECRET_KEY"));
       if (payload?.user) {
-        const user = await AuthMiddleware.upsertUser(
-          this.drizzle,
-          this.secret,
-          {
-            uid: payload.user,
-          },
-          {
-            skipCreateWallet: true,
-          },
-        );
+        const user = await AuthMiddleware.upsertUser(this.drizzle, {
+          uid: payload.user,
+        });
 
         const sessionId = request.session.sessionId;
         const key = this.getCacheUserKey(sessionId);

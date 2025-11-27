@@ -20,17 +20,10 @@ export class FirebaseAuthMiddleware extends AuthMiddleware {
       }
 
       if (payload) {
-        const user = await AuthMiddleware.upsertUser(
-          this.drizzle,
-          this.secret,
-          {
-            uid: payload.uid,
-            email: payload.email,
-          },
-          {
-            skipCreateWallet: true,
-          },
-        );
+        const user = await AuthMiddleware.upsertUser(this.drizzle, {
+          uid: payload.uid,
+          email: payload.email,
+        });
 
         const sessionId = request.session.sessionId;
         const key = this.getCacheUserKey(sessionId);

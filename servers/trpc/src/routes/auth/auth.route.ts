@@ -26,15 +26,20 @@ const walletSignInRoute = async (
   const signInMessage = new SignMessage(data.message);
   const isValid = await signInMessage.validate(data.signature);
   if (isValid) {
-    const user = await AuthMiddleware.upsertUser(db, {
-      uid: data.message.publicKey,
-    });
+    const user = await AuthMiddleware.upsertUser(
+      db,
+      {
+        uid: data.message.publicKey,
+      },
+      async (user) =>
+        await createWallet(db, secret, {
+          id: user.uid,
+          primary: true,
+          user: user.id,
+        }),
+    );
 
     if (user) {
-      await createWallet(db, secret, {
-        primary: true,
-        user: user.id,
-      });
       const extendedUser = await getUserById(db, user.id);
       const token = jwt.sign({ user: user.uid }, getEnv<string>("SECRET_KEY"), {
         expiresIn: 25_200,
@@ -54,16 +59,20 @@ const firebaseTokenSignInRoute = async (
   const data = firebaseTokenAuthSchema.parse(request.body);
   const auth = getAuth();
   const decodedUser = await auth.verifyIdToken(data.token, true);
-  const user = await AuthMiddleware.upsertUser(db, {
-    uid: decodedUser.uid,
-    email: decodedUser.email,
-  });
+  const user = await AuthMiddleware.upsertUser(
+    db,
+    {
+      uid: decodedUser.uid,
+      email: decodedUser.email,
+    },
+    async (user) =>
+      await createWallet(db, secret, {
+        primary: true,
+        user: user.id,
+      }),
+  );
 
   if (user) {
-    await createWallet(db, secret, {
-      primary: true,
-      user: user.id,
-    });
     const extendedUser = await getUserById(db, user.id);
     const token = jwt.sign({ user: user.uid }, getEnv<string>("SECRET_KEY"), {
       expiresIn: 25200,

@@ -6,6 +6,7 @@ import { userRoute } from "./users/user.route";
 import { poolRoute } from "./pools/pool.route";
 import { referRoute } from "./refer/refer.route";
 import { tokenRoute } from "./tokens/token.route";
+import { walletRoute } from "./wallets/wallet.route";
 import { rewardRoute } from "./rewards/reward.route";
 import { settingsRoute } from "./settings/settings.route";
 import { positionRoute } from "./positions/position.route";
@@ -21,6 +22,7 @@ export const appRouter = router({
   token: tokenRoute,
   refer: referRoute,
   reward: rewardRoute,
+  wallet: walletRoute,
   position: positionRoute,
   settings: settingsRoute,
   poolFilter: poolFilterRoute,

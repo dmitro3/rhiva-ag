@@ -128,3 +128,7 @@ input[type="number"] {
     animation: shrink-x 5s linear infinite;
   }
 }
+
+.menu button {
+  @apply flex items-center space-x-2 p-2 hover:text-primary hover:bg-black;
+}

@@ -82,12 +82,17 @@ export const getUserById = async (
       .innerJoin(settings, eq(settings.user, users.id)),
     db.select().from(wallets).where(eq(wallets.user, userId)),
   ]);
-  if (user)
-    return {
-      ...user,
-      wallets: userWallets,
-      wallet: userWallets.find((wallet) => wallet.primary)!,
-    };
+  if (user) {
+    const primaryWallet = userWallets.find((wallet) => wallet.primary);
+    if (primaryWallet)
+      return {
+        ...user,
+        wallets: userWallets,
+        wallet: primaryWallet,
+      };
+
+    throw new Error("primary wallet not found.");
+  }
 
   return null;
 };

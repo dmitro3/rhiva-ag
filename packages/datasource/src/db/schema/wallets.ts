@@ -19,7 +19,6 @@ export const wallets = pgTable(
     primary: boolean().default(false).notNull(),
     user: uuid()
       .references(() => users.id, { onDelete: "cascade" })
-      .unique()
       .notNull(),
     createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
   },

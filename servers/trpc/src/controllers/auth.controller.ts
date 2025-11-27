@@ -11,6 +11,7 @@ import {
   rewards,
   type Database,
   type userInsertSchema,
+  type userSelectSchema,
 } from "@rhiva-ag/datasource";
 
 import type { User } from "./types";
@@ -31,6 +32,7 @@ export abstract class AuthMiddleware {
   static async upsertUser(
     drizzle: Database,
     values: z.infer<typeof userInsertSchema>,
+    onCreateUser?: (user: z.infer<typeof userSelectSchema>) => Promise<unknown>,
   ) {
     let user = await drizzle.query.users.findFirst({
       where: eq(users.uid, values.uid),
@@ -74,7 +76,7 @@ export abstract class AuthMiddleware {
           user: user.id,
           key: "1_month_streak",
         });
-
+      await onCreateUser?.(user);
       const result = await drizzle.query.users.findFirst({
         with: {
           wallets: true,
@@ -83,10 +85,14 @@ export abstract class AuthMiddleware {
         where: eq(users.uid, values.uid),
       });
       if (result) {
-        return {
-          ...result,
-          wallet: result.wallets.find((wallet) => wallet.primary)!,
-        };
+        const primaryWallet = result.wallets.find((wallet) => wallet.primary);
+        if (primaryWallet)
+          return {
+            ...result,
+            wallet: primaryWallet,
+          };
+
+        throw new Error("no primary wallet found.");
       }
     }
 

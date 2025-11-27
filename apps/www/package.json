@@ -20,13 +20,14 @@
     "@raydium-io/raydium-sdk-v2": "../../bin/raydium-io-raydium-sdk-v2-0.0.0.tgz"
   },
   "dependencies": {
+    "@floating-ui/react": "^0.27.16",
     "@headlessui/react": "^2.2.9",
     "@opennextjs/cloudflare": "^1.11.0",
+    "@rhiva-ag/auth-ui": "*",
     "@rhiva-ag/datasource": "*",
     "@rhiva-ag/dex-api": "*",
     "@rhiva-ag/shared": "*",
     "@rhiva-ag/trpc": "*",
-    "@rhiva-ag/auth-ui": "*",
     "@solana-mobile/wallet-adapter-mobile": "^2.2.5",
     "@solana/kit": "^5.0.0",
     "@solana/react": "^5.0.0",

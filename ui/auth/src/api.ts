@@ -32,32 +32,43 @@ export function registerAuthRoutes(apiURL = process.env.NEXT_PUBLIC_API_URL) {
     const expiresIn = 604_800_000;
     const body = await request.json();
 
-    let user: z.infer<typeof safeAuthUserSchema>;
+    let user: z.infer<typeof safeAuthUserSchema> | null;
     if (isPathname("firebase")) {
       const { token } = body;
 
-      user = await firebaseSignIn(token);
-    } else if (isPathname("wallet")) user = await walletSignIn(body);
+      user = await firebaseSignIn(token).catch(() => {
+        cookie.delete("user").delete("session");
+        return null;
+      });
+    } else if (isPathname("wallet"))
+      user = await walletSignIn(body).catch(() => {
+        cookie.delete("user").delete("session");
+        return null;
+      });
     else
       return NextResponse.json(
         { message: "invalid auth endpoint" },
         { status: 404 },
       );
 
-    cookie
-      .set("session", user.token, {
-        path: "/",
-        secure: true,
-        httpOnly: true,
-        maxAge: expiresIn / 1_000,
-      })
-      .set("user", JSON.stringify(user), {
-        path: "/",
-        secure: true,
-        httpOnly: true,
-        maxAge: 300,
-      });
-    return NextResponse.json(user);
+    if (user) {
+      cookie
+        .set("session", user.token, {
+          path: "/",
+          secure: true,
+          httpOnly: true,
+          maxAge: expiresIn / 1_000,
+        })
+        .set("user", JSON.stringify(user), {
+          path: "/",
+          secure: true,
+          httpOnly: true,
+          maxAge: 300,
+        });
+      return NextResponse.json(user);
+    }
+
+    return NextResponse.json({ message: "not authorized" }, { status: 401 });
   }
 
   async function DELETE() {

@@ -1,6 +1,7 @@
 import type z from "zod";
-import type { safeAuthUserSchema } from "@rhiva-ag/trpc";
 import { cookies } from "next/headers";
+import type { safeAuthUserSchema } from "@rhiva-ag/trpc";
+
 import { makeTRPCClient } from "./trpc";
 
 export { Auth } from "./providers";

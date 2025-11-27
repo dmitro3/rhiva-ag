@@ -18,15 +18,10 @@ export const getUser = async (
   if (sessionUser && !refresh) return JSON.parse(sessionUser.value);
   if (session) {
     const trpcClient = makeTRPCClient(session.value);
-    const response = await trpcClient.user.me.query().catch(() => {
-      cookie.delete("user").delete("session");
-      return null;
-    });
+    const response = await trpcClient.user.me.query();
 
-    if (response) {
-      const user = { token: session.value, ...response };
-      return user;
-    }
+    const user = { token: session.value, ...response };
+    return user;
   }
 
   throw new Error("NOT_AUTHENTICATED");

@@ -41,6 +41,7 @@ export default function Decimal<T extends React.ElementType>({
     return (
       <As {...props}>
         {prefix}
+        {/** just pick the formatted string before decimals */}
         {intl.format(Number(wholeNumber)).split(/\./g)[0]}.
         {fractionalNumber.slice(0, 3)}
         {truncate.length > 0 && (

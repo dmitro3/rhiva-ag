@@ -7,7 +7,7 @@ import type {
   walletSchema,
 } from "@rhiva-ag/datasource";
 
-export const rabalanceMeteoraPosition = async (_args: {
+export const rebalanceMeteoraPosition = async (_args: {
   dex: Dex;
   secret: KMSSecret;
   sender: SendTransaction;

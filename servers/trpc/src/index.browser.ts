@@ -31,5 +31,5 @@ export {
   claimReward as claimRaydiumReward,
   closePosition as closeRaydiumPosition,
   createPosition as createRaydiumPosition,
-  rebalancePosition as rabalanceRaydiumPosition,
+  rebalancePosition as rebalanceRaydiumPosition,
 } from "./routers/positions/raydium/raydium.controller";

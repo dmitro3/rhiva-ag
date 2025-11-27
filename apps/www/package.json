@@ -3,15 +3,18 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
+    "build": "next build",
     "start": "next start",
     "check": "tsc --noEmit",
-    "lint": "biome format --write && biome check",
     "dev": "next dev --turbopack",
-    "build": "next build",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs",
+    "lint": "biome format --write && biome check",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
-    "preview": "opennextjs-cloudflare build --noMinify && opennextjs-cloudflare preview",
-    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
+    "preview": "opennextjs-cloudflare build --noMinify && opennextjs-cloudflare preview"
   },
   "peerDependencies": {
     "@meteora-ag/dlmm": "../../bin/meteora-ag-dlmm-0.0.0.tgz",
@@ -77,6 +80,7 @@
     "@unocss/reset": "^66.5.4",
     "typescript": "^5.9.3",
     "unocss": "^66.5.4",
+    "vitepress": "^1.6.4",
     "wrangler": "^4.45.3"
   }
 }

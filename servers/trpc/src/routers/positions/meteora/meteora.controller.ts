@@ -4,10 +4,6 @@ import type { z } from "zod/mini";
 import DLMM, { StrategyType } from "@meteora-ag/dlmm";
 import { getAssociatedTokenAddressSync, NATIVE_MINT } from "@solana/spl-token";
 import { getTokenBalanceChangesFromBundleSimulation } from "@rhiva-ag/dex/utils";
-import type {
-  positionSelectSchema,
-  settingsSelectSchema,
-} from "@rhiva-ag/datasource";
 import {
   isNative,
   throwBundleSimulationError,
@@ -16,16 +12,16 @@ import {
 } from "@rhiva-ag/shared";
 import {
   Keypair,
-  PublicKey,
+  type PublicKey,
   TransactionMessage,
   VersionedTransaction,
 } from "@solana/web3.js";
 
-import type { jitoTipConfigSchema } from "../position.schema";
 import type {
   meteoraClaimRewardSchema,
   meteoraClosePositionSchema,
   meteoraCreatePositionSchema,
+  meteoraRebalanceSchema,
 } from "./meteora.schema";
 
 type Dex =
@@ -393,31 +389,22 @@ export const closePosition = async (
   };
 };
 
-export const rebalancePosition = async ({
-  dex,
-  wallet,
-  sender,
-  settings,
-  jitoConfig,
-  position: offchainPosition,
-}: {
-  dex: Dex;
-  wallet: WalletAdapter;
-  sender: SendTransaction;
-  jitoConfig: z.infer<typeof jitoTipConfigSchema>;
-  position: z.infer<typeof positionSelectSchema>;
-  settings: z.infer<typeof settingsSelectSchema>;
-}) => {
-  const pool = await DLMM.create(
-    dex.connection,
-    new PublicKey(offchainPosition.pool.id),
-  );
-  const position = await pool.getPosition(new PublicKey(offchainPosition.id));
+export const rebalancePosition = async (
+  dex: Dex,
+  wallet: WalletAdapter,
+  sender: SendTransaction,
+  args: Exclude<
+    z.infer<typeof meteoraRebalanceSchema>,
+    { transactions: string[] }
+  >,
+) => {
+  const pool = await DLMM.create(dex.connection, args.pool);
+  const position = await pool.getPosition(args.position);
   const rebalanceTransactions = await dex.dlmm.meteora.buildRebalancePosition({
     pool,
     position,
     owner: wallet.publicKey,
-    slippage: settings.slippage,
+    slippage: args.slippage,
     strategyType: StrategyType.Spot,
   });
   const { blockhash: recentBlockhash } =
@@ -428,7 +415,7 @@ export const rebalancePosition = async ({
         transaction = await sender.processJitoTipFromTxMessage(
           wallet.publicKey,
           transaction,
-          jitoConfig,
+          args.jitoConfig,
         );
       const v0Message = new TransactionMessage({
         recentBlockhash,

@@ -1,4 +1,7 @@
+import type z from "zod";
+import { useAuth } from "@rhiva-ag/auth-ui/client";
 import type { NonNullable } from "@rhiva-ag/shared";
+import type { walletSelectSchema } from "@rhiva-ag/datasource";
 import {
   createContext,
   useCallback,
@@ -11,9 +14,6 @@ import SwapModal from "@/components/modals/SwapModal";
 import SendTokenModal from "@/components/modals/SendTokenModal";
 import ReceiveTokenModal from "@/components/modals/ReceiveTokenModal";
 import CreateInternalWallet from "@/components/modals/CreateInternalWallet";
-import { useAuth } from "@rhiva-ag/auth-ui/client";
-import type z from "zod";
-import type { walletSelectSchema } from "@rhiva-ag/datasource";
 
 export type Wallet = Pick<
   z.infer<typeof walletSelectSchema>,
@@ -45,12 +45,12 @@ export default function SolanaWalletProvider({
     useState(false);
 
   const externalWallet = useMemo(
-    () => user.wallets.find((wallet) => wallet.external),
-    [user.wallets],
+    () => user?.wallets.find((wallet) => wallet.external),
+    [user?.wallets],
   );
   const internalWallet = useMemo(
-    () => user.wallets.find((wallet) => !wallet.external),
-    [user.wallets],
+    () => user?.wallets.find((wallet) => !wallet.external),
+    [user?.wallets],
   );
 
   const swap = useCallback(() => setShowSwapModal((prev) => !prev), []);

@@ -4,7 +4,7 @@ layout: doc
 
 # Rhiva's Web
 
-![Web](/web.png)
+![Web](../../assets/web.png)
 
 Rhiva combines smart data, AI-driven analysis, autonomous execution, and an intuitive interface to simplify
 complex processes and help users maximize returns effortlessly.

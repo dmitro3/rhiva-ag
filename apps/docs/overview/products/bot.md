@@ -1,5 +1,8 @@
 ---
 layout: doc
+next:
+  text: "User Guide" 
+  link: "/user-guide"
 ---
 
 # Rhiva's Telegram Bot

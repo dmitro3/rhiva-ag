@@ -26,7 +26,7 @@ type TInternalWalletContext = {
   create(): void;
   internalWallet?: Wallet;
   externalWallet?: Wallet;
-  switchWallet(wallet: Wallet): Promise<Wallet>;
+  switchWallet(wallet: Wallet): Promise<unknown>;
 };
 
 const InternalWalletContext = createContext<TInternalWalletContext | null>(

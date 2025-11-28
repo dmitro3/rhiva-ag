@@ -1,5 +1,5 @@
 import z from "zod";
-import { address, publicKey } from "@rhiva-ag/datasource";
+import { publicKey } from "@rhiva-ag/datasource";
 
 import {
   jitoTipConfigSchema,
@@ -18,7 +18,7 @@ const orcaInternalCreatePositionSchema = z
   .union([orcaFullCreatePositionSchema, orcaCustomCreatePositionSchema])
   .and(
     z.object({
-      pair: address(),
+      pair: publicKey(),
       slippage: z.number(),
       inputAmount: z.number(),
       inputMint: publicKey(),
@@ -29,7 +29,7 @@ export const orcaCreatePositionSchema = z
   .union([
     orcaInternalCreatePositionSchema,
     externalTransactionSchema.extend({
-      positionMint: address(),
+      positionMint: publicKey(),
     }),
   ])
   .and(
@@ -57,9 +57,9 @@ export const orcaCreatePositionSchema = z
 export const orcaClaimRewardSchema = z
   .union([
     z.object({
-      pair: address().describe("pool address"),
+      pair: publicKey().describe("pool address"),
       slippage: z.number().describe("swap slippage"),
-      position: address().describe("position address"),
+      position: publicKey().describe("position address"),
     }),
     externalTransactionSchema,
   ])

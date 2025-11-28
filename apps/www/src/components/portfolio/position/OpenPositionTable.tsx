@@ -21,6 +21,7 @@ import PositionDetailModal from "./PositionDetailModal";
 import { useClosePosition } from "@/hooks/useClosePosition";
 import { usePosition, type Position } from "@/hooks/usePosition";
 import NativeOrUsdAndPercentage from "./NativeOrUsdAndPercentage";
+import { useRebalancePosition } from "@/hooks/useRebalancePosition";
 import { useClaimPositionReward } from "@/hooks/useClaimPositionReward";
 
 type OpenPositionTableProps = {
@@ -40,6 +41,12 @@ export default function OpenPositionTable({
   const trpcClient = useTRPCClient();
   const queryClient = useQueryClient();
   const closePosition = useClosePosition(dexInstance, wallet, trpcClient, user);
+  const rebalancePosition = useRebalancePosition(
+    dexInstance,
+    wallet,
+    trpcClient,
+    user,
+  );
   const claimPositionRewards = useClaimPositionReward(
     dexInstance,
     wallet,
@@ -152,8 +159,9 @@ export default function OpenPositionTable({
 
         if (analytics)
           logEvent(analytics, "position_closed", {
-            bundleId,
             dex,
+            bundleId,
+            position: position.id,
           });
       }
     },
@@ -182,12 +190,32 @@ export default function OpenPositionTable({
 
         if (analytics)
           logEvent(analytics, "rewards_claimed", {
+            dex,
+            bundleId,
+            position: position.id,
+          });
+      }
+    },
+    [claimPositionRewards, dex, analytics, updatePosition],
+  );
+  const onRebalancePositon = useCallback(
+    async (position: Position) => {
+      const result = await toast.promise(rebalancePosition(position), {
+        error: "Oops! Transaction failed.",
+        pending: "Sending claim reward transaction...",
+        success: "🎉 Rewards claimed successfully.",
+      });
+      if (result) {
+        const { bundleId } = result;
+
+        if (analytics)
+          logEvent(analytics, "position_rebalanced", {
             bundleId,
             dex: dex,
           });
       }
     },
-    [claimPositionRewards, dex, analytics, updatePosition],
+    [rebalancePosition, dex, analytics],
   );
 
   return (
@@ -317,6 +345,12 @@ export default function OpenPositionTable({
                             onClick={() => onClaimRewards(position.extra)}
                           >
                             Claim Rewards
+                          </MenuItem>
+                          <MenuItem
+                            as="button"
+                            onClick={() => onRebalancePositon(position.extra)}
+                          >
+                            Rebalance Position
                           </MenuItem>
                           <MenuItem
                             as="button"

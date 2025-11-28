@@ -1,7 +1,8 @@
 import type z from "zod";
 import { useAuth } from "@rhiva-ag/auth-ui/client";
 import type { NonNullable } from "@rhiva-ag/shared";
-import type { walletSelectSchema } from "@rhiva-ag/datasource";
+import { useMutation } from "@tanstack/react-query";
+import type { safeWalletSchema } from "@rhiva-ag/trpc";
 import {
   createContext,
   useCallback,
@@ -10,15 +11,13 @@ import {
   useState,
 } from "react";
 
+import { useTRPC } from "@/trpc.client";
 import SwapModal from "@/components/modals/SwapModal";
 import SendTokenModal from "@/components/modals/SendTokenModal";
 import ReceiveTokenModal from "@/components/modals/ReceiveTokenModal";
 import CreateInternalWallet from "@/components/modals/CreateInternalWallet";
 
-export type Wallet = Pick<
-  z.infer<typeof walletSelectSchema>,
-  "id" | "primary" | "external" | "createdAt"
->;
+export type Wallet = z.infer<typeof safeWalletSchema>;
 
 type TInternalWalletContext = {
   swap(): void;
@@ -27,16 +26,19 @@ type TInternalWalletContext = {
   create(): void;
   internalWallet?: Wallet;
   externalWallet?: Wallet;
-  switchWallet(wallet?: Wallet): void;
+  switchWallet(wallet: Wallet): Promise<Wallet>;
 };
 
 const InternalWalletContext = createContext<TInternalWalletContext | null>(
   null,
 );
 
+// todo: support multiple wallets switching
+// this model assume there is only two wallets types external and internal wallet
 export default function SolanaWalletProvider({
   children,
 }: React.PropsWithChildren) {
+  const trpc = useTRPC();
   const { user, updateUser } = useAuth();
   const [showSwapModal, setShowSwapModal] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
@@ -53,6 +55,14 @@ export default function SolanaWalletProvider({
     [user?.wallets],
   );
 
+  const { mutateAsync } = useMutation(
+    trpc.wallet.update.mutationOptions({
+      onSuccess(wallet) {
+        return updateUser({ wallet });
+      },
+    }),
+  );
+
   const swap = useCallback(() => setShowSwapModal((prev) => !prev), []);
   const send = useCallback(() => setShowSendModal((prev) => !prev), []);
   const receive = useCallback(() => setShowReceiveModal((prev) => !prev), []);
@@ -62,17 +72,18 @@ export default function SolanaWalletProvider({
   );
 
   const switchWallet = useCallback(
-    (wallet?: Wallet) => {
-      if (wallet) return updateUser({ wallet });
-      if (externalWallet && internalWallet)
-        return updateUser({
-          wallet:
-            externalWallet?.id === user.wallet.id
-              ? internalWallet
-              : externalWallet,
-        });
+    async (wallet: Wallet) => {
+      // todo: show loading in ui instead
+      updateUser({
+        wallet: { ...wallet, primary: true },
+        wallets: user.wallets.map((item) => {
+          if (item.id === wallet.id) return { ...item, primary: true };
+          return { ...item, primary: false };
+        }),
+      });
+      mutateAsync({ id: wallet.id, primary: true });
     },
-    [externalWallet, internalWallet, user, updateUser],
+    [mutateAsync, user.wallets, updateUser],
   );
 
   return (

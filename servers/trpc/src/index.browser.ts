@@ -1,18 +1,22 @@
 export type { AppRouter } from "./routers";
+export { safeWalletSchema } from "./routers/wallets/wallet.schema";
 export {
   meteoraCreatePositionSchema,
   meteoraClosePositionSchema,
   meteoraClaimRewardSchema,
+  meteoraRebalanceSchema,
 } from "./routers/positions/meteora/meteora.schema";
 export {
   orcaClosePositionSchema,
   orcaCreatePositionSchema,
   orcaClaimRewardSchema,
+  orcaRebalanceSchema,
 } from "./routers/positions/orca/orca.schema";
 export {
   raydiumClaimRewardSchema,
   raydiumClosePositionSchema,
   raydiumCreatePositionSchema,
+  raydiumRebalanceSchema,
 } from "./routers/positions/raydium/raydium.schema";
 
 export {

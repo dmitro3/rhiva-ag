@@ -75,8 +75,10 @@ export const useClaimPositionReward = (
             dex,
             sendTransaction,
             fromWebWalletAdapter(wallet),
-            //@ts-expect-error force dynamic type here
-            schema.parse(value),
+            schema.parse(value) as Exclude<
+              z.infer<typeof schema>,
+              { transactions: string[] }
+            >,
           );
 
           data = {

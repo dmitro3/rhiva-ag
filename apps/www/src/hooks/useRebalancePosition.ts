@@ -6,11 +6,11 @@ import { fromWebWalletAdapter } from "@rhiva-ag/shared";
 import type { safeAuthUserSchema } from "@rhiva-ag/trpc";
 import type { WalletContextState } from "@solana/wallet-adapter-react";
 import {
-  meteoraClaimRewardSchema,
-  orcaClaimRewardSchema,
-  raydiumClaimRewardSchema,
-  rebalanceMeteoraPosition,
+  orcaRebalanceSchema,
+  meteoraRebalanceSchema,
+  raydiumRebalanceSchema,
   rebalanceOrcaPosition,
+  rebalanceMeteoraPosition,
   rebalanceRaydiumPosition,
   type AppRouter,
 } from "@rhiva-ag/trpc/browser";
@@ -18,7 +18,7 @@ import {
 import { sendTransaction } from "@/instances";
 import type { Position } from "./usePosition";
 
-export const useClaimPositionReward = (
+export const useRebalancePosition = (
   dex: Dex,
   wallet: WalletContextState,
   trpcClient: TRPCClient<AppRouter>,
@@ -56,15 +56,15 @@ export const useClaimPositionReward = (
           "saros-dlmm": undefined,
           orca: {
             fn: rebalanceOrcaPosition,
-            schema: orcaClaimRewardSchema,
+            schema: orcaRebalanceSchema,
           },
           "raydium-clmm": {
             fn: rebalanceRaydiumPosition,
-            schema: raydiumClaimRewardSchema,
+            schema: raydiumRebalanceSchema,
           },
           meteora: {
             fn: rebalanceMeteoraPosition,
-            schema: meteoraClaimRewardSchema,
+            schema: meteoraRebalanceSchema,
           },
         } as const;
 
@@ -75,8 +75,10 @@ export const useClaimPositionReward = (
             dex,
             sendTransaction,
             fromWebWalletAdapter(wallet),
-            //@ts-expect-error force dynamic type here
-            schema.parse(value),
+            schema.parse(value) as Exclude<
+              z.infer<typeof schema>,
+              { transactions: string[] }
+            >,
           );
 
           data = {

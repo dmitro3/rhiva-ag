@@ -1,5 +1,8 @@
 ---
 layout: doc
+next:
+  text: "Sign up" 
+  link: "/user-guide/auth"
 ---
 
 # Get Started 

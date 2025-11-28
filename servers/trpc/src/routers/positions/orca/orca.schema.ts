@@ -11,8 +11,6 @@ const orcaFullCreatePositionSchema = z.object({
 });
 const orcaCustomCreatePositionSchema = z.object({
   strategyType: z.literal("Custom"),
-  tokenADecimals: z.number(),
-  tokenBDecimals: z.number(),
   priceChanges: z.tuple([z.number().min(-1).max(0), z.number().min(0).max(1)]),
 });
 
@@ -62,16 +60,6 @@ export const orcaClaimRewardSchema = z
       pair: address().describe("pool address"),
       slippage: z.number().describe("swap slippage"),
       position: address().describe("position address"),
-      tokenA: z.object({
-        mint: address().describe("pool base token mint address"),
-        owner: address().describe("pool base token program address"),
-        decimals: z.number().describe("pool base token decimals"),
-      }),
-      tokenB: z.object({
-        mint: address().describe("pool quote token mint address"),
-        owner: address().describe("pool quote token program address"),
-        decimals: z.number().int().describe("pool quote token decimals"),
-      }),
     }),
     externalTransactionSchema,
   ])
@@ -87,24 +75,14 @@ export const orcaClaimRewardSchema = z
 export const orcaClosePositionSchema = z
   .union([
     z.object({
-      pair: address().describe("pool address"),
+      pair: publicKey().describe("pool address"),
       slippage: z.number().describe("swap slippage"),
-      position: address().describe("position address"),
+      position: publicKey().describe("position address"),
       swapToNative: z
         .boolean()
         .default(true)
         .optional()
         .describe("skip swapping to native mint"),
-      tokenA: z.object({
-        mint: address().describe("pool base token mint address"),
-        owner: address().describe("pool base token program address"),
-        decimals: z.number().describe("pool base token decimals"),
-      }),
-      tokenB: z.object({
-        mint: address().describe("pool quote token mint address"),
-        owner: address().describe("pool quote token program address"),
-        decimals: z.number().int().describe("pool quote token decimals"),
-      }),
     }),
     externalTransactionSchema,
   ])
@@ -116,3 +94,21 @@ export const orcaClosePositionSchema = z
       }),
     }),
   );
+
+export const orcaRebalanceSchema = z.union([
+  z
+    .object({
+      pool: publicKey(),
+      position: publicKey(),
+      slippage: z.number().describe("swap slippage"),
+    })
+    .and(
+      z.object({
+        jitoConfig: jitoTipConfigSchema.default({
+          type: "dynamic",
+          priorityFeePercentile: "50ema",
+        }),
+      }),
+    ),
+  externalTransactionSchema,
+]);

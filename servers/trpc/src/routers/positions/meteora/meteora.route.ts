@@ -2,11 +2,7 @@ import Dex from "@rhiva-ag/dex";
 import { Work } from "@rhiva-ag/cron";
 import { TRPCError } from "@trpc/server";
 import { fromKeyPairToWalletAdapter, loadWallet } from "@rhiva-ag/shared";
-import {
-  mints,
-  positions,
-  buildConflictUpdateColumns,
-} from "@rhiva-ag/datasource";
+import { mints, buildConflictUpdateColumns } from "@rhiva-ag/datasource";
 
 import { createQueue } from "../shared";
 import { privateProcedure, router } from "../../../trpc";
@@ -182,8 +178,8 @@ export const meteoraRoute = router({
 
         const { execute } = await rebalancePosition(
           dex,
-          wallet,
           ctx.sendTransaction,
+          wallet,
           input,
         );
 
@@ -195,8 +191,8 @@ export const meteoraRoute = router({
         {
           bundleId,
           dex: "raydium-clmm",
-          type: "rebalanced-position",
           wallet: ctx.user.wallet,
+          type: "rebalanced-position",
         },
         { jobId: bundleId },
       );

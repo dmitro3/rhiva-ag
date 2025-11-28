@@ -4,10 +4,6 @@ import Decimal from "decimal.js";
 import type { z } from "zod/mini";
 import { PublicKey, type VersionedTransaction } from "@solana/web3.js";
 import { getAssociatedTokenAddressSync, NATIVE_MINT } from "@solana/spl-token";
-import type {
-  positionSelectSchema,
-  settingsSelectSchema,
-} from "@rhiva-ag/datasource";
 import {
   isNative,
   throwBundleSimulationError,
@@ -17,8 +13,8 @@ import {
 } from "@rhiva-ag/shared";
 import {
   getPreTokenBalanceForAccounts,
-  getTokenBalanceChangesFromBundleSimulation,
   getTokenBalanceChangesFromSimulation,
+  getTokenBalanceChangesFromBundleSimulation,
 } from "@rhiva-ag/dex/utils";
 import {
   TickUtils,
@@ -35,6 +31,7 @@ import type {
   raydiumClaimRewardSchema,
   raydiumClosePositionSchema,
   raydiumCreatePositionSchema,
+  raydiumRebalanceSchema,
 } from "./raydium.schema";
 
 type Dex =
@@ -47,6 +44,7 @@ export const createPosition = async (
   wallet: WalletAdapter,
   {
     pair,
+    skipSig,
     slippage,
     inputMint,
     jitoConfig,
@@ -55,7 +53,7 @@ export const createPosition = async (
   }: Exclude<
     z.infer<typeof raydiumCreatePositionSchema>,
     { transactions: string[] }
-  >,
+  > & { skipSig?: boolean },
 ) => {
   const pool = await dex.clmm.raydium.raydium.clmm.getPoolInfoFromRpc(
     pair.toBase58(),
@@ -161,10 +159,13 @@ export const createPosition = async (
   const { transaction: createPositionV0Transaction } = await builder.buildV0();
   createPositionV0Transaction.sign(signers);
 
-  const transactions = await wallet.signAllTransactions([
+  const unsignedTransactions = [
     ...swapV0Transactions,
     createPositionV0Transaction,
-  ]);
+  ];
+  const transactions = skipSig
+    ? unsignedTransactions
+    : await wallet.signAllTransactions(unsignedTransactions);
   const bundleSimulationResponse = await sender.simulateBundle({
     transactions,
     skipSigVerify: true,
@@ -306,6 +307,7 @@ export const closePosition = async (
   wallet: WalletAdapter,
   {
     pair,
+    skipSig,
     slippage,
     jitoConfig,
     swapToNative,
@@ -313,7 +315,7 @@ export const closePosition = async (
   }: Exclude<
     z.infer<typeof raydiumClosePositionSchema>,
     { transactions: string[] }
-  >,
+  > & { skipSig?: boolean },
 ) => {
   const accountInfo = await dex.connection.getAccountInfo(
     getPdaPersonalPositionAddress(CLMM_PROGRAM_ID, positionPubkey).publicKey,
@@ -410,10 +412,16 @@ export const closePosition = async (
     }
   }
 
-  const transactions = await wallet.signAllTransactions([
+  const unsignedTransactions = [
     closePositionV0Transaction,
     ...swapV0Transactions,
-  ]);
+  ];
+  const transactions = skipSig
+    ? unsignedTransactions
+    : await wallet.signAllTransactions([
+        closePositionV0Transaction,
+        ...swapV0Transactions,
+      ]);
 
   const bundleSimulationResponse = await sender.simulateBundle({
     transactions,
@@ -439,19 +447,15 @@ export const closePosition = async (
   };
 };
 
-export const rebalancePosition = async ({
-  dex,
-  sender,
-  wallet,
-  settings,
-  position: offchainPosition,
-}: {
-  dex: Dex;
-  wallet: WalletAdapter;
-  sender: SendTransaction;
-  position: z.infer<typeof positionSelectSchema>;
-  settings: z.infer<typeof settingsSelectSchema>;
-}) => {
+export const rebalancePosition = async (
+  dex: Dex,
+  sender: SendTransaction,
+  wallet: WalletAdapter,
+  args: Exclude<
+    z.infer<typeof raydiumRebalanceSchema>,
+    { transactions: string[] }
+  >,
+) => {
   const {
     poolInfo,
     swapV0Transactions,
@@ -459,13 +463,12 @@ export const rebalancePosition = async ({
     position,
     tokenBalanceChanges,
   } = await closePosition(dex, sender, wallet, {
-    position: new PublicKey(offchainPosition.id),
-    pair: new PublicKey(offchainPosition.pool.id),
-    slippage: settings.slippage,
-    jitoConfig: { type: "dynamic", priorityFeePercentile: "75" },
+    skipSig: true,
+    pair: args.pool,
+    slippage: args.slippage,
+    position: args.position,
+    jitoConfig: args.jitoConfig,
   });
-  const transactions = [closePositionV0Transaction, ...swapV0Transactions];
-
   const amountMaxA = new BN(
     tokenBalanceChanges[poolInfo.mintA.address] || BigInt(0),
   );
@@ -487,21 +490,28 @@ export const rebalancePosition = async ({
   const tickUpper = currentTick - tickDelta;
   const tickLower = currentTick + tickDelta;
 
-  const { transaction, signers, extInfo } =
-    await dex.clmm.raydium.raydium.clmm.openPositionFromBase({
-      poolInfo,
-      tickLower,
-      tickUpper,
-      base: "MintA",
-      baseAmount: amountMaxA,
-      otherAmountMax: amountMaxB,
-      ownerInfo: {
-        useSOLBalance: true,
-      },
-      txVersion: TxVersion.V0,
-    });
-
-  transactions.push(await wallet.signTransaction(transaction, signers));
+  const {
+    transaction: createPositionV0Transaction,
+    signers,
+    extInfo,
+  } = await dex.clmm.raydium.raydium.clmm.openPositionFromBase({
+    poolInfo,
+    tickLower,
+    tickUpper,
+    base: "MintA",
+    baseAmount: amountMaxA,
+    otherAmountMax: amountMaxB,
+    ownerInfo: {
+      useSOLBalance: true,
+    },
+    txVersion: TxVersion.V0,
+  });
+  createPositionV0Transaction.sign(signers);
+  const transactions = await wallet.signAllTransactions([
+    closePositionV0Transaction,
+    ...swapV0Transactions,
+    closePositionV0Transaction,
+  ]);
 
   const bundleSimulationResponse = await sender.simulateBundle({
     transactions,

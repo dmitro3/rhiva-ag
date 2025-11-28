@@ -1,0 +1,23 @@
+:root {
+  --vp-c-brand-1: #00d897;
+  --vp-c-brand-2: #00d897;
+  --vp-c-brand-3: #00d897;
+  --vp-c-brand-soft: #00d89722;
+
+  --vp-button-brand-bg: #00d897;
+  --vp-button-brand-hover-bg: #00c488;
+  --vp-button-brand-border: #00d897;
+  --vp-button-brand-hover-border: #00c488;
+
+  --vp-button-brand-text: #000000;
+  --vp-button-brand-hover-text: #000000;
+
+  --vp-c-accent-1: #d80040;
+  --vp-c-accent-2: #b80038;
+  --vp-c-accent-soft: #d8004022;
+}
+
+.dark {
+  --vp-button-brand-bg: #00c488;
+  --vp-button-brand-hover-bg: #00ad77;
+}

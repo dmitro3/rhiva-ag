@@ -82,3 +82,21 @@ export const raydiumClosePositionSchema = z
       }),
     }),
   );
+
+export const raydiumRebalanceSchema = z.union([
+  z
+    .object({
+      pool: publicKey(),
+      position: publicKey(),
+      slippage: z.number().describe("swap slippage"),
+    })
+    .and(
+      z.object({
+        jitoConfig: jitoTipConfigSchema.default({
+          type: "dynamic",
+          priorityFeePercentile: "50ema",
+        }),
+      }),
+    ),
+  externalTransactionSchema,
+]);

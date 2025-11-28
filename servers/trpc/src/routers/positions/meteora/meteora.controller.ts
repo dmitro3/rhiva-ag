@@ -391,8 +391,8 @@ export const closePosition = async (
 
 export const rebalancePosition = async (
   dex: Dex,
-  wallet: WalletAdapter,
   sender: SendTransaction,
+  wallet: WalletAdapter,
   args: Exclude<
     z.infer<typeof meteoraRebalanceSchema>,
     { transactions: string[] }

@@ -86,7 +86,7 @@ export const raydiumClosePositionSchema = z
 export const raydiumRebalanceSchema = z.union([
   z
     .object({
-      pool: publicKey(),
+      pair: publicKey(),
       position: publicKey(),
       slippage: z.number().describe("swap slippage"),
     })

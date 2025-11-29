@@ -30,16 +30,6 @@ export const useRebalancePosition = (
         pair: position.pool.id,
         position: position.id,
         slippage: user.settings.slippage * 100,
-        tokenA: {
-          mint: position.pool.baseToken.id,
-          owner: position.pool.baseToken.tokenProgram,
-          decimals: position.pool.baseToken.decimals,
-        },
-        tokenB: {
-          mint: position.pool.quoteToken.id,
-          owner: position.pool.quoteToken.tokenProgram,
-          decimals: position.pool.quoteToken.decimals,
-        },
       };
       const mapFunc = {
         "saros-dlmm": undefined,

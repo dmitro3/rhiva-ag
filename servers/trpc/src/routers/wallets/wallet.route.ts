@@ -35,19 +35,22 @@ export const walletRoute = router({
     .input(walletSchema.pick({ id: true }).and(walletSchema.partial()))
     .output(safeWalletSchema)
     .mutation(async ({ ctx, input }) => {
-      if (input.primary)
-        await ctx.drizzle
+      const wallet = await ctx.drizzle.transaction(async (db) => {
+        if (input.primary)
+          await db
+            .update(wallets)
+            .set({
+              primary: false,
+            })
+            .where(eq(wallets.user, ctx.user.id));
+        const [wallet] = await db
           .update(wallets)
-          .set({
-            primary: false,
-          })
-          .where(eq(wallets.user, ctx.user.id));
+          .set(input)
+          .where(and(eq(wallets.user, ctx.user.id), eq(wallets.id, input.id)))
+          .returning();
 
-      const [wallet] = await ctx.drizzle
-        .update(wallets)
-        .set(input)
-        .where(and(eq(wallets.user, ctx.user.id), eq(wallets.id, input.id)))
-        .returning();
+        return wallet;
+      });
 
       if (wallet) return wallet;
       throw new TRPCError({

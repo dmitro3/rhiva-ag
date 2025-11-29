@@ -464,7 +464,7 @@ export const rebalancePosition = async (
     tokenBalanceChanges,
   } = await closePosition(dex, sender, wallet, {
     skipSig: true,
-    pair: args.pool,
+    pair: args.pair,
     slippage: args.slippage,
     position: args.position,
     jitoConfig: args.jitoConfig,

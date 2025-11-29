@@ -83,7 +83,7 @@ export default function SolanaWalletProvider({
       });
       mutateAsync({ id: wallet.id, primary: true });
     },
-    [mutateAsync, user.wallets, updateUser],
+    [mutateAsync, user?.wallets, updateUser],
   );
 
   return (

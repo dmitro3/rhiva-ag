@@ -1,5 +1,5 @@
 {
-  "id": "560fa8a2-03e8-4f0a-b1c7-9e507c92c152",
+  "id": "a5230a8d-f0d0-4110-b42c-4fe7e3f43496",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -520,13 +520,7 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "wallets_user_primary_unique": {
-          "name": "wallets_user_primary_unique",
-          "nullsNotDistinct": false,
-          "columns": ["user", "primary"]
-        }
-      },
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

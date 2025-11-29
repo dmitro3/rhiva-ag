@@ -19,7 +19,8 @@ export default function HeaderAction(props: React.ComponentProps<"div">) {
   const mounted = useMounted();
   const { wallet } = useWallet();
   const { user, signIn } = useAuth();
-  const { create, switchWallet, internalWallet } = useInternalWallet();
+  const { create, switchWallet, internalWallet, externalWallet } =
+    useInternalWallet();
 
   return (
     <div
@@ -91,7 +92,12 @@ export default function HeaderAction(props: React.ComponentProps<"div">) {
                     type="button"
                     className="!bg-transparent text-nowrap"
                     onClick={() => {
-                      if (internalWallet) switchWallet();
+                      if (internalWallet)
+                        switchWallet(
+                          user.wallet.id === externalWallet?.id
+                            ? internalWallet
+                            : externalWallet,
+                        );
                       else create();
                     }}
                   >

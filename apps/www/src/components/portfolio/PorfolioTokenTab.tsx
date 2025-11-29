@@ -26,14 +26,17 @@ export default function PorfolioTokenTab() {
     () => new Intl.NumberFormat("en-US", percentageIntlArgs),
     [],
   );
-  const { data } = useQuery({
+  const { data, isPending } = useQuery({
     queryKey: ["wallet", "tokens", user.wallet.id],
     queryFn: async () => getWalletPNL(connection, dexApi, user.wallet.id),
   });
 
   return (
     <>
-      <TabPanel className="flex-1 flex flex-col space-y-4">
+      <TabPanel className="flex-1 flex flex-col space-y-4 min-h-sm">
+        {isPending && (
+          <div className="m-auto size-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        )}
         {data && (
           <>
             <div className="flex flex-col space-y-2 sm:flex-row sm:justify-between md:border md:px-10 md:py-4 md:border-white/20 md:rounded">

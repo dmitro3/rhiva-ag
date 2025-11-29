@@ -73,8 +73,7 @@ CREATE TABLE "wallets" (
 	"external" boolean NOT NULL,
 	"primary" boolean DEFAULT false NOT NULL,
 	"user" uuid NOT NULL,
-	"createdAt" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "wallets_user_primary_unique" UNIQUE("user","primary")
+	"createdAt" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "messages" (

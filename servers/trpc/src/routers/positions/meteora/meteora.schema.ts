@@ -101,7 +101,7 @@ export const meteoraClosePositionSchema = z
 export const meteoraRebalanceSchema = z.union([
   z
     .object({
-      pool: publicKey(),
+      pair: publicKey(),
       position: publicKey(),
       slippage: z.number().describe("swap slippage"),
     })

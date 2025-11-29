@@ -398,7 +398,7 @@ export const rebalancePosition = async (
     { transactions: string[] }
   >,
 ) => {
-  const pool = await DLMM.create(dex.connection, args.pool);
+  const pool = await DLMM.create(dex.connection, args.pair);
   const position = await pool.getPosition(args.position);
   const rebalanceTransactions = await dex.dlmm.meteora.buildRebalancePosition({
     pool,

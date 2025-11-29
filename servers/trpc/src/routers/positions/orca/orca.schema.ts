@@ -98,7 +98,7 @@ export const orcaClosePositionSchema = z
 export const orcaRebalanceSchema = z.union([
   z
     .object({
-      pool: publicKey(),
+      pair: publicKey(),
       position: publicKey(),
       slippage: z.number().describe("swap slippage"),
     })

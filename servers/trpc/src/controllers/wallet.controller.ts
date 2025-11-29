@@ -58,10 +58,11 @@ export const createWallet = async (
   const [wallet] = await db
     .insert(wallets)
     .values(values)
-    .returning()
-    .onConflictDoNothing({
-      target: [wallets.user, wallets.primary],
-    });
+    .onConflictDoUpdate({
+      target: [wallets.id],
+      set: { primary: wallets.primary, external: wallets.external },
+    })
+    .returning();
 
   return wallet;
 };

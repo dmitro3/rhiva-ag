@@ -2,36 +2,33 @@ import clsx from "clsx";
 import Link from "next/link";
 import { format } from "util";
 import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@rhiva-ag/auth-ui/client";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useConnection } from "@solana/wallet-adapter-react";
 
 import Decimal from "../Decimal";
+import { dexApi } from "@/instances";
 import { getNumberColor } from "@/lib";
 import { useTRPC } from "@/trpc.client";
+import { getWalletPNL } from "@/lib/get-tokens";
 import { useCurrencies } from "@/hooks/useCurrency";
-import type { getWalletPNL } from "@/lib/get-tokens";
 import { currencyIntlArgs, percentageIntlArgs } from "@/constants/format";
 
 export default function PortfolioInfo(props: React.ComponentProps<"div">) {
   const trpc = useTRPC();
   const { user } = useAuth();
   const currencies = useCurrencies();
-  const queryClient = useQueryClient();
   const searchParams = useSearchParams();
+  const { connection } = useConnection();
   const { data } = useQuery(trpc.position.aggregrate.queryOptions());
 
   const currency = useMemo(() => searchParams.get("currency"), [searchParams]);
 
-  const token = useMemo(
-    () =>
-      queryClient.getQueryData<Awaited<ReturnType<typeof getWalletPNL>>>([
-        "wallet",
-        "tokens",
-        user.wallet.id,
-      ]),
-    [user, queryClient],
-  );
+  const { data: token } = useQuery({
+    queryKey: ["wallet", "tokens", user.wallet.id],
+    queryFn: async () => getWalletPNL(connection, dexApi, user.wallet.id),
+  });
 
   const winRate = useMemo(() => {
     if (!data) return 0;

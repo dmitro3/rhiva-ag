@@ -38,7 +38,7 @@ export const orcaRoute = router({
 
       let bundleId: string, positionMint: Address;
       if ("transactions" in input) {
-        positionMint = input.positionMint;
+        positionMint = fromLegacyPublicKey(input.positionMint);
         bundleId = await ctx.sendTransaction
           .sendBundle(input.transactions)
           .then(({ result }) => result);

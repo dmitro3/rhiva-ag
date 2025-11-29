@@ -7,16 +7,16 @@ export {
   meteoraRebalanceSchema,
 } from "./routers/positions/meteora/meteora.schema";
 export {
+  orcaRepositionSchema,
+  orcaClaimRewardSchema,
   orcaClosePositionSchema,
   orcaCreatePositionSchema,
-  orcaClaimRewardSchema,
-  orcaRebalanceSchema,
 } from "./routers/positions/orca/orca.schema";
 export {
+  raydiumRepositionSchema,
   raydiumClaimRewardSchema,
   raydiumClosePositionSchema,
   raydiumCreatePositionSchema,
-  raydiumRebalanceSchema,
 } from "./routers/positions/raydium/raydium.schema";
 
 export {
@@ -29,11 +29,11 @@ export {
   claimReward as claimOrcaReward,
   closePosition as closeOrcaPosition,
   createPosition as createOrcaPosition,
-  rebalancePosition as rebalanceOrcaPosition,
+  reposition as repositionOrcaPosition,
 } from "./routers/positions/orca/orca-legacy.controller";
 export {
   claimReward as claimRaydiumReward,
   closePosition as closeRaydiumPosition,
   createPosition as createRaydiumPosition,
-  rebalancePosition as rebalanceRaydiumPosition,
+  reposition as repositionRaydiumPosition,
 } from "./routers/positions/raydium/raydium.controller";

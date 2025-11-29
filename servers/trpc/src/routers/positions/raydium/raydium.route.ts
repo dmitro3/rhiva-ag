@@ -1,7 +1,7 @@
 import Dex from "@rhiva-ag/dex";
 import { Work } from "@rhiva-ag/cron";
 import { TRPCError } from "@trpc/server";
-import type { PublicKey } from "@solana/web3.js";
+import type { Address } from "@solana/kit";
 import { fromLegacyPublicKey } from "@solana/compat";
 import { fromKeyPairToWalletAdapter, loadWallet } from "@rhiva-ag/shared";
 import { mints, buildConflictUpdateColumns } from "@rhiva-ag/datasource";
@@ -9,20 +9,19 @@ import { mints, buildConflictUpdateColumns } from "@rhiva-ag/datasource";
 import { createQueue } from "../shared";
 import { privateProcedure, router } from "../../../trpc";
 import {
+  reposition,
   claimReward,
   closePosition,
   createPosition,
-  rebalancePosition,
 } from "./raydium.controller";
 import {
+  raydiumRepositionSchema,
   raydiumClaimRewardSchema,
   raydiumCreatePositionSchema,
   raydiumClosePositionSchema,
-  raydiumRebalanceSchema,
 } from "./raydium.schema";
 
 const queue = createQueue();
-
 export const raydiumRoute = router({
   create: privateProcedure
     .input(raydiumCreatePositionSchema)
@@ -36,9 +35,9 @@ export const raydiumRoute = router({
             set: buildConflictUpdateColumns(mints, ["name", "symbol", "image"]),
           });
 
-      let bundleId: string, positionNftMint: PublicKey;
+      let bundleId: string, positionMint: Address;
       if ("transactions" in input) {
-        positionNftMint = input.positionNftMint;
+        positionMint = fromLegacyPublicKey(input.positionMint);
         bundleId = await ctx.sendTransaction
           .sendBundle(input.transactions)
           .then(({ result }) => result);
@@ -52,7 +51,7 @@ export const raydiumRoute = router({
         const dex = new Dex(ctx.connection);
         const owner = await loadWallet(ctx.user.wallet, ctx.secret);
         const wallet = fromKeyPairToWalletAdapter(owner);
-        const { positionNftMint: mint, execute } = await createPosition(
+        const { execute, ...args } = await createPosition(
           dex,
           ctx.sendTransaction,
           wallet,
@@ -60,16 +59,16 @@ export const raydiumRoute = router({
         );
 
         bundleId = await execute();
-        positionNftMint = mint;
+        positionMint = fromLegacyPublicKey(args.positionMint);
       }
       const response = await queue.add(
         Work.syncTransaction,
         {
           bundleId,
+          positionMint,
           dex: "raydium-clmm",
           type: "create-position",
           wallet: ctx.user.wallet,
-          positionMint: fromLegacyPublicKey(positionNftMint),
         },
         { jobId: bundleId },
       );
@@ -155,11 +154,14 @@ export const raydiumRoute = router({
         ...response.data,
       };
     }),
-  rebalance: privateProcedure
-    .input(raydiumRebalanceSchema)
+  reposition: privateProcedure
+    .input(raydiumRepositionSchema)
     .mutation(async ({ ctx, input }) => {
       let bundleId: string;
+      let positionMint: Address;
+
       if ("transactions" in input) {
+        positionMint = fromLegacyPublicKey(input.positionMint);
         bundleId = await ctx.sendTransaction
           .sendBundle(input.transactions)
           .then(({ result }) => result);
@@ -173,7 +175,7 @@ export const raydiumRoute = router({
         const dex = new Dex(ctx.connection);
         const owner = await loadWallet(ctx.user.wallet, ctx.secret);
         const wallet = fromKeyPairToWalletAdapter(owner);
-        const { execute } = await rebalancePosition(
+        const { execute, ...args } = await reposition(
           dex,
           ctx.sendTransaction,
           wallet,
@@ -181,12 +183,14 @@ export const raydiumRoute = router({
         );
 
         bundleId = await execute();
+        positionMint = fromLegacyPublicKey(args.positionMint);
       }
 
       const response = await queue.add(
         Work.syncTransaction,
         {
           bundleId,
+          positionMint,
           dex: "raydium-clmm",
           type: "repositioned",
           wallet: ctx.user.wallet,

@@ -13,8 +13,9 @@ import {
 import { getTokenBalanceChangesFromSimulation } from "../utils";
 
 type SwapArgs = {
-  owner: PublicKey;
   slippage: number;
+  owner: PublicKey | string;
+  destinationTokenAccount?: PublicKey | string;
   prioritizationFeeLamports?: {
     jitoTipLamports: number;
   };
@@ -45,20 +46,28 @@ export class Jupiter {
     inputMint,
     outputMint,
     skipSimulation,
+    destinationTokenAccount,
     prioritizationFeeLamports,
   }: SwapArgs & { skipSimulation?: boolean }) {
-    const inputMintPk = new PublicKey(inputMint);
-    const outputMintPk = new PublicKey(outputMint);
+    const ownerPubkey = new PublicKey(owner);
+    const inputMintPubkey = new PublicKey(inputMint);
+    const outputMintPubkey = new PublicKey(outputMint);
 
-    const inputMintAta = getAssociatedTokenAddressSync(inputMintPk, owner);
-    const outputMintAta = getAssociatedTokenAddressSync(outputMintPk, owner);
+    const inputMintAta = getAssociatedTokenAddressSync(
+      inputMintPubkey,
+      outputMintPubkey,
+    );
+    const outputMintAta = getAssociatedTokenAddressSync(
+      outputMintPubkey,
+      ownerPubkey,
+    );
 
     const quoteResponse = await this.jupiter.quoteGet({
       slippageBps: slippage,
       // @ts-expect-error jupiter v6 api expect bigint string
       amount: amount.toString(),
-      inputMint: inputMintPk.toBase58(),
-      outputMint: outputMintPk.toBase58(),
+      inputMint: inputMintPubkey.toBase58(),
+      outputMint: outputMintPubkey.toBase58(),
     });
 
     const swapResponse = await this.jupiter.swapPost({
@@ -67,7 +76,10 @@ export class Jupiter {
         dynamicSlippage: true,
         prioritizationFeeLamports,
         dynamicComputeUnitLimit: true,
-        userPublicKey: owner.toBase58(),
+        userPublicKey: ownerPubkey.toBase58(),
+        destinationTokenAccount: destinationTokenAccount
+          ? new PublicKey(destinationTokenAccount).toBase58()
+          : undefined,
       },
     });
 

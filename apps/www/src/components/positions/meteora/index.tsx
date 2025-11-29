@@ -169,12 +169,14 @@ function MeteoraOpenPositionForm({
         slippage: user.settings.slippage * 100,
       };
 
-      let data: typeof createPositionValue | { transactions: string[] } =
+      let data:
+        | typeof createPositionValue
+        | { transactions: string[]; positionMint: string } =
         createPositionValue;
 
       if (user.wallet.external) {
         if (wallet.publicKey) {
-          const { transactions } = await createMeteoraPosition(
+          const { transactions, positionMint } = await createMeteoraPosition(
             dex,
             sendTransaction,
             fromWebWalletAdapter(wallet),
@@ -187,6 +189,7 @@ function MeteoraOpenPositionForm({
           );
 
           data = {
+            positionMint: positionMint.toBase58(),
             transactions: transactions.map((transaction) =>
               transaction.serialize().toBase64(),
             ),

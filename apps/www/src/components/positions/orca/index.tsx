@@ -184,6 +184,7 @@ function OrcaOpenPositionForm({
         }
       }
 
+      // @ts-expect-error type overlapping not supported
       const bundleId = await mutateAsync(data).then(({ bundleId }) => bundleId);
 
       if (analytics)

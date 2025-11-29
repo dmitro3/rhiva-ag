@@ -9,20 +9,19 @@ import { mints, buildConflictUpdateColumns } from "@rhiva-ag/datasource";
 import { createQueue } from "../shared";
 import { privateProcedure, router } from "../../../trpc";
 import {
+  reposition,
   claimReward,
   closePosition,
   createPosition,
-  rebalancePosition,
 } from "./orca-legacy.controller";
 import {
+  orcaRepositionSchema,
   orcaClaimRewardSchema,
   orcaCreatePositionSchema,
   orcaClosePositionSchema,
-  orcaRebalanceSchema,
 } from "./orca.schema";
 
 const queue = createQueue();
-
 export const orcaRoute = router({
   create: privateProcedure
     .input(orcaCreatePositionSchema)
@@ -161,11 +160,13 @@ export const orcaRoute = router({
         ...response.data,
       };
     }),
-  rebalance: privateProcedure
-    .input(orcaRebalanceSchema)
+  reposition: privateProcedure
+    .input(orcaRepositionSchema)
     .mutation(async ({ ctx, input }) => {
       let bundleId: string;
+      let positionMint: Address;
       if ("transactions" in input) {
+        positionMint = fromLegacyPublicKey(input.positionMint);
         bundleId = await ctx.sendTransaction
           .sendBundle(input.transactions)
           .then(({ result }) => result);
@@ -180,7 +181,7 @@ export const orcaRoute = router({
           await loadWallet(ctx.user.wallet, ctx.secret),
         );
 
-        const { execute } = await rebalancePosition(
+        const { execute, ...args } = await reposition(
           dex,
           ctx.sendTransaction,
           wallet,
@@ -188,12 +189,14 @@ export const orcaRoute = router({
         );
 
         bundleId = await execute();
+        positionMint = fromLegacyPublicKey(args.positionMint);
       }
       const response = await queue.add(
         Work.syncTransaction,
         {
           bundleId,
-          dex: "raydium-clmm",
+          positionMint,
+          dex: "orca",
           type: "repositioned",
           wallet: ctx.user.wallet,
         },

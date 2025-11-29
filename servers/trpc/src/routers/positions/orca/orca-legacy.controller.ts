@@ -5,10 +5,10 @@ import { PublicKey, type VersionedTransaction } from "@solana/web3.js";
 import { getAssociatedTokenAddressSync, NATIVE_MINT } from "@solana/spl-token";
 import { getTokenBalanceChangesFromBundleSimulation } from "@rhiva-ag/dex/utils";
 import {
-  TickUtil,
-  PriceMath,
-  TokenExtensionUtil,
   increaseLiquidityQuoteByInputToken,
+  PriceMath,
+  TickUtil,
+  TokenExtensionUtil,
   type IncreaseLiquidityQuote,
 } from "@orca-so/whirlpools-sdk";
 import {
@@ -19,7 +19,7 @@ import {
 } from "@rhiva-ag/shared";
 
 import type {
-  orcaRebalanceSchema,
+  orcaRepositionSchema,
   orcaClaimRewardSchema,
   orcaClosePositionSchema,
   orcaCreatePositionSchema,
@@ -36,7 +36,7 @@ export const createPosition = async (
   args: Exclude<
     z.infer<typeof orcaCreatePositionSchema>,
     { transactions: string[] }
-  > & { skipSig?: boolean },
+  >,
 ) => {
   const { pair, inputAmount, inputMint, slippage, jitoConfig } = args;
   const pool = await dex.dlmm.orcaLegacy.client.getPool(pair);
@@ -67,16 +67,19 @@ export const createPosition = async (
       tokenBInfo.decimals,
     ).toNumber();
 
-    const ticks = args.priceChanges.map((priceChange) =>
-      TickUtil.getInitializableTickIndex(
-        PriceMath.priceToTickIndex(
-          new Decimal(currentPrice + currentPrice * priceChange),
-          tokenAInfo.decimals,
-          tokenBInfo.decimals,
-        ),
-        poolData.tickSpacing,
-      ),
-    );
+    const ticks =
+      "tickRange" in args
+        ? args.tickRange
+        : args.priceChanges.map((priceChange) =>
+            TickUtil.getInitializableTickIndex(
+              PriceMath.priceToTickIndex(
+                new Decimal(currentPrice + currentPrice * priceChange),
+                tokenAInfo.decimals,
+                tokenBInfo.decimals,
+              ),
+              poolData.tickSpacing,
+            ),
+          );
     lowerTick = Math.min(...ticks);
     upperTick = Math.max(...ticks);
   } else
@@ -402,15 +405,16 @@ export const closePosition = async (
   };
 };
 
-export const rebalancePosition = async (
+export const reposition = async (
   dex: Dex,
   sender: SendTransaction,
   wallet: WalletAdapter,
   args: Exclude<
-    z.infer<typeof orcaRebalanceSchema>,
+    z.infer<typeof orcaRepositionSchema>,
     { transactions: string[] }
   >,
 ) => {
+  const swapToNative = args.type === "swap";
   const {
     pool,
     position,
@@ -418,6 +422,7 @@ export const rebalancePosition = async (
     closePositionV0Transactions,
     tokenBalanceChanges,
   } = await closePosition(dex, sender, wallet, {
+    swapToNative,
     skipSig: true,
     pair: args.pair,
     slippage: args.slippage,
@@ -429,11 +434,6 @@ export const rebalancePosition = async (
   const positionData = position.getData();
   const tokenAInfo = pool.getTokenAInfo();
   const tokenBInfo = pool.getTokenBInfo();
-
-  const tokenA =
-    tokenBalanceChanges[tokenAInfo.address.toBase58()] || BigInt(0);
-  const tokenB =
-    tokenBalanceChanges[tokenBInfo.address.toBase58()] || BigInt(0);
 
   const tickDelta = Math.ceil(
     Math.abs(positionData.tickUpperIndex - positionData.tickLowerIndex),
@@ -448,27 +448,58 @@ export const rebalancePosition = async (
     poolData.tickSpacing,
   );
 
-  const tokenExtension = await TokenExtensionUtil.buildTokenExtensionContext(
-    dex.dlmm.orcaLegacy.fetcher,
-    poolData,
-  );
-  const quote = increaseLiquidityQuoteByInputToken(
-    tokenA > BigInt(0) ? poolData.tokenMintA : poolData.tokenMintB,
-    new Decimal(tokenA > BigInt(0) ? tokenA : tokenB).div(
-      Math.pow(
-        10,
-        tokenA > BigInt(0) ? tokenAInfo.decimals : tokenBInfo.decimals,
-      ),
-    ),
-    lowerTick,
-    upperTick,
-    Percentage.fromDecimal(new Decimal(args.slippage)),
-    pool,
-    tokenExtension,
-  );
+  let positionMint: PublicKey;
+  let transactions: VersionedTransaction[];
 
-  const { transactions: createPositionV0Transactions, positionMint } =
-    await dex.dlmm.orcaLegacy.buildPreloadedCreatePosition({
+  if (swapToNative) {
+    const inputAmount = new Decimal(
+      tokenBalanceChanges[NATIVE_MINT.toBase58()] || BigInt(0),
+    )
+      .div(Math.pow(10, 9))
+      .toNumber();
+    const response = await createPosition(dex, sender, wallet, {
+      inputAmount,
+      skipSig: true,
+      pair: args.pair,
+      inputMint: NATIVE_MINT,
+      strategyType: "Custom",
+      slippage: args.slippage,
+      jitoConfig: args.jitoConfig,
+      tickRange: [lowerTick, upperTick],
+    });
+
+    positionMint = response.positionMint;
+    transactions = [
+      ...closePositionV0Transactions,
+      ...swapV0Transactions,
+      ...response.transactions,
+    ];
+  } else {
+    const tokenA =
+      tokenBalanceChanges[tokenAInfo.address.toBase58()] || BigInt(0);
+    const tokenB =
+      tokenBalanceChanges[tokenBInfo.address.toBase58()] || BigInt(0);
+
+    const tokenExtension = await TokenExtensionUtil.buildTokenExtensionContext(
+      dex.dlmm.orcaLegacy.fetcher,
+      poolData,
+    );
+    const quote = increaseLiquidityQuoteByInputToken(
+      tokenA > BigInt(0) ? poolData.tokenMintA : poolData.tokenMintB,
+      new Decimal(tokenA > BigInt(0) ? tokenA : tokenB).div(
+        Math.pow(
+          10,
+          tokenA > BigInt(0) ? tokenAInfo.decimals : tokenBInfo.decimals,
+        ),
+      ),
+      lowerTick,
+      upperTick,
+      Percentage.fromDecimal(new Decimal(args.slippage)),
+      pool,
+      tokenExtension,
+    );
+
+    const response = await dex.dlmm.orcaLegacy.buildPreloadedCreatePosition({
       pool,
       quote,
       lowerTick,
@@ -477,11 +508,15 @@ export const rebalancePosition = async (
       inputMint: tokenA > BigInt(0) ? poolData.tokenMintA : poolData.tokenMintB,
     });
 
-  const transactions = await wallet.signAllTransactions([
-    ...closePositionV0Transactions,
-    ...swapV0Transactions,
-    ...createPositionV0Transactions,
-  ]);
+    positionMint = response.positionMint;
+    transactions = [
+      ...closePositionV0Transactions,
+      ...swapV0Transactions,
+      ...response.transactions,
+    ];
+  }
+
+  transactions = await wallet.signAllTransactions(transactions);
   const bundleSimulationResponse = await sender.simulateBundle({
     transactions,
     skipSigVerify: true,
@@ -490,8 +525,8 @@ export const rebalancePosition = async (
   throwBundleSimulationError(bundleSimulationResponse.result.value);
 
   return {
-    positionMint,
     transactions,
+    positionMint,
     bundleSimulationResponse,
     async execute() {
       const { result } = await sender.sendBundle(transactions);

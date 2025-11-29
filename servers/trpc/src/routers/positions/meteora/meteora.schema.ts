@@ -103,6 +103,7 @@ export const meteoraRebalanceSchema = z.union([
     .object({
       pair: publicKey(),
       position: publicKey(),
+      type: z.enum(["swap", "swapless"]),
       slippage: z.number().describe("swap slippage"),
     })
     .and(

@@ -9,10 +9,23 @@ import {
 const orcaFullCreatePositionSchema = z.object({
   strategyType: z.literal("Full"),
 });
-const orcaCustomCreatePositionSchema = z.object({
-  strategyType: z.literal("Custom"),
-  priceChanges: z.tuple([z.number().min(-1).max(0), z.number().min(0).max(1)]),
-});
+const orcaCustomCreatePositionSchema = z
+  .union([
+    z.object({
+      priceChanges: z.tuple([
+        z.number().min(-1).max(0),
+        z.number().min(0).max(1),
+      ]),
+    }),
+    z.object({
+      tickRange: z.tuple([z.number().min(-1).max(0), z.number().min(0).max(1)]),
+    }),
+  ])
+  .and(
+    z.object({
+      strategyType: z.literal("Custom"),
+    }),
+  );
 
 const orcaInternalCreatePositionSchema = z
   .union([orcaFullCreatePositionSchema, orcaCustomCreatePositionSchema])
@@ -34,6 +47,7 @@ export const orcaCreatePositionSchema = z
   ])
   .and(
     z.object({
+      skipSig: z.boolean().optional(),
       jitoConfig: jitoTipConfigSchema.default({
         type: "dynamic",
         priorityFeePercentile: "50ema",
@@ -75,6 +89,7 @@ export const orcaClaimRewardSchema = z
 export const orcaClosePositionSchema = z
   .union([
     z.object({
+      skipSig: z.boolean().optional(),
       pair: publicKey().describe("pool address"),
       slippage: z.number().describe("swap slippage"),
       position: publicKey().describe("position address"),
@@ -95,11 +110,12 @@ export const orcaClosePositionSchema = z
     }),
   );
 
-export const orcaRebalanceSchema = z.union([
+export const orcaRepositionSchema = z.union([
   z
     .object({
       pair: publicKey(),
       position: publicKey(),
+      type: z.enum(["swap", "swapless"]),
       slippage: z.number().describe("swap slippage"),
     })
     .and(
@@ -110,5 +126,7 @@ export const orcaRebalanceSchema = z.union([
         }),
       }),
     ),
-  externalTransactionSchema,
+  externalTransactionSchema.extend({
+    positionMint: publicKey(),
+  }),
 ]);

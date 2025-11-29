@@ -6,12 +6,12 @@ import { fromWebWalletAdapter } from "@rhiva-ag/shared";
 import type { safeAuthUserSchema } from "@rhiva-ag/trpc";
 import type { WalletContextState } from "@solana/wallet-adapter-react";
 import {
-  orcaRebalanceSchema,
+  orcaRepositionSchema,
   meteoraRebalanceSchema,
-  raydiumRebalanceSchema,
-  rebalanceOrcaPosition,
+  raydiumRepositionSchema,
+  repositionOrcaPosition,
   rebalanceMeteoraPosition,
-  rebalanceRaydiumPosition,
+  repositionRaydiumPosition,
   type AppRouter,
 } from "@rhiva-ag/trpc/browser";
 
@@ -29,6 +29,7 @@ export const useRebalancePosition = (
       const value = {
         pair: position.pool.id,
         position: position.id,
+        type: user.settings.rebalanceType,
         slippage: user.settings.slippage * 100,
       };
       const mapFunc = {
@@ -39,18 +40,20 @@ export const useRebalancePosition = (
       };
 
       const isExternal = user.wallet.external && wallet.publicKey;
-      let data: typeof value | { transactions: string[] } = value;
+      let data:
+        | typeof value
+        | { transactions: string[]; positionMint: string } = value;
 
       if (isExternal) {
         const dexConfig = {
           "saros-dlmm": undefined,
           orca: {
-            fn: rebalanceOrcaPosition,
-            schema: orcaRebalanceSchema,
+            fn: repositionOrcaPosition,
+            schema: orcaRepositionSchema,
           },
           "raydium-clmm": {
-            fn: rebalanceRaydiumPosition,
-            schema: raydiumRebalanceSchema,
+            fn: repositionRaydiumPosition,
+            schema: raydiumRepositionSchema,
           },
           meteora: {
             fn: rebalanceMeteoraPosition,
@@ -61,7 +64,7 @@ export const useRebalancePosition = (
         const config = dexConfig[position.pool.dex];
         if (config) {
           const { fn, schema } = config;
-          const { transactions } = await fn(
+          const { transactions, positionMint } = await fn(
             dex,
             sendTransaction,
             fromWebWalletAdapter(wallet),
@@ -72,6 +75,7 @@ export const useRebalancePosition = (
           );
 
           data = {
+            positionMint: positionMint.toBase58(),
             transactions: transactions.map((transaction) =>
               transaction.serialize().toBase64(),
             ),

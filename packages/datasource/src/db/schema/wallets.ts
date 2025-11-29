@@ -1,12 +1,4 @@
-import { eq, type SQL } from "drizzle-orm";
-import {
-  boolean,
-  pgTable,
-  text,
-  timestamp,
-  unique,
-  uuid,
-} from "drizzle-orm/pg-core";
+import { boolean, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 import { users } from "./users";
 

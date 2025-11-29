@@ -58,7 +58,8 @@ export const createPosition = async (
 
   if (isNative(inputMint)) {
     for (const [index, side] of sides.entries()) {
-      const ratio = liquidityRatio ? liquidityRatio[index]! : 1;
+      const ratio =
+        liquidityRatio && sides.length > 1 ? liquidityRatio[index]! : 1;
       const amount = new BN(
         new Decimal(inputAmount * ratio).mul(Math.pow(10, 9)).toFixed(0),
       );
@@ -135,6 +136,7 @@ export const createPosition = async (
   return {
     transactions,
     bundleSimulationResponse,
+    positionMint: position.publicKey,
     async execute() {
       const { result } = await sender.sendBundle(transactions);
       return result;
@@ -442,6 +444,7 @@ export const rebalancePosition = async (
   return {
     transactions,
     bundleSimulationResponse,
+    positionMint: position.publicKey,
     async execute() {
       const { result } = await sender.sendBundle(transactions);
       return result;

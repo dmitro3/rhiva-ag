@@ -47,12 +47,12 @@ export const transactionWorkSchema = z
       ])
       .and(
         z.object({
-          type: z.literal("create-position"),
+          type: z.enum(["create-position", "repositioned"]),
         }),
       ),
     z.object({
       dex: z.enum(["orca", "meteora", "raydium-clmm"]),
-      type: z.enum(["closed-position", "rebalanced-position", "repositioned"]),
+      type: z.enum(["closed-position", "rebalanced-position"]),
     }),
   ])
   .and(

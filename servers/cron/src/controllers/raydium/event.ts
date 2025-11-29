@@ -41,8 +41,7 @@ export const syncRaydiumPositionStateFromEvent = async ({
   wallet: Pick<z.infer<typeof walletSelectSchema>, "id" | "user">;
 }) => {
   const results = [];
-  const isClosed =
-    type && ["closed-position", "rebalanced-position"].includes(type);
+  const isClosed = type && ["closed-position", "repositioned"].includes(type);
 
   for (const event of events) {
     if (event.name === "createPersonalPositionEvent") {

@@ -39,6 +39,7 @@ export default function ClosePositionTable({
     ...trpc.position.list.queryOptions({
       offset: currentPage,
       limit: itemsPerPage.current,
+      sortBy: { createdAt: "desc" },
       filter: {
         state: { eq: "closed" },
       },

@@ -18,24 +18,28 @@ export default async function PortfolioPage(_props: PageProps<"/portfolio">) {
     queryFn: async () => getWalletPNL(solanaConnection, dexApi, user.wallet.id),
   });
 
-  await queryClient.prefetchQuery(
-    trpc.position.list.queryOptions({
-      offset: 0,
-      limit: 5,
-      filter: {
-        state: { eq: "closed" },
-      },
-    }),
-  );
-  await queryClient.prefetchQuery(
-    trpc.position.list.queryOptions({
-      offset: 0,
-      limit: 5,
-      filter: {
-        state: { eq: "open" },
-      },
-    }),
-  );
+  await Promise.all([
+    queryClient.prefetchQuery(
+      trpc.position.list.queryOptions({
+        offset: 0,
+        limit: 5,
+        sortBy: { createdAt: "desc" },
+        filter: {
+          state: { eq: "closed" },
+        },
+      }),
+    ),
+    queryClient.prefetchQuery(
+      trpc.position.list.queryOptions({
+        offset: 0,
+        limit: 5,
+        sortBy: { createdAt: "desc" },
+        filter: {
+          state: { eq: "open" },
+        },
+      }),
+    ),
+  ]);
 
   await queryClient.prefetchQuery(trpc.position.aggregrate.queryOptions());
 

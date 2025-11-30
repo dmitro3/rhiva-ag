@@ -150,8 +150,8 @@ export class MeteoraDLMM {
         strategyType,
         new BN(0),
         new BN(0),
-        new BN(100).muln(100),
-        new BN(100).muln(100),
+        new BN(0),
+        new BN(0),
       );
     const { initBinArrayInstructions, rebalancePositionInstruction } =
       await pool.rebalancePosition(

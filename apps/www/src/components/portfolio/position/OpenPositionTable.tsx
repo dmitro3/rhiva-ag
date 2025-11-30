@@ -73,6 +73,7 @@ export default function OpenPositionTable({
     ...trpc.position.list.queryOptions({
       offset: currentPage,
       limit: itemsPerPage.current,
+      sortBy: { createdAt: "desc" },
       filter: {
         state: { eq: "open" },
       },

@@ -150,7 +150,6 @@ export default function BackgroundJobToast({
       });
     else if (status === "progress")
       toast.update(jobId, {
-        autoClose: 500,
         hideProgressBar: true,
         onClose: () => setJobId(undefined),
         render: ({ isPaused }) => (

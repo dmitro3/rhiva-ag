@@ -1,7 +1,9 @@
 import ms from "ms";
 import { toast } from "react-toastify";
+import { BiNoEntry } from "react-icons/bi";
 import { MdMoreVert } from "react-icons/md";
 import { mapFilter } from "@rhiva-ag/shared";
+import { RiAiGenerate } from "react-icons/ri";
 import { logEvent } from "firebase/analytics";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@rhiva-ag/auth-ui/client";
@@ -9,6 +11,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
+import { IoMdRefresh, IoMdGift, IoMdInformation } from "react-icons/io";
 
 import Image from "@/components/Image";
 import { useDex } from "@/hooks/useDex";
@@ -17,13 +20,15 @@ import DexIcon from "@/assets/icons/ic_dex";
 import Pagination from "../PositionPagination";
 import CopyButton from "@/components/CopyButton";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import type { Position } from "@/hooks/usePosition";
 import { useTRPC, useTRPCClient } from "@/trpc.client";
 import PositionDetailModal from "./PositionDetailModal";
 import { useClosePosition } from "@/hooks/useClosePosition";
-import { usePosition, type Position } from "@/hooks/usePosition";
+import ConfirmBundleToast from "@/components/ConfirmBundleToast";
 import NativeOrUsdAndPercentage from "./NativeOrUsdAndPercentage";
 import { useRebalancePosition } from "@/hooks/useRebalancePosition";
 import { useClaimPositionReward } from "@/hooks/useClaimPositionReward";
+import { useRefreshPositionQueries } from "@/hooks/usePositionManager";
 
 type OpenPositionTableProps = {
   isNative?: boolean;
@@ -41,6 +46,7 @@ export default function OpenPositionTable({
   const analytics = useAnalytics();
   const trpcClient = useTRPCClient();
   const queryClient = useQueryClient();
+  const refreshPositionQueries = useRefreshPositionQueries(queryClient);
   const closePosition = useClosePosition(dexInstance, wallet, trpcClient, user);
   const rebalancePosition = useRebalancePosition(
     dexInstance,
@@ -58,7 +64,11 @@ export default function OpenPositionTable({
   const itemsPerPage = useRef(5);
   const searchParams = useSearchParams();
   const [currentPage, setCurrentPage] = useState(0);
+  const [bundleId, setBundleId] = useState<string | undefined>();
   const [showGeneratePnLModal, setShowGeneratePnLModal] = useState(false);
+  const [actionType, setActionType] = useState<
+    "claim" | "close" | "rebalance" | undefined
+  >();
   const [showDetailedPositionModal, setShowDetailedPositionModal] =
     useState(false);
   const [selectedPosition, setSelectedPosition] = useState<Position | null>(
@@ -135,34 +145,17 @@ export default function OpenPositionTable({
     return [positions, aggregrations];
   }, [data, dex]);
 
-  const { setPosition, updatePosition, removePosition } = usePosition(
-    currentPage,
-    itemsPerPage,
-    queryClient,
-    trpc,
-  );
   const onClosePosition = useCallback(
     async (position: Position) => {
       const result = await toast.promise(closePosition(position), {
-        error: "Oops! Transaction failed.",
-        pending: "Sending close position transaction...",
-        success: "🎉 Position closed successfully.",
+        error: "Oops! Bundle failed.",
+        pending: "Sending transaction bundle...",
+        success: "🎉 Bundle sent successfully.",
       });
       if (result) {
         const { bundleId } = result;
-        const updatedPosition = {
-          ...position,
-          pnls: position.pnls.map((pnl) => ({
-            ...pnl,
-            feeUsd: 0,
-            claimedFeeUsd: 0,
-          })),
-        };
-
-        removePosition(position.id, "open", undefined);
-        setPosition(updatedPosition, "closed", undefined);
-        removePosition(position.id, "open", position.pool.dex);
-        setPosition(updatedPosition, "closed", position.pool.dex);
+        setBundleId(bundleId);
+        setActionType("close");
 
         if (analytics)
           logEvent(analytics, "position_closed", {
@@ -172,28 +165,19 @@ export default function OpenPositionTable({
           });
       }
     },
-    [closePosition, setPosition, removePosition, dex, analytics],
+    [closePosition, dex, analytics],
   );
   const onClaimRewards = useCallback(
     async (position: Position) => {
       const result = await toast.promise(claimPositionRewards(position), {
-        error: "Oops! Transaction failed.",
-        pending: "Sending claim reward transaction...",
-        success: "🎉 Rewards claimed successfully.",
+        error: "Oops! Bundle failed.",
+        pending: "Sending transaction bundle...",
+        success: "🎉 Bundle sent successfully.",
       });
       if (result) {
         const { bundleId } = result;
-        const updatedPosition = {
-          ...position,
-          pnls: position.pnls.map((pnl) => ({
-            ...pnl,
-            feeUsd: 0,
-            claimedFeeUsd: 0,
-          })),
-        };
-
-        updatePosition(updatedPosition, "closed", undefined);
-        updatePosition(updatedPosition, "closed", position.pool.dex);
+        setBundleId(bundleId);
+        setActionType("claim");
 
         if (analytics)
           logEvent(analytics, "rewards_claimed", {
@@ -203,17 +187,19 @@ export default function OpenPositionTable({
           });
       }
     },
-    [claimPositionRewards, dex, analytics, updatePosition],
+    [claimPositionRewards, dex, analytics],
   );
   const onRebalancePositon = useCallback(
     async (position: Position) => {
       const result = await toast.promise(rebalancePosition(position), {
-        error: "Oops! Transaction failed.",
-        pending: "Sending rebalance transaction...",
-        success: "🎉 Position rebalanced successfully.",
+        error: "Oops! Bundle failed.",
+        pending: "Sending transaction bundle...",
+        success: "🎉 Bundle sent successfully.",
       });
       if (result) {
         const { bundleId } = result;
+        setBundleId(bundleId);
+        setActionType("rebalance");
 
         if (analytics)
           logEvent(analytics, "position_rebalanced", {
@@ -331,7 +317,8 @@ export default function OpenPositionTable({
                             padding: 96,
                             to: "bottom start",
                           }}
-                          className="flex flex-col absolute bg-dark z-50 border border-white/10 outline-none rounded-md [&_button]:text-start [&_button]:text-xs [&_button]:p-2 [&_button]:text-nowrap [&_button:focus]:bg-white/10"
+                          className="flex flex-col absolute bg-dark z-50 border border-white/10 outline-none rounded-md 
+                          [&_button]:flex [&_button]:items-center [&_button]:space-x-2 [&_button]:text-start [&_button]:text-sm [&_button]:p-2 [&_button]:text-nowrap [&_button:focus]:bg-white/10"
                         >
                           <MenuItem
                             as="button"
@@ -340,7 +327,8 @@ export default function OpenPositionTable({
                               setShowDetailedPositionModal(true);
                             }}
                           >
-                            Details
+                            <IoMdInformation size={18} />
+                            <span>Details</span>
                           </MenuItem>
                           <MenuItem
                             as="button"
@@ -349,25 +337,29 @@ export default function OpenPositionTable({
                               setShowGeneratePnLModal(true);
                             }}
                           >
-                            Generate PNL Card
+                            <RiAiGenerate size={18} />
+                            <span>Generate PNL Card</span>
                           </MenuItem>
                           <MenuItem
                             as="button"
                             onClick={() => onClaimRewards(position.extra)}
                           >
-                            Claim Rewards
+                            <IoMdGift size={18} />
+                            <span>Claim Rewards</span>
                           </MenuItem>
                           <MenuItem
                             as="button"
                             onClick={() => onRebalancePositon(position.extra)}
                           >
-                            Rebalance Position
+                            <IoMdRefresh size={18} />
+                            <span>Rebalance Position</span>
                           </MenuItem>
                           <MenuItem
                             as="button"
                             onClick={() => onClosePosition(position.extra)}
                           >
-                            Close Position
+                            <BiNoEntry size={18} />
+                            <span>Close Position</span>
                           </MenuItem>
                         </MenuItems>
                       </Menu>
@@ -412,6 +404,40 @@ export default function OpenPositionTable({
             </tbody>
           </table>
         </div>
+        {bundleId && (
+          <ConfirmBundleToast
+            bundleId={bundleId}
+            setBundleId={setBundleId}
+            title="⚡Bundle Sent"
+            message={(status) => {
+              const base = {
+                progress: "Unknown status",
+                error: "Oops! Can't confirm this bundle.",
+                pending: "Confirming Transaction Bundle...",
+              };
+
+              const successMessages: Record<
+                "close" | "claim" | "rebalance" | "base",
+                string
+              > = {
+                base: "Unknown status",
+                close: "🎉 Position Closed",
+                claim: "🎉 Position Reward claimed",
+                rebalance: "🎉 Position Rebalanced",
+              };
+
+              const key = actionType ?? "base";
+
+              const messages = {
+                ...base,
+                success: successMessages[key],
+              };
+
+              return messages[status];
+            }}
+            onSuccess={refreshPositionQueries}
+          />
+        )}
         <Pagination
           currentPage={currentPage}
           totalItems={totalItems}

@@ -13,7 +13,7 @@ type ConfirmBundleToastProps = {
   setBundleId: React.Dispatch<React.SetStateAction<string | undefined>>;
 } & Omit<
   React.ComponentProps<typeof BackgroundJobToast>,
-  "action" | "setJobId" | "jobId" | "status"
+  "action" | "setJobId" | "jobId" | "status" | "onSuccess"
 >;
 
 export default function ConfirmTransactionToast({

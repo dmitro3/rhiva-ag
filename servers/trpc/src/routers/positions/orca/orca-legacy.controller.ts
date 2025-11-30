@@ -327,32 +327,31 @@ export const closePosition = async (
   const swapV0Transactions = [];
   let tokenBalanceChanges: Record<string, bigint> = {};
 
-  if (swapToNative) {
-    const tokenAAta = getAssociatedTokenAddressSync(
-      tokenAInfo.address,
-      wallet.publicKey,
-      false,
-      tokenAInfo.tokenProgram,
-    );
-    const tokenBAta = getAssociatedTokenAddressSync(
-      tokenBInfo.address,
-      wallet.publicKey,
-      false,
-      tokenBInfo.tokenProgram,
-    );
+  const tokenAAta = getAssociatedTokenAddressSync(
+    tokenAInfo.address,
+    wallet.publicKey,
+    false,
+    tokenAInfo.tokenProgram,
+  );
+  const tokenBAta = getAssociatedTokenAddressSync(
+    tokenBInfo.address,
+    wallet.publicKey,
+    false,
+    tokenBInfo.tokenProgram,
+  );
 
-    const accountConfigs = closePositionV0Transactions.map(() => ({
-      encoding: "base64" as const,
-      addresses: [tokenAAta.toBase58(), tokenBAta.toBase58()],
-    }));
+  const accountConfigs = closePositionV0Transactions.map(() => ({
+    encoding: "base64" as const,
+    addresses: [tokenAAta.toBase58(), tokenBAta.toBase58()],
+  }));
+
+  if (swapToNative) {
     const simulationResponse = await sender.simulateBundle({
       transactions: closePositionV0Transactions,
       skipSigVerify: true,
       postExecutionAccountsConfigs: accountConfigs,
       preExecutionAccountsConfigs: accountConfigs,
     });
-
-    console.log(simulationResponse);
 
     throwBundleSimulationError(simulationResponse.result.value);
 
@@ -391,8 +390,15 @@ export const closePosition = async (
   const bundleSimulationResponse = await sender.simulateBundle({
     transactions,
     skipSigVerify: true,
-    replaceRecentBlockhash: true,
+
+    preExecutionAccountsConfigs: accountConfigs,
+    postExecutionAccountsConfigs: accountConfigs,
   });
+
+  if (!swapToNative)
+    tokenBalanceChanges = getTokenBalanceChangesFromBundleSimulation(
+      bundleSimulationResponse.result.value,
+    );
 
   throwBundleSimulationError(bundleSimulationResponse.result.value);
 
@@ -485,7 +491,6 @@ export const reposition = async (
       tokenBalanceChanges[tokenAInfo.address.toBase58()] || BigInt(0);
     const tokenB =
       tokenBalanceChanges[tokenBInfo.address.toBase58()] || BigInt(0);
-
     const tokenExtension = await TokenExtensionUtil.buildTokenExtensionContext(
       dex.dlmm.orcaLegacy.fetcher,
       poolData,

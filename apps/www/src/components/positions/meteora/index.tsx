@@ -30,6 +30,7 @@ import PriceRangeInput from "./PriceRangeInput";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { getActiveBin } from "@/lib/web3/meteora-patch";
 import ConfirmBundleToast from "@/components/ConfirmBundleToast";
+import { useRefreshPositionQueries } from "@/hooks/usePositionManager";
 
 type MeteoraOpenPositionProps = {
   pool: Pair;
@@ -67,6 +68,7 @@ function MeteoraOpenPositionForm({
   const nativeMint = NATIVE_MINT.toBase58();
   const { user, isAuthenticated, signIn } = useAuth();
   const [bundleId, setBundleId] = useState<string | undefined>();
+  const refreshPositionQueries = useRefreshPositionQueries(queryClient);
 
   const { data: rawBalance } = useQuery({
     refetchOnMount: true,
@@ -367,19 +369,7 @@ function MeteoraOpenPositionForm({
 
               return messages[status];
             }}
-            onSuccess={async () =>
-              queryClient.refetchQueries({
-                predicate: (query) => {
-                  for (const key of query.queryKey) {
-                    if (Array.isArray(key))
-                      return query.queryKey.includes("position");
-                    return key === "position";
-                  }
-
-                  return false;
-                },
-              })
-            }
+            onSuccess={refreshPositionQueries}
           />
         )}
       </Form>

@@ -29,6 +29,7 @@ import PriceRangeInput from "./PriceRangeInput";
 import PositionOverview from "../PositionOverview";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import ConfirmBundleToast from "@/components/ConfirmBundleToast";
+import { useRefreshPositionQueries } from "@/hooks/usePositionManager";
 
 type OrcaOpenPositionProps = {
   pool: Pair;
@@ -67,6 +68,7 @@ function OrcaOpenPositionForm({
   const nativeMint = NATIVE_MINT.toBase58();
   const { user, isAuthenticated, signIn } = useAuth();
   const [bundleId, setBundleId] = useState<string | undefined>();
+  const refreshPositionQueries = useRefreshPositionQueries(queryClient);
 
   const { data: rawBalance } = useQuery({
     refetchOnMount: true,
@@ -295,19 +297,7 @@ function OrcaOpenPositionForm({
 
                 return messages[status];
               }}
-              onSuccess={async () =>
-                queryClient.refetchQueries({
-                  predicate: (query) => {
-                    for (const key of query.queryKey) {
-                      if (Array.isArray(key))
-                        return query.queryKey.includes("position");
-                      return key === "position";
-                    }
-
-                    return false;
-                  },
-                })
-              }
+              onSuccess={refreshPositionQueries}
             />
           )}
         </Form>

@@ -28,6 +28,7 @@ import PositionOverview from "../PositionOverview";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { getPoolState } from "@/lib/web3/raydium-patch";
 import ConfirmBundleToast from "@/components/ConfirmBundleToast";
+import { useRefreshPositionQueries } from "@/hooks/usePositionManager";
 
 type RaydiumOpenPositionProps = {
   pool: Pair;
@@ -66,6 +67,7 @@ function RaydiumOpenPositionForm({
   const nativeMint = NATIVE_MINT.toBase58();
   const { isAuthenticated, user, signIn } = useAuth();
   const [bundleId, setBundleId] = useState<string | undefined>();
+  const refreshPositionQueries = useRefreshPositionQueries(queryClient);
 
   const { data: rawBalance } = useQuery({
     refetchOnMount: true,
@@ -281,19 +283,7 @@ function RaydiumOpenPositionForm({
 
                 return messages[status];
               }}
-              onSuccess={async () =>
-                queryClient.refetchQueries({
-                  predicate: (query) => {
-                    for (const key of query.queryKey) {
-                      if (Array.isArray(key))
-                        return query.queryKey.includes("position");
-                      return key === "position";
-                    }
-
-                    return false;
-                  },
-                })
-              }
+              onSuccess={refreshPositionQueries}
             />
           )}
         </Form>

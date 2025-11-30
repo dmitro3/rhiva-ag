@@ -4,6 +4,7 @@ import type { z } from "zod";
 import Decimal from "decimal.js";
 import { PublicKey, type VersionedTransaction } from "@solana/web3.js";
 import { getAssociatedTokenAddressSync, NATIVE_MINT } from "@solana/spl-token";
+import { getTokenBalanceChangesFromBundleSimulation } from "@rhiva-ag/dex/utils";
 import {
   PoolUtils,
   TxVersion,
@@ -15,13 +16,7 @@ import {
   type ReturnTypeGetLiquidityAmountOut,
 } from "@raydium-io/raydium-sdk-v2";
 import {
-  getPreTokenBalanceForAccounts,
-  getTokenBalanceChangesFromBundleSimulation,
-  getTokenBalanceChangesFromSimulation,
-} from "@rhiva-ag/dex/utils";
-import {
   isNative,
-  throwSimulationError,
   throwBundleSimulationError,
   type WalletAdapter,
   type SendTransaction,
@@ -350,42 +345,38 @@ export const closePosition = async (
   let nativeAmount = new BN(0);
   let tokenBalanceChanges: Record<string, bigint> = {};
 
+  const tokenAAta = getAssociatedTokenAddressSync(
+    new PublicKey(poolInfo.mintA.address),
+    wallet.publicKey,
+    false,
+    new PublicKey(poolInfo.mintA.programId),
+  );
+  const tokenBAta = getAssociatedTokenAddressSync(
+    new PublicKey(poolInfo.mintB.address),
+    wallet.publicKey,
+    false,
+    new PublicKey(poolInfo.mintB.programId),
+  );
+
+  const accountConfigs = [
+    {
+      encoding: "base64" as const,
+      addresses: [tokenAAta.toBase58(), tokenBAta.toBase58()],
+    },
+  ];
+
   if (swapToNative) {
-    const tokenAAta = getAssociatedTokenAddressSync(
-      new PublicKey(poolInfo.mintA.address),
-      wallet.publicKey,
-      false,
-      new PublicKey(poolInfo.mintA.programId),
-    );
-    const tokenBAta = getAssociatedTokenAddressSync(
-      new PublicKey(poolInfo.mintB.address),
-      wallet.publicKey,
-      false,
-      new PublicKey(poolInfo.mintB.programId),
-    );
+    const simulationResponse = await sender.simulateBundle({
+      skipSigVerify: true,
+      transactions: [closePositionV0Transaction],
+      postExecutionAccountsConfigs: accountConfigs,
+      preExecutionAccountsConfigs: accountConfigs,
+    });
 
-    const preTokenBalanceChanges = await getPreTokenBalanceForAccounts(
-      dex.connection,
-      [tokenAAta, tokenBAta],
-    );
+    throwBundleSimulationError(simulationResponse.result.value);
 
-    const simulationResponse = await dex.connection.simulateTransaction(
-      closePositionV0Transaction,
-      {
-        sigVerify: false,
-        replaceRecentBlockhash: true,
-        accounts: {
-          addresses: [tokenAAta.toBase58(), tokenBAta.toBase58()],
-          encoding: "base64",
-        },
-      },
-    );
-
-    throwSimulationError(simulationResponse.value);
-
-    tokenBalanceChanges = getTokenBalanceChangesFromSimulation(
-      simulationResponse.value,
-      preTokenBalanceChanges,
+    tokenBalanceChanges = getTokenBalanceChangesFromBundleSimulation(
+      simulationResponse.result.value,
     );
 
     const tokens = [poolInfo.mintA, poolInfo.mintB];
@@ -429,8 +420,14 @@ export const closePosition = async (
   const bundleSimulationResponse = await sender.simulateBundle({
     transactions,
     skipSigVerify: true,
-    replaceRecentBlockhash: true,
+    preExecutionAccountsConfigs: accountConfigs,
+    postExecutionAccountsConfigs: accountConfigs,
   });
+
+  if (!swapToNative)
+    tokenBalanceChanges = getTokenBalanceChangesFromBundleSimulation(
+      bundleSimulationResponse.result.value,
+    );
 
   throwBundleSimulationError(bundleSimulationResponse.result.value);
 

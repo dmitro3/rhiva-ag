@@ -13,6 +13,7 @@ import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import Image from "@/components/Image";
 import { useDex } from "@/hooks/useDex";
 import PnLCardModal from "./PnLCardModal";
+import DexIcon from "@/assets/icons/ic_dex";
 import Pagination from "../PositionPagination";
 import CopyButton from "@/components/CopyButton";
 import { useAnalytics } from "@/hooks/useAnalytics";
@@ -68,12 +69,12 @@ export default function OpenPositionTable({
 
   const { data } = useQuery({
     refetchInterval: 60_000,
+    refetchOnMount: true,
     ...trpc.position.list.queryOptions({
       offset: currentPage,
       limit: itemsPerPage.current,
       filter: {
         state: { eq: "open" },
-        dex: dex ? { eq: dex } : undefined,
       },
     }),
   });
@@ -93,11 +94,12 @@ export default function OpenPositionTable({
           ? (pnl.claimedFeeUsd / pnl.amountUsd) * 100
           : 0;
 
-        return {
+        const data = {
           pnlPercentage,
           collectedFeePercentage,
           unCollectedFeePercentage,
           extra: position,
+          dex: position.pool.dex,
           id: position.id,
           pnl: pnl.pnlUsd,
           value: pnl.amountUsd,
@@ -107,6 +109,10 @@ export default function OpenPositionTable({
           baseToken: position.pool.baseToken,
           quoteToken: position.pool.quoteToken,
         };
+        if (dex) {
+          if (dex === data.dex) return data;
+          return null;
+        } else return data;
       }
     });
 
@@ -126,7 +132,7 @@ export default function OpenPositionTable({
     );
 
     return [positions, aggregrations];
-  }, [data]);
+  }, [data, dex]);
 
   const { setPosition, updatePosition, removePosition } = usePosition(
     currentPage,
@@ -202,8 +208,8 @@ export default function OpenPositionTable({
     async (position: Position) => {
       const result = await toast.promise(rebalancePosition(position), {
         error: "Oops! Transaction failed.",
-        pending: "Sending claim reward transaction...",
-        success: "🎉 Rewards claimed successfully.",
+        pending: "Sending rebalance transaction...",
+        success: "🎉 Position rebalanced successfully.",
       });
       if (result) {
         const { bundleId } = result;
@@ -246,7 +252,7 @@ export default function OpenPositionTable({
                   >
                     <td>
                       <div className="flex flex-nowrap items-center space-x-2 lt-lg:min-w-40">
-                        <div className="flex flex-nowrap relative">
+                        <div className="flex flex-nowrap items-center relative">
                           <Image
                             width={24}
                             height={24}
@@ -260,6 +266,10 @@ export default function OpenPositionTable({
                             src={position.quoteToken.image}
                             alt={position.quoteToken.symbol}
                             className="-ml-2 size-6 rounded-full"
+                          />
+                          <DexIcon
+                            dex={position.dex}
+                            className="size-4 ml-1"
                           />
                         </div>
                         <p className="text-base font-medium text-nowrap -mr-2">

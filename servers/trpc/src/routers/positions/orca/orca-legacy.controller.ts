@@ -193,6 +193,7 @@ export const claimReward = async (
     pair,
     position,
     slippage,
+    skipSig,
     jitoConfig,
   }: Exclude<z.infer<typeof orcaClaimRewardSchema>, { transactions: string[] }>,
 ) => {
@@ -228,13 +229,13 @@ export const claimReward = async (
   }));
 
   const simulationResponse = await sender.simulateBundle({
-    transactions: claimRewardV0Transactions,
     skipSigVerify: true,
-    replaceRecentBlockhash: true,
+    transactions: claimRewardV0Transactions.map((transaction) =>
+      transaction.serialize().toBase64(),
+    ),
     postExecutionAccountsConfigs: accountConfigs,
     preExecutionAccountsConfigs: accountConfigs,
   });
-
   throwBundleSimulationError(simulationResponse.result.value);
 
   const tokenBalanceChanges = getTokenBalanceChangesFromBundleSimulation(
@@ -263,10 +264,13 @@ export const claimReward = async (
     }
   }
 
-  const transactions = await wallet.signAllTransactions([
+  const unsignedTransactions = [
     ...claimRewardV0Transactions,
     ...swapV0Transactions,
-  ]);
+  ];
+  const transactions = skipSig
+    ? unsignedTransactions
+    : await wallet.signAllTransactions(unsignedTransactions);
 
   const bundleSimulationResponse = await sender.simulateBundle({
     transactions,
@@ -291,9 +295,9 @@ export const closePosition = async (
   sender: SendTransaction,
   wallet: WalletAdapter,
   {
-    slippage,
     pair,
     skipSig,
+    slippage,
     jitoConfig,
     swapToNative,
     position: positionPubkey,
@@ -347,6 +351,8 @@ export const closePosition = async (
       postExecutionAccountsConfigs: accountConfigs,
       preExecutionAccountsConfigs: accountConfigs,
     });
+
+    console.log(simulationResponse);
 
     throwBundleSimulationError(simulationResponse.result.value);
 

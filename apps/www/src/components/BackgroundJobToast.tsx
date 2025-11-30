@@ -3,10 +3,12 @@ import { toast } from "react-toastify";
 import { MdCheckCircle, MdError } from "react-icons/md";
 import { memo, useEffect, useMemo, useRef } from "react";
 
+type Status = "success" | "error" | "pending" | "progress";
+
 type JobMessageProps = {
   title: string;
   subtitle?: string;
-  type: "success" | "error" | "pending";
+  type: Status;
   action?: React.ReactNode;
   isPaused?: boolean;
 };
@@ -19,8 +21,11 @@ export const JobMessage = memo(function JobMessage({
   isPaused,
 }: JobMessageProps) {
   const isError = useMemo(() => type === "error", [type]);
-  const isPending = useMemo(() => type === "pending", [type]);
   const isSuccess = useMemo(() => type === "success", [type]);
+  const isPending = useMemo(
+    () => ["pending", "progress"].includes(type),
+    [type],
+  );
 
   return (
     <div className="bg-stone-900 w-[calc(min(100vh,24rem))] rounded-md overflow-hidden">
@@ -79,24 +84,23 @@ export const JobMessage = memo(function JobMessage({
 
 type BackgroundJobToastProps = {
   jobId: string;
-  setJobId: React.Dispatch<React.SetStateAction<string | undefined>>;
   title: string;
-  message: {
-    success: string;
-    error: string;
-    pending: string;
-  };
+  subtitle?: string;
   action?: React.ReactNode;
-  status?: "success" | "error" | "pending";
+  message: (status: Status) => string;
+  onSuccess?: () => Promise<void>;
+  status?: "success" | "error" | "pending" | "progress";
+  setJobId: React.Dispatch<React.SetStateAction<string | undefined>>;
 };
 
 export default function BackgroundJobToast({
   jobId,
   title,
-  setJobId,
-  message,
   action,
   status,
+  message,
+  setJobId,
+  onSuccess,
 }: BackgroundJobToastProps) {
   const created = useRef(false);
 
@@ -109,7 +113,7 @@ export default function BackgroundJobToast({
             type="pending"
             title={title}
             action={action}
-            subtitle={message.pending}
+            subtitle={message("pending")}
           />
         ),
         {
@@ -140,26 +144,44 @@ export default function BackgroundJobToast({
             action={action}
             title={title}
             isPaused={isPaused}
-            subtitle={message.error}
+            subtitle={message("error")}
           />
         ),
       });
-    else if (status === "success")
+    else if (status === "progress")
       toast.update(jobId, {
-        autoClose: 5000,
+        autoClose: 500,
         hideProgressBar: true,
         onClose: () => setJobId(undefined),
         render: ({ isPaused }) => (
           <JobMessage
-            type="success"
+            type="progress"
             action={action}
             title={title}
             isPaused={isPaused}
-            subtitle={message.success}
+            subtitle={message("progress")}
           />
         ),
       });
-  }, [message, title, jobId, action, setJobId, status]);
+    else if (status === "success") {
+      onSuccess?.().then(() =>
+        toast.update(jobId, {
+          autoClose: 5000,
+          hideProgressBar: true,
+          onClose: () => setJobId(undefined),
+          render: ({ isPaused }) => (
+            <JobMessage
+              type="success"
+              action={action}
+              title={title}
+              isPaused={isPaused}
+              subtitle={message("success")}
+            />
+          ),
+        }),
+      );
+    }
+  }, [message, title, jobId, action, setJobId, status, onSuccess]);
 
   return null;
 }

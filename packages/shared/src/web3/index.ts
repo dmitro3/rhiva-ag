@@ -1,5 +1,5 @@
 import xior from "xior";
-import { format } from "util";
+import { format, isString } from "util";
 import { fromLegacyPublicKey } from "@solana/compat";
 import { lamports, type TransactionSigner } from "@solana/kit";
 import {
@@ -94,9 +94,9 @@ export class SendTransaction {
       params: [
         {
           encodedTransactions: transactions.map((transaction) =>
-            transaction instanceof VersionedTransaction
-              ? transaction.serialize().toBase64()
-              : transaction,
+            isString(transaction)
+              ? transaction
+              : transaction.serialize().toBase64(),
           ),
         },
         {

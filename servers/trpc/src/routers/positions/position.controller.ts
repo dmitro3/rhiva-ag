@@ -41,7 +41,6 @@ export const getWalletPositions = async (
     })
     .from(positions)
     .where(and(eq(positions.wallet, wallet), extra?.where));
-  if (extra?.orderBy) totalQuery.orderBy(...extra.orderBy);
   const [total] = await totalQuery.execute();
 
   const items = await db.query.positions

@@ -79,6 +79,7 @@ export const orcaClaimRewardSchema = z
   ])
   .and(
     z.object({
+      skipSig: z.boolean().optional(),
       jitoConfig: jitoTipConfigSchema.default({
         type: "dynamic",
         priorityFeePercentile: "50ema",
@@ -89,7 +90,6 @@ export const orcaClaimRewardSchema = z
 export const orcaClosePositionSchema = z
   .union([
     z.object({
-      skipSig: z.boolean().optional(),
       pair: publicKey().describe("pool address"),
       slippage: z.number().describe("swap slippage"),
       position: publicKey().describe("position address"),
@@ -103,6 +103,7 @@ export const orcaClosePositionSchema = z
   ])
   .and(
     z.object({
+      skipSig: z.boolean().optional(),
       jitoConfig: jitoTipConfigSchema.default({
         type: "dynamic",
         priorityFeePercentile: "50ema",

@@ -10,6 +10,7 @@ import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import Image from "@/components/Image";
 import { useTRPC } from "@/trpc.client";
 import PnLCardModal from "./PnLCardModal";
+import DexIcon from "@/assets/icons/ic_dex";
 import Pagination from "../PositionPagination";
 import CopyButton from "@/components/CopyButton";
 import NativeOrUsdAndPercentage from "./NativeOrUsdAndPercentage";
@@ -40,13 +41,11 @@ export default function ClosePositionTable({
       limit: itemsPerPage.current,
       filter: {
         state: { eq: "closed" },
-        dex: dex ? { eq: dex } : undefined,
       },
     }),
   });
 
   const totalItems = useMemo(() => (data?.total ? data.total : 0), [data]);
-
   const allPositions = useMemo(() => {
     return mapFilter(data?.items ?? [], (position) => {
       const [pnl] = position.pnls;
@@ -58,22 +57,28 @@ export default function ClosePositionTable({
           ? (pnl.claimedFeeUsd / pnl.amountUsd) * 100
           : 0;
 
-        return {
+        const data = {
           pnlPercentage,
           earnedPercentage,
           extra: position,
           id: position.id,
           pnl: pnl.pnlUsd,
           value: pnl.amountUsd,
+          dex: position.pool.dex,
           age: position.createdAt,
           closed: position.updatedAt,
           earned: pnl.claimedFeeUsd,
           baseToken: position.pool.baseToken,
           quoteToken: position.pool.quoteToken,
         };
+
+        if (dex) {
+          if (dex === data.dex) return data;
+          return null;
+        } else return data;
       }
     });
-  }, [data]);
+  }, [data, dex]);
 
   return (
     <>
@@ -103,7 +108,7 @@ export default function ClosePositionTable({
                   >
                     <td>
                       <div className="flex items-center space-x-2 lt-lg:min-w-32">
-                        <div className="flex flex-nowrap relative">
+                        <div className="flex flex-nowrap items-center relative">
                           <Image
                             width={24}
                             height={24}
@@ -117,6 +122,10 @@ export default function ClosePositionTable({
                             src={position.quoteToken.image}
                             alt={position.quoteToken.symbol}
                             className="-ml-2 size-4 rounded-full"
+                          />
+                          <DexIcon
+                            dex={position.dex}
+                            className="size-4 ml-1"
                           />
                         </div>
                         <p className="text-base font-medium text-nowrap">

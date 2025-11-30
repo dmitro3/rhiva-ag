@@ -64,6 +64,7 @@ export const transactionWorkSchema = z
 export const transactionEventSchema = z
   .union([
     z.object({
+      result: z.unknown().optional(),
       status: z.enum(["queued", "pending", "completed"]),
     }),
     z.object({
@@ -71,10 +72,14 @@ export const transactionEventSchema = z
       failedReason: z.string().optional(),
       stacktrace: z.array(z.string()).optional(),
     }),
+    z.object({
+      status: z.literal("progress"),
+    }),
   ])
   .and(
     z.object({
       jobId: z.string(),
+      message: z.string().optional(),
       type: z.enum([
         "create-position",
         "closed-position",
@@ -194,10 +199,20 @@ export default async function createWorker({
   const rpc = createSolanaRpc(connection.rpcEndpoint);
   const worker = new Worker<z.infer<typeof transactionWorkSchema>>(
     Work.syncTransaction,
-    async ({ data }) => {
+    async ({ data, ...job }) => {
+      const redis = await worker.client;
       const result = transactionWorkSchema.safeParse(data);
 
       if (result.success) {
+        await redis.publish(
+          Work.syncTransaction,
+          JSON.stringify({
+            jobId: job.id,
+            type: data.type,
+            status: "progress",
+            message: "Processing transaction",
+          }),
+        );
         const pipeline = createTransactionPipeline({
           db,
           rpc,
@@ -210,12 +225,23 @@ export default async function createWorker({
         const bundle = await pRetry(() =>
           sender.safeGetBundle(data.bundleId, 30),
         );
+
+        await redis.publish(
+          Work.syncTransaction,
+          JSON.stringify({
+            jobId: job.id,
+            type: data.type,
+            status: "progress",
+            message: "Transaction bundle parsed",
+          }),
+        );
         const response = mapFilter(
           await connection.getParsedTransactions(bundle.transactions, {
             maxSupportedTransactionVersion: 0,
           }),
           (transaction) => transaction,
         );
+
         return pipeline.process(...response);
       }
 
@@ -238,6 +264,7 @@ export default async function createWorker({
         jobId: job.id,
         status: "pending",
         type: job.data.type,
+        message: "Processing bundle transactions",
       }),
     );
   });
@@ -249,7 +276,9 @@ export default async function createWorker({
       JSON.stringify({
         jobId: job.id,
         type: job.data.type,
+        result: job.returnvalue,
         status: "completed",
+        message: "Bundle transactions processed",
       }),
     );
 
@@ -267,7 +296,7 @@ export default async function createWorker({
         status: "error",
         type: job?.data.type,
         stacktrace: job?.stacktrace,
-        failedReason: job?.failedReason,
+        message: job?.failedReason,
       }),
     );
 

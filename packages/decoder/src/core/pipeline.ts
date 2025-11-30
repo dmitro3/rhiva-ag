@@ -67,7 +67,7 @@ export class Pipeline<T> {
     );
 
     return results.flat(2) as unknown as Promise<
-      Awaited<ConsumerReturnType<T>>
+      FlatArray<Awaited<ConsumerReturnType<T>>, 2>[]
     >;
   }
 

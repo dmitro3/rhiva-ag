@@ -7,8 +7,7 @@ import { getWalletPNL } from "@/lib/get-tokens";
 import PortfolioClientPage from "./page.client";
 import { dexApi, solanaConnection } from "@/instances";
 
-export default async function PortfolioPage(props: PageProps<"/portfolio">) {
-  const searchParams = await props.searchParams;
+export default async function PortfolioPage(_props: PageProps<"/portfolio">) {
   const queryClient = makeQueryClient();
 
   const user = await getUser();
@@ -25,7 +24,6 @@ export default async function PortfolioPage(props: PageProps<"/portfolio">) {
       limit: 5,
       filter: {
         state: { eq: "closed" },
-        dex: searchParams.dex ? searchParams.dex : undefined,
       },
     }),
   );
@@ -35,7 +33,6 @@ export default async function PortfolioPage(props: PageProps<"/portfolio">) {
       limit: 5,
       filter: {
         state: { eq: "open" },
-        dex: searchParams.dex ? searchParams.dex : undefined,
       },
     }),
   );

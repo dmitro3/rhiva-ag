@@ -9,6 +9,7 @@ import BackgroundJobToast from "./BackgroundJobToast";
 
 type ConfirmBundleToastProps = {
   bundleId: string;
+  onSuccess?: (returnvalue: unknown) => Promise<void>;
   setBundleId: React.Dispatch<React.SetStateAction<string | undefined>>;
 } & Omit<
   React.ComponentProps<typeof BackgroundJobToast>,
@@ -18,6 +19,7 @@ type ConfirmBundleToastProps = {
 export default function ConfirmTransactionToast({
   bundleId,
   setBundleId,
+  onSuccess,
   ...props
 }: ConfirmBundleToastProps) {
   const trpc = useTRPC();
@@ -32,6 +34,7 @@ export default function ConfirmTransactionToast({
       if (status) {
         if (status === "error") return "error";
         if (status === "completed") return "success";
+        if (status === "progress") return "progress";
       }
 
       return "pending";
@@ -53,17 +56,21 @@ export default function ConfirmTransactionToast({
     ),
     [bundleId],
   );
-
   return (
     <BackgroundJobToast
       {...props}
-      message={{
-        ...props.message,
-        error: error ? error.message : props.message.error,
+      subtitle={data?.message}
+      message={(status) => {
+        if (status === data?.status && data.message) return data.message;
+        else if (status === "error" && error) return error.message;
+        return props.message(status);
       }}
       action={action}
       jobId={bundleId}
       setJobId={setBundleId}
+      onSuccess={async () => {
+        if (data && "returnvalue" in data) return onSuccess?.(data.returnvalue);
+      }}
       status={transformStatus(data?.status)}
     />
   );

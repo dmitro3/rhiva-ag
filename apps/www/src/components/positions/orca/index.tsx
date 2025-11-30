@@ -12,7 +12,7 @@ import { useAuth } from "@rhiva-ag/auth-ui/client";
 import { address, createSolanaRpc } from "@solana/kit";
 import { Form, FormikContext, useFormik } from "formik";
 import { fromWebWalletAdapter } from "@rhiva-ag/shared";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { Dialog, DialogBackdrop, DialogPanel } from "@headlessui/react";
 import { fetchWhirlpool } from "@orca-so/whirlpools-sdk/whirlpools-client";
@@ -61,6 +61,7 @@ function OrcaOpenPositionForm({
   const dex = useDex();
   const trpc = useTRPC();
   const wallet = useWallet();
+  const queryClient = useQueryClient();
   const analytics = useAnalytics();
   const { connection } = useConnection();
   const nativeMint = NATIVE_MINT.toBase58();
@@ -176,6 +177,7 @@ function OrcaOpenPositionForm({
           );
 
           data = {
+            tokens: values.tokens,
             positionMint: positionMint.toBase58(),
             transactions: transactions.map((transaction) =>
               transaction.serialize().toBase64(),
@@ -283,11 +285,29 @@ function OrcaOpenPositionForm({
               bundleId={bundleId}
               setBundleId={setBundleId}
               title="⚡Bundle Sent"
-              message={{
-                success: "🎉 Position Created",
-                error: "Oops! Can't confirm this bundle.",
-                pending: "Confirming Transaction Bundle...",
+              message={(status) => {
+                const messages = {
+                  progress: "Unknown status",
+                  success: "🎉 Position Created",
+                  error: "Oops! Can't confirm this bundle.",
+                  pending: "Confirming Transaction Bundle...",
+                };
+
+                return messages[status];
               }}
+              onSuccess={async () =>
+                queryClient.refetchQueries({
+                  predicate: (query) => {
+                    for (const key of query.queryKey) {
+                      if (Array.isArray(key))
+                        return query.queryKey.includes("position");
+                      return key === "position";
+                    }
+
+                    return false;
+                  },
+                })
+              }
             />
           )}
         </Form>

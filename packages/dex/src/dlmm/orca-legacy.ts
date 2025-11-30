@@ -1,20 +1,19 @@
+import Decimal from "decimal.js";
 import { mapFilter } from "@rhiva-ag/shared";
 import {
   isVersionedTransaction,
   Percentage,
 } from "@orca-so/whirlpools-sdk/common-sdk";
-import type {
-  VersionedTransaction,
+import {
+  type VersionedTransaction,
   PublicKey,
-  TransactionInstruction,
-  Blockhash,
+  type TransactionInstruction,
+  type Blockhash,
 } from "@solana/web3.js";
 import {
   toTx,
   WhirlpoolIx,
   TickArrayUtil,
-  TokenExtensionUtil,
-  decreaseLiquidityQuoteByLiquidity,
   type Whirlpool,
   type Position,
   type WhirlpoolClient,
@@ -225,7 +224,7 @@ export class OrcaLegacyDLMM {
     position: positionPubkey,
   }: {
     owner: PublicKey;
-    position: PublicKey;
+    position: PublicKey | Position;
     prependInstructions?: TransactionInstruction | TransactionInstruction[];
     latestBlockhash?: {
       blockhash: Blockhash;
@@ -234,7 +233,10 @@ export class OrcaLegacyDLMM {
   }) => {
     this.context.provider.wallet.publicKey = owner;
 
-    const position = await this.client.getPosition(positionPubkey);
+    const position =
+      positionPubkey instanceof PublicKey
+        ? await this.client.getPosition(positionPubkey)
+        : positionPubkey;
     const transactions: VersionedTransaction[] = [];
     latestBlockhash = latestBlockhash
       ? latestBlockhash
@@ -289,9 +291,6 @@ export class OrcaLegacyDLMM {
     owner: PublicKey;
     prependInstructions?: TransactionInstruction[] | TransactionInstruction;
   }) => {
-    const positionData = position.getData();
-    const poolData = pool.getData();
-
     this.context.provider.wallet.publicKey = owner;
 
     const transactions: VersionedTransaction[] = [];
@@ -307,39 +306,20 @@ export class OrcaLegacyDLMM {
 
     const claimTxs = await this.buildClaimReward({
       owner,
+      position,
       latestBlockhash,
       prependInstructions,
-      position: position.getAddress(),
     });
-    const tokenExtension = await TokenExtensionUtil.buildTokenExtensionContext(
-      this.client.getFetcher(),
-      poolData,
-    );
-    const decreaseQuote = decreaseLiquidityQuoteByLiquidity(
-      positionData.liquidity,
-      Percentage.fromFraction(1, slippage),
-      position,
-      pool,
-      tokenExtension,
-    );
 
     const closePositionTxBuilders = await pool.closePosition(
       position.getAddress(),
-      Percentage.fromFraction(1, slippage),
+      Percentage.fromDecimal(new Decimal(slippage)),
     );
 
     transactions.push(...claimTxs);
-    if (positionData.liquidity.gtn(0)) {
-      const { buildSync } = await position.decreaseLiquidity(decreaseQuote);
-      const { transaction, signers } = buildSync(txConfig);
-      if (isVersionedTransaction(transaction)) {
-        transaction.sign(signers);
-        transactions.push(transaction);
-      }
-    }
 
-    for (const { buildSync } of closePositionTxBuilders) {
-      const { transaction, signers } = buildSync(txConfig);
+    for (const txBuilder of closePositionTxBuilders) {
+      const { transaction, signers } = txBuilder.buildSync(txConfig);
       if (isVersionedTransaction(transaction)) {
         transaction.sign(signers);
         transactions.push(transaction);

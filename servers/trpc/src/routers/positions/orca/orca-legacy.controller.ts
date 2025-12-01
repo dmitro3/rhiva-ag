@@ -1,3 +1,5 @@
+import { BN } from "bn.js";
+import assert from "assert";
 import type { z } from "zod";
 import Decimal from "decimal.js";
 import { Percentage } from "@orca-so/whirlpools-sdk/common-sdk";
@@ -487,22 +489,19 @@ export const reposition = async (
       ...response.transactions,
     ];
   } else {
-    const tokenA =
-      tokenBalanceChanges[tokenAInfo.address.toBase58()] || BigInt(0);
-    const tokenB =
-      tokenBalanceChanges[tokenBInfo.address.toBase58()] || BigInt(0);
+    const rawAmountA = tokenBalanceChanges[poolData.tokenMintA.toBase58()];
+    const rawAmountB = tokenBalanceChanges[poolData.tokenMintB.toBase58()];
+    assert(rawAmountA && rawAmountB, "expected not to be undefined");
+    const amountMaxA = new BN(rawAmountA);
+    const amountMaxB = new BN(rawAmountB);
+
     const tokenExtension = await TokenExtensionUtil.buildTokenExtensionContext(
       dex.dlmm.orcaLegacy.fetcher,
       poolData,
     );
     const quote = increaseLiquidityQuoteByInputToken(
-      tokenA > BigInt(0) ? poolData.tokenMintA : poolData.tokenMintB,
-      new Decimal(tokenA > BigInt(0) ? tokenA : tokenB).div(
-        Math.pow(
-          10,
-          tokenA > BigInt(0) ? tokenAInfo.decimals : tokenBInfo.decimals,
-        ),
-      ),
+      poolData.tokenMintA,
+      new Decimal(amountMaxA.toString()).div(Math.pow(10, tokenAInfo.decimals)),
       lowerTick,
       upperTick,
       Percentage.fromDecimal(new Decimal(args.slippage)),
@@ -510,13 +509,39 @@ export const reposition = async (
       tokenExtension,
     );
 
+    if (quote.tokenEstB.gt(amountMaxB) && !isNative(tokenBInfo.address)) {
+      const mintBBalanceResponse = await dex.connection.getTokenAccountBalance(
+        tokenBInfo.address,
+      );
+      const mintBBalance = new BN(mintBBalanceResponse.value.amount);
+      if (quote.tokenEstB.gt(mintBBalance)) {
+        const quoteResponse = await dex.swap.jupiter.jupiter.quoteGet({
+          slippageBps: args.slippage,
+          outputMint: NATIVE_MINT.toBase58(),
+          inputMint: tokenBInfo.address.toBase58(),
+          // @ts-expect-error
+          amount: quote.amountB.amount.toString(),
+        });
+
+        const { transaction } = await dex.swap.jupiter.buildSwap({
+          skipSimulation: true,
+          owner: wallet.publicKey,
+          slippage: args.slippage,
+          amount: quoteResponse.outAmount,
+          inputMint: quoteResponse.outputMint,
+          outputMint: quoteResponse.inputMint,
+        });
+        swapV0Transactions.push(transaction);
+      }
+    }
+
     const response = await dex.dlmm.orcaLegacy.buildPreloadedCreatePosition({
       pool,
       quote,
       lowerTick,
       upperTick,
       owner: wallet.publicKey,
-      inputMint: tokenA > BigInt(0) ? poolData.tokenMintA : poolData.tokenMintB,
+      inputMint: tokenAInfo.address,
     });
 
     positionMint = response.positionMint;

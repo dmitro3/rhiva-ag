@@ -43,6 +43,7 @@ export class Pipeline<T> {
               if (parsedEvents && parsedEvents.length > 0)
                 return pipe.consume(parsedEvents, {
                   signature,
+                  transaction: parsedTransactionWithMeta,
                 });
 
               return null;
@@ -56,6 +57,7 @@ export class Pipeline<T> {
                 return pipe.consume(parsedInstructions, {
                   signature,
                   blockTime,
+                  transaction: parsedTransactionWithMeta,
                 });
               return null;
             }),

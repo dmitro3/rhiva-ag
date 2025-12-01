@@ -1,7 +1,9 @@
 import type { web3 } from "@coral-xyz/anchor";
+import type { ParsedTransactionWithMeta } from "@solana/web3.js";
+
 import { Consumer } from "./consumer";
 
-type TInstruction<T> = Omit<
+export type TInstruction<T> = Omit<
   web3.PartiallyDecodedInstruction,
   "data" | "accounts"
 > & {
@@ -11,7 +13,11 @@ type TInstruction<T> = Omit<
 
 type FnConsumer<T> = (
   instructions: (TInstruction<T> & { inner?: boolean; index?: number })[],
-  extra: { signature: string; blockTime?: number | null },
+  extra: {
+    signature: string;
+    blockTime?: number | null;
+    transaction: ParsedTransactionWithMeta;
+  },
 ) => Promise<unknown>;
 
 export abstract class InstructionProcessor<T> extends Consumer<FnConsumer<T>> {

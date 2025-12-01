@@ -16,10 +16,12 @@ import {
 } from "@rhiva-ag/datasource";
 import {
   RaydiumProgramEventProcessor,
+  RaydiumProgramInstructionProcessor,
   RaydiumProgramInstructionEventProcessor,
 } from "@rhiva-ag/decoder/programs/raydium/index";
 import {
   WhirlpoolProgramEventProcessor,
+  WhirlpoolProgramInstructionProcessor,
   WhirlpoolProgramInstructionEventProcessor,
 } from "@rhiva-ag/decoder/programs/orca/index";
 import {
@@ -32,6 +34,8 @@ import { createRedis } from "../instances";
 import { syncOrcaPositionStateFromEvent } from "../controllers/orca";
 import { syncRaydiumPositionStateFromEvent } from "../controllers/raydium";
 import { syncMeteoraPositionStateFromEvent } from "../controllers/meteora";
+import { syncOrcaPositionStateFromInstructions } from "../controllers/orca/instruction";
+import { syncRaydiumPositionStateFromInstructions } from "../controllers/raydium/instruction";
 
 export const transactionWorkSchema = z
   .union([
@@ -179,6 +183,40 @@ export const createTransactionPipeline = ({
           coingecko,
           positionMint,
           events: instructions.map((instruction) => instruction.parsed),
+        }),
+    ),
+  ]);
+
+export const createInstructionPipeline = ({
+  db,
+  connection,
+}: {
+  db: Database;
+  coingecko: Coingecko;
+  rpc: Rpc<SolanaRpcApi>;
+  connection: Connection;
+  positionMint?: string;
+  type?: z.infer<typeof transactionWorkSchema>["type"];
+  wallet: Pick<z.infer<typeof walletSelectSchema>, "id" | "user">;
+}) =>
+  new Pipeline([
+    new RaydiumProgramInstructionProcessor(connection).addConsumer(
+      async (instructions, extra) =>
+        syncRaydiumPositionStateFromInstructions({
+          db,
+          extra,
+          connection,
+          instructions,
+        }),
+    ),
+
+    new WhirlpoolProgramInstructionProcessor(connection).addConsumer(
+      async (instructions, extra) =>
+        syncOrcaPositionStateFromInstructions({
+          db,
+          extra,
+          connection,
+          instructions,
         }),
     ),
   ]);

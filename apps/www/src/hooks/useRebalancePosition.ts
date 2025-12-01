@@ -34,9 +34,9 @@ export const useRebalancePosition = (
       };
       const mapFunc = {
         "saros-dlmm": undefined,
-        orca: trpcClient.position.orca.claim.mutate,
-        meteora: trpcClient.position.meteora.claim.mutate,
-        "raydium-clmm": trpcClient.position.raydium.claim.mutate,
+        orca: trpcClient.position.orca.reposition.mutate,
+        meteora: trpcClient.position.meteora.rebalance.mutate,
+        "raydium-clmm": trpcClient.position.raydium.reposition.mutate,
       };
 
       const isExternal = user.wallet.external && wallet.publicKey;

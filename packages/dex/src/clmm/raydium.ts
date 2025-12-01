@@ -18,7 +18,6 @@ import {
 
 type CreatePositionArgs = {
   inputMint: string;
-  slippage: number;
   tickLower: number;
   tickUpper: number;
   quote: ReturnTypeGetLiquidityAmountOut;

@@ -35,7 +35,9 @@ export const isNative = (value: string | PublicKey | Address) => {
 
 export const isSystemProgram = (value: string | PublicKey | Address) => {
   const pubkey = new PublicKey(value);
-  return SystemProgram.programId.equals(pubkey);
+  return (
+    SystemProgram.programId.equals(pubkey) || PublicKey.default.equals(pubkey)
+  );
 };
 
 export const isTokenProgram = (value: string | PublicKey | Address) => {
@@ -190,3 +192,6 @@ export const getUniqueInstructions = (
 
   return [ComputeBudgetProgram.setComputeUnitLimit({ units }), ...instructions];
 };
+
+export const percentageFromBps = (value: number) =>
+  value > 1 ? value / 100 : value;

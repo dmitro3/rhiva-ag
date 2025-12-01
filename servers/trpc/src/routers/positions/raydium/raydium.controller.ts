@@ -20,6 +20,7 @@ import {
   throwBundleSimulationError,
   type WalletAdapter,
   type SendTransaction,
+  percentageFromBps,
 } from "@rhiva-ag/shared";
 
 import type {
@@ -104,7 +105,6 @@ export const createPosition = async (
     }
 
     quote = await PoolUtils.getLiquidityAmountOutFromAmountIn({
-      slippage,
       epochInfo,
       tickLower,
       tickUpper,
@@ -112,6 +112,8 @@ export const createPosition = async (
       amountHasFee: true,
       poolInfo: pool.poolInfo,
       amount: new BN(addLiquidityAmount),
+      slippage: percentageFromBps(slippage),
+
       inputA: addLiquidityMint === poolInfo.mintA.address,
     });
 
@@ -138,9 +140,8 @@ export const createPosition = async (
 
   const { signers, builder, extInfo } =
     await dex.clmm.raydium.buildCreatePosition({
-      quote,
-      slippage,
       pool,
+      quote,
       tickUpper,
       tickLower,
       inputMint: addLiquidityMint,
@@ -187,10 +188,11 @@ export const claimReward = async (
   sender: SendTransaction,
   wallet: WalletAdapter,
   {
-    position: positionPubkey,
     pair,
     slippage,
+
     jitoConfig,
+    position: positionPubkey,
   }: Exclude<
     z.infer<typeof raydiumClaimRewardSchema>,
     { transactions: string[] }
@@ -361,7 +363,11 @@ export const closePosition = async (
   const accountConfigs = [
     {
       encoding: "base64" as const,
-      addresses: [tokenAAta.toBase58(), tokenBAta.toBase58()],
+      addresses: [
+        wallet.publicKey.toBase58(),
+        tokenAAta.toBase58(),
+        tokenBAta.toBase58(),
+      ],
     },
   ];
 
@@ -432,6 +438,8 @@ export const closePosition = async (
   throwBundleSimulationError(bundleSimulationResponse.result.value);
 
   return {
+    tokenAAta,
+    tokenBAta,
     position,
     poolInfo,
     transactions,
@@ -464,6 +472,7 @@ export const reposition = async (
   const {
     poolInfo,
     position,
+    tokenBAta,
     swapV0Transactions,
     tokenBalanceChanges,
     closePositionV0Transaction,
@@ -479,15 +488,34 @@ export const reposition = async (
     poolId: poolInfo.id,
   });
   poolInfo.price = rpcData.currentPrice;
-  const { tick: currentTick } = TickUtils.getPriceAndTick({
+  const currentPrice = new Decimal(poolInfo.price);
+  const { price: lowerPrice } = TickUtils.getTickPrice({
     poolInfo,
     baseIn: true,
-    price: new Decimal(poolInfo.price),
+    tick: position.tickLower,
   });
-  const tickDelta = Math.ceil(
-    Math.abs(position.tickUpper - position.tickLower),
-  );
-  const ticks = [currentTick - tickDelta, currentTick + tickDelta];
+  const { price: upperPrice } = TickUtils.getTickPrice({
+    poolInfo,
+    baseIn: true,
+    tick: position.tickUpper,
+  });
+
+  const priceDelta = upperPrice.sub(lowerPrice).div(2);
+  const currentLowerPrice = currentPrice.sub(priceDelta);
+  const currentUpperPrice = currentPrice.add(priceDelta);
+
+  const ticks = [
+    TickUtils.getPriceAndTick({
+      poolInfo,
+      baseIn: true,
+      price: currentLowerPrice,
+    }).tick,
+    TickUtils.getPriceAndTick({
+      poolInfo,
+      baseIn: true,
+      price: currentUpperPrice,
+    }).tick,
+  ];
   const tickLower = Math.min(...ticks);
   const tickUpper = Math.max(...ticks);
 
@@ -514,24 +542,62 @@ export const reposition = async (
       ...response.transactions,
     ];
   } else {
-    const amountMaxA = new BN(
-      tokenBalanceChanges[poolInfo.mintA.address] || BigInt(0),
-    );
-    const amountMaxB = new BN(
-      tokenBalanceChanges[poolInfo.mintB.address] || BigInt(0),
-    );
+    const rawAmountA = tokenBalanceChanges[poolInfo.mintA.address];
+    const rawAmountB = tokenBalanceChanges[poolInfo.mintB.address];
+    assert(rawAmountA && rawAmountB, "expected not to be undefined");
+    const amountMaxA = new BN(rawAmountA);
+    const amountMaxB = new BN(rawAmountB);
+
+    const epochInfo = await dex.clmm.raydium.raydium.fetchEpochInfo();
+    const quote = await PoolUtils.getLiquidityAmountOutFromAmountIn({
+      poolInfo,
+      epochInfo,
+      tickLower,
+      tickUpper,
+      add: true,
+      inputA: true,
+      amountHasFee: true,
+      amount: amountMaxA,
+      slippage: percentageFromBps(args.slippage),
+    });
+
+    const mintBPubkey = new PublicKey(poolInfo.mintB.address);
+    if (quote.amountB.amount.gt(amountMaxB) && !isNative(mintBPubkey)) {
+      const mintBBalanceResponse =
+        await dex.connection.getTokenAccountBalance(tokenBAta);
+      const mintBBalance = new BN(mintBBalanceResponse.value.amount);
+      if (quote.amountB.amount.gt(mintBBalance)) {
+        const quoteResponse = await dex.swap.jupiter.jupiter.quoteGet({
+          slippageBps: args.slippage,
+          inputMint: poolInfo.mintB.address,
+          outputMint: NATIVE_MINT.toBase58(),
+          // @ts-expect-error
+          amount: quote.amountB.amount.toString(),
+        });
+
+        const { transaction } = await dex.swap.jupiter.buildSwap({
+          skipSimulation: true,
+          owner: wallet.publicKey,
+          slippage: args.slippage,
+          amount: quoteResponse.outAmount,
+          inputMint: quoteResponse.outputMint,
+          outputMint: quoteResponse.inputMint,
+        });
+        swapV0Transactions.push(transaction);
+      }
+    }
 
     const {
-      transaction: createPositionV0Transaction,
       signers,
       extInfo,
+      transaction: createPositionV0Transaction,
     } = await dex.clmm.raydium.raydium.clmm.openPositionFromBase({
       poolInfo,
       tickLower,
       tickUpper,
       base: "MintA",
-      baseAmount: amountMaxA,
-      otherAmountMax: amountMaxB,
+      baseAmount: quote.amountA.amount,
+      otherAmountMax: quote.amountSlippageB.amount,
       ownerInfo: {
         useSOLBalance: true,
       },

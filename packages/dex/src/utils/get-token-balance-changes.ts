@@ -108,9 +108,10 @@ export const getTokenBalanceChangesFromBundleSimulation = (
         "space" in account &&
         account.space === 0
       ) {
-        preTokenBalanceChanges[NATIVE_MINT.toBase58()] = BigInt(
-          account.lamports,
-        );
+        if (account.lamports > 0)
+          preTokenBalanceChanges[NATIVE_MINT.toBase58()] = BigInt(
+            account.lamports,
+          );
       }
     }
     for (const account of transaction.postExecutionAccounts) {
@@ -123,9 +124,10 @@ export const getTokenBalanceChangesFromBundleSimulation = (
         "space" in account &&
         account.space === 0
       ) {
-        postTokenBalanceChanges[NATIVE_MINT.toBase58()] = BigInt(
-          account.lamports,
-        );
+        if (account.lamports > 0)
+          postTokenBalanceChanges[NATIVE_MINT.toBase58()] = BigInt(
+            account.lamports,
+          );
       }
     }
 
@@ -135,7 +137,6 @@ export const getTokenBalanceChangesFromBundleSimulation = (
         ...Object.keys(postTokenBalanceChanges),
       ]),
     ];
-
     for (const token of tokens) {
       const pre = preTokenBalanceChanges[token] ?? BigInt(0);
       const post = postTokenBalanceChanges[token] ?? BigInt(0);

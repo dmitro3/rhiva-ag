@@ -32,7 +32,7 @@ runs:
         else 
           paths="$(printf '%s\n%s' "${{ inputs.watchPaths }}" "${{ inputs.path }}")"
           
-          while IFS= read -r paths; do 
+          while IFS= read -r path; do 
             [ -z "$path" ] && continue 
             
             if ! git diff --quiet origin/main -- "$path"; then

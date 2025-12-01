@@ -22,7 +22,7 @@ runs:
       id: changes
       run: |
         git fetch origin main 
-        if git diff --quiet origin/main -- "${{ input.path }}"; then
+        if git diff --quiet origin/main -- "${{ inputs.path }}"; then
           echo "changed=false" >> "$GITHUB_OUTPUT"
         else 
           echo "changed=true" >> "$GITHUB_OUTPUT"
@@ -33,7 +33,7 @@ runs:
       shell: sh 
       if: steps.changes.outputs.changed == 'true'
       run: |
-           cd ${{ input.path }} && bun install --lockfile
+           cd ${{ inputs.path }} && bun install --lockfile
            bun x opennextjs-cloudflare build
       env: ${{ fromJSON(inputs.envVars) }}
     - name: Deploy www

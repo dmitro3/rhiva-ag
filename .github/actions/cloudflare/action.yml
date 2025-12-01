@@ -41,7 +41,7 @@ runs:
             fi
           done <<< "$paths"
         fi
-       
+        echo "This changed? $changed"
         echo "changed=$changed" >> "$GITHUB_OUTPUT"
     - uses: oven-sh/setup-bun@v1
       if: steps.changes.outputs.changed == 'true'

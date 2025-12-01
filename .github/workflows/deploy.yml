@@ -34,16 +34,6 @@ jobs:
         run: |
            cd apps/www && bun install --lockfile
            bun x opennextjs-cloudflare build
-        env:
-          NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL }}
-          NEXT_PUBLIC_MEDIA_URL: ${{ secrets.NEXT_PUBLIC_MEDIA_URL }}
-          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
-          NEXT_PUBLIC_TELEGRAM_LINK: ${{ secrets.NEXT_PUBLIC_TELEGRAM_LINK }}
-          NEXT_PUBLIC_SOLANA_RPC_URL: ${{ secrets.NEXT_PUBLIC_SOLANA_RPC_URL }}
-          NEXT_PUBLIC_JITO_API_URL: ${{ secrets.NEXT_PUBLIC_JITO_API_URL }} 
-          NEXT_PUBLIC_JITO_UUID: ${{ secrets.NEXT_PUBLIC_JITO_UUID }}
-          NEXT_PUBLIC_HELIUS_API_URL: ${{ secrets.NEXT_PUBLIC_HELIUS_API_URL }}
-          NEXT_PUBLIC_HELIUS_API_KEY: ${{ secrets.NEXT_PUBLIC_HELIUS_API_KEY }}
       - name: Deploy www
         uses: cloudflare/wrangler-action@v3
         with:
@@ -62,6 +52,16 @@ jobs:
                      NEXT_PUBLIC_JITO_UUID
                      NEXT_PUBLIC_HELIUS_API_URL
                      NEXT_PUBLIC_HELIUS_API_KEY
+        env:
+          NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL }}
+          NEXT_PUBLIC_MEDIA_URL: ${{ secrets.NEXT_PUBLIC_MEDIA_URL }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_TELEGRAM_LINK: ${{ secrets.NEXT_PUBLIC_TELEGRAM_LINK }}
+          NEXT_PUBLIC_SOLANA_RPC_URL: ${{ secrets.NEXT_PUBLIC_SOLANA_RPC_URL }}
+          NEXT_PUBLIC_JITO_API_URL: ${{ secrets.NEXT_PUBLIC_JITO_API_URL }} 
+          NEXT_PUBLIC_JITO_UUID: ${{ secrets.NEXT_PUBLIC_JITO_UUID }}
+          NEXT_PUBLIC_HELIUS_API_URL: ${{ secrets.NEXT_PUBLIC_HELIUS_API_URL }}
+          NEXT_PUBLIC_HELIUS_API_KEY: ${{ secrets.NEXT_PUBLIC_HELIUS_API_KEY }}
   deploy_media:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && ( github.event.inputs.service == 'media' ||  github.event.inputs.service == 'all')

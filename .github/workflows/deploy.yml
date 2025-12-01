@@ -27,6 +27,9 @@ jobs:
     if: github.ref == 'refs/heads/main' &&  (github.event.inputs.service == 'www'||github.event.inputs.service == 'all')
     name: Deploy www
     steps:
+      - uses: actions/checkout@v4
+        with: 
+          fetch-depth: 0
       - uses: ./.github/actions/cloudflare
         with:
           path: "apps/www"
@@ -49,6 +52,9 @@ jobs:
     if: github.ref == 'refs/heads/main' && ( github.event.inputs.service == 'media' ||  github.event.inputs.service == 'all')
     name: Deploy media
     steps:
+      - uses: actions/checkout@v4
+        with: 
+          fetch-depth: 0
       - uses: ./.github/actions/cloudflare
         with:
           path: "apps/media"

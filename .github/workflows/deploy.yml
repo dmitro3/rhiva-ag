@@ -28,10 +28,13 @@ jobs:
     if: github.ref == 'refs/heads/main' &&  (github.event.inputs.service == 'www'||github.event.inputs.service == 'all')
     name: Deploy www
     steps:
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v1
       - uses: actions/checkout@v4
       - name: Deploy www
         uses: cloudflare/wrangler-action@v3
         with:
+          packageManager: bun
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           environment: ${{ github.event.inputs.environment }}
@@ -58,10 +61,13 @@ jobs:
     if: github.ref == 'refs/heads/main' && ( github.event.inputs.service == 'media' ||  github.event.inputs.service == 'all')
     name: Deploy media
     steps:
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v1
       - uses: actions/checkout@v4
       - name: Deploy media
         uses: cloudflare/wrangler-action@v3
         with:
+          packageManager: bun
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           environment: ${{ github.event.inputs.environment }}

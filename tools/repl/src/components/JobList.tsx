@@ -8,7 +8,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Cell from "./Cell";
 import JobAction from "./JobAction";
 import { truncate } from "../utils";
-import type { Config } from "../utils/config";
+import type { Config } from "../types";
 
 type JobListProps = {
   config: Config;

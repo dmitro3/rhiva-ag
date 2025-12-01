@@ -542,7 +542,7 @@ export const reposition = async (
     transactions = [
       closePositionV0Transaction,
       ...swapV0Transactions,
-      closePositionV0Transaction,
+      createPositionV0Transaction,
     ];
   }
 

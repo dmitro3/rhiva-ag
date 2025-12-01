@@ -1,4 +1,6 @@
 require("dotenv").config();
+
+const os = require("os");
 const { execSync } = require("child_process");
 
 const interpreter = execSync("which bun").toString().trim();
@@ -38,10 +40,10 @@ module.exports = {
     },
     {
       interpreter,
-      instances: 2,
       name: "workers",
       exec_mode: "fork",
       script: "cron/src/workers/index.ts",
+      instances: Math.min(3, Math.round(os.cpus().length / 2)),
     },
   ],
 };

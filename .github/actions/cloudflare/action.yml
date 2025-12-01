@@ -52,8 +52,7 @@ runs:
            cd ${{ inputs.path }} && bun install --lockfile
            bun x opennextjs-cloudflare build
       env: ${{ fromJSON(inputs.envVars) }}
-    - name: Deploy www
-      shell: bash
+    - name: Deploy
       if: steps.changes.outputs.changed == 'true'
       uses: cloudflare/wrangler-action@v3
       with:

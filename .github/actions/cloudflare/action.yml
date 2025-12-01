@@ -1,6 +1,10 @@
 name: "Deploy Cloudflare"
 description: "Deploy opennext project to cloudflare"
 inputs: 
+  watchPaths:
+    required: false 
+    default: "."
+    description: "Folder to watch before building"
   path: 
     required: false
     default: "."
@@ -22,11 +26,23 @@ runs:
       id: changes
       run: |
         git fetch origin main 
-        if git diff --quiet origin/main -- "${{ inputs.path }}"; then
-          echo "changed=false" >> "$GITHUB_OUTPUT"
+        changed="false" 
+        if [ -z "${{ inputs.watchPaths }}" ]; then
+          changed="false" 
         else 
-          echo "changed=true" >> "$GITHUB_OUTPUT"
-        fi 
+          paths="$(printf '%s\n%s' "${{ inputs.watchPaths }}" "${{ inputs.path }}")"
+          
+          while IFS= read -r paths; do 
+            [ -z "$path" ] && continue 
+            
+            if ! git diff --quiet origin/main -- "$path"; then
+              changed="true"
+              break
+            fi
+          done <<< "$paths"
+        fi
+       
+        echo "changed=$changed" >> "$GITHUB_OUTPUT"
     - uses: oven-sh/setup-bun@v1
       if: steps.changes.outputs.changed == 'true'
     - name: Build
@@ -37,6 +53,7 @@ runs:
            bun x opennextjs-cloudflare build
       env: ${{ fromJSON(inputs.envVars) }}
     - name: Deploy www
+      if: steps.changes.outputs.changed == 'true'
       uses: cloudflare/wrangler-action@v3
       with:
           packageManager: bun

@@ -32,7 +32,6 @@ jobs:
       - name: Deploy www
         uses: cloudflare/wrangler-action@v3
         with:
-          packageManager: bun
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           environment: ${{ github.event.inputs.environment }}
@@ -63,7 +62,6 @@ jobs:
       - name: Deploy media
         uses: cloudflare/wrangler-action@v3
         with:
-          packageManager: bun
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           environment: ${{ github.event.inputs.environment }}

@@ -22,13 +22,13 @@ runs:
   using: "composite"
   steps:
     - name: Check file changes 
-      shell: sh
+      shell: bash
       id: changes
       run: |
         git fetch origin main 
         changed="false" 
         if [ -z "${{ inputs.watchPaths }}" ]; then
-          changed="false" 
+          changed="true" 
         else 
           paths="$(printf '%s\n%s' "${{ inputs.watchPaths }}" "${{ inputs.path }}")"
           
@@ -46,13 +46,14 @@ runs:
     - uses: oven-sh/setup-bun@v1
       if: steps.changes.outputs.changed == 'true'
     - name: Build
-      shell: sh 
+      shell: bash
       if: steps.changes.outputs.changed == 'true'
       run: |
            cd ${{ inputs.path }} && bun install --lockfile
            bun x opennextjs-cloudflare build
       env: ${{ fromJSON(inputs.envVars) }}
     - name: Deploy www
+      shell: bash
       if: steps.changes.outputs.changed == 'true'
       uses: cloudflare/wrangler-action@v3
       with:

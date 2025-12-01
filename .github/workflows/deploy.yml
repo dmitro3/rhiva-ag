@@ -32,7 +32,7 @@ jobs:
       - uses: oven-sh/setup-bun@v1
       - name: Build www
         run: |
-           cd apps/www
+           cd apps/www && bun install --lockfile
            bun x opennextjs-cloudflare build
         env:
           NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL }}

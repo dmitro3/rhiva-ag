@@ -3,7 +3,6 @@ description: "Deploy opennext project to cloudflare"
 inputs: 
   watchPaths:
     required: false 
-    default: "."
     description: "Folder to watch before building"
   path: 
     required: false

@@ -1,0 +1,49 @@
+name: "Deploy Cloudflare"
+description: "Deploy opennext project to cloudflare"
+inputs: 
+  path: 
+    required: false
+    default: "."
+    description: "Folder to build & deploy"
+  apiToken:
+    required: true 
+    description: "Cloudflare apiToken"
+  accountId: 
+    required: true
+    description: "Cloudflare accountId"
+  envVars:
+    required: false
+    description: "Environment variables for build"
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v4
+      with: 
+        fetch-depth: 0
+    - name: Check file changes 
+      shell: sh
+      id: changes
+      run: |
+        git fetch origin main 
+        if git diff --quiet origin/main -- "${{ input.path }}"; then
+          echo "changed=false" >> "$GITHUB_OUTPUT"
+        else 
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+        fi 
+    - uses: oven-sh/setup-bun@v1
+      if: steps.changes.outputs.changed == 'true'
+    - name: Build
+      shell: sh 
+      if: steps.changes.outputs.changed == 'true'
+      run: |
+           cd ${{ input.path }} && bun install --lockfile
+           bun x opennextjs-cloudflare build
+      env: ${{ fromJSON(inputs.envVars) }}
+    - name: Deploy www
+      uses: cloudflare/wrangler-action@v3
+      with:
+          packageManager: bun
+          wranglerVersion: "4.51.0"
+          apiToken: ${{ inputs.apiToken }}
+          accountId: ${{ inputs.accountId }}
+          workingDirectory: ${{ inputs.path }}

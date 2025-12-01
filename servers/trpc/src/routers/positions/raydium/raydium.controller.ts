@@ -487,8 +487,9 @@ export const reposition = async (
   const tickDelta = Math.ceil(
     Math.abs(position.tickUpper - position.tickLower),
   );
-  const tickUpper = currentTick - tickDelta;
-  const tickLower = currentTick + tickDelta;
+  const ticks = [currentTick - tickDelta, currentTick + tickDelta];
+  const tickLower = Math.min(...ticks);
+  const tickUpper = Math.max(...ticks);
 
   if (swapToNative) {
     const inputAmount = new Decimal(

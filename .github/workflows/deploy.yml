@@ -7,7 +7,7 @@ on:
         type: choice
         required: false
         default: "production"
-        description: "Choose an environment to deploy to: <development|staging|production>"
+        description: "Select environment to deploy to:"
         options:
           - "development"
           - "staging"
@@ -16,7 +16,7 @@ on:
         type: choice
         required: false
         default: "www"
-        description: "Select service to deploy? <www|media|all>"
+        description: "Select service to deploy:"
         options:
           - "www"
           - "media"
@@ -30,22 +30,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v1
-      - name: Deploy www
-        uses: cloudflare/wrangler-action@v3
-        with:
-          wranglerVersion: "4.51.0"
-          packageManager: bun
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          environment: ${{ github.event.inputs.environment }}
-          workingDirectory: apps/www
-          command: deploy --env ${{ github.event.inputs.environment }}
-          secrets: |
-            NEXT_PUBLIC_BASE_URL
-            NEXT_PUBLIC_MEDIA_URL
-            NEXT_PUBLIC_API_URL
-            NEXT_PUBLIC_TELEGRAM_LINK
-            NEXT_PUBLIC_SOLANA_RPC_URL
+      - name: Build www
+        run: |
+           cd apps/www
+           bun x opennextjs-cloudflare build
         env:
           NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL }}
           NEXT_PUBLIC_MEDIA_URL: ${{ secrets.NEXT_PUBLIC_MEDIA_URL }}
@@ -56,6 +44,24 @@ jobs:
           NEXT_PUBLIC_JITO_UUID: ${{ secrets.NEXT_PUBLIC_JITO_UUID }}
           NEXT_PUBLIC_HELIUS_API_URL: ${{ secrets.NEXT_PUBLIC_HELIUS_API_URL }}
           NEXT_PUBLIC_HELIUS_API_KEY: ${{ secrets.NEXT_PUBLIC_HELIUS_API_KEY }}
+      - name: Deploy www
+        uses: cloudflare/wrangler-action@v3
+        with:
+          packageManager: bun
+          wranglerVersion: "4.51.0"
+          workingDirectory: apps/www
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          secrets: |
+                     NEXT_PUBLIC_BASE_URL
+                     NEXT_PUBLIC_MEDIA_URL
+                     NEXT_PUBLIC_API_URL
+                     NEXT_PUBLIC_TELEGRAM_LINK
+                     NEXT_PUBLIC_SOLANA_RPC_URL
+                     NEXT_PUBLIC_JITO_API_URL
+                     NEXT_PUBLIC_JITO_UUID
+                     NEXT_PUBLIC_HELIUS_API_URL
+                     NEXT_PUBLIC_HELIUS_API_KEY
   deploy_media:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && ( github.event.inputs.service == 'media' ||  github.event.inputs.service == 'all')
@@ -63,13 +69,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v1
+      - name: Build media
+        run: |
+           cd apps/media
+           bun x opennextjs-cloudflare build
       - name: Deploy media
         uses: cloudflare/wrangler-action@v3
         with:
           packageManager: bun
           wranglerVersion: "4.51.0"
+          workingDirectory: apps/media
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          environment: ${{ github.event.inputs.environment }}
-          workingDirectory: apps/media
-          command: deploy --env ${{ github.event.inputs.environment }}
+          

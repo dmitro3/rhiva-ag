@@ -4,14 +4,28 @@ on:
   workflow_dispatch:
     inputs:
       environment:
+        type: choice
+        required: false
+        default: "production"
         description: "Choose an environment to deploy to: <development|staging|production>"
-        required: true
-        default: "development"
+        options:
+          - "development"
+          - "staging"
+          - "production"
+      service:
+        type: choice
+        required: false
+        default: "www"
+        description: "Select service to deploy? <www|media|all>"
+        options:
+          - "www"
+          - "media"
+          - "all"
 
 jobs:
   deploy_www:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' &&  (github.event.inputs.service == 'www'||github.event.inputs.service == 'all')
     name: Deploy www
     steps:
       - uses: actions/checkout@v4
@@ -36,9 +50,13 @@ jobs:
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
           NEXT_PUBLIC_TELEGRAM_LINK: ${{ secrets.NEXT_PUBLIC_TELEGRAM_LINK }}
           NEXT_PUBLIC_SOLANA_RPC_URL: ${{ secrets.NEXT_PUBLIC_SOLANA_RPC_URL }}
+          NEXT_PUBLIC_JITO_API_URL: ${{ secrets.NEXT_PUBLIC_JITO_API_URL }} 
+          NEXT_PUBLIC_JITO_UUID: ${{ secrets.NEXT_PUBLIC_JITO_UUID }}
+          NEXT_PUBLIC_HELIUS_API_URL: ${{ secrets.NEXT_PUBLIC_HELIUS_API_URL }}
+          NEXT_PUBLIC_HELIUS_API_KEY: ${{ secrets.NEXT_PUBLIC_HELIUS_API_KEY }}
   deploy_media:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && ( github.event.inputs.service == 'media' ||  github.event.inputs.service == 'all')
     name: Deploy media
     steps:
       - uses: actions/checkout@v4

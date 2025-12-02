@@ -14,8 +14,8 @@ import {
   type walletSchema,
 } from "@rhiva-ag/datasource";
 
-import { fromPricePerLamport } from "./shared";
 import { getPositionsWhere } from "../shared";
+import { fromPricePerLamport } from "./shared";
 
 export const syncMeteoraPositionsForWallet = async ({
   db,
@@ -123,9 +123,6 @@ export const syncMeteoraPositions = async ({
     const activeBin = lbPair.activeId;
 
     const offchainPosition = positionsMap.get(position.publicKey.toBase58());
-    const [reward1Mint, reward2Mint] = lbPair.rewardInfos.map((rewardInfo) =>
-      rewardInfo.mint.toBase58(),
-    );
 
     if (!offchainPosition) continue;
 
@@ -146,16 +143,8 @@ export const syncMeteoraPositions = async ({
     ).toNumber();
     const priceRange: [number, number] = [lowerBinPrice, upperBinPrice];
 
-    let rewardUsd = 0,
-      claimedFeeUsd = 0;
-
     const { baseToken, quoteToken } = offchainPosition.pool;
-    const reward1Token = offchainPosition.pool.rewardTokens.find(
-      ({ mint }) => mint.id === reward1Mint,
-    );
-    const reward2Token = offchainPosition.pool.rewardTokens.find(
-      ({ mint }) => mint.id === reward2Mint,
-    );
+    const rewardTokens = offchainPosition.pool.rewardTokens;
 
     const rawFeeX = position.positionData.feeXExcludeTransferFee.toString();
     const rawFeeY = position.positionData.feeYExcludeTransferFee.toString();
@@ -163,18 +152,17 @@ export const syncMeteoraPositions = async ({
       position.positionData.totalXAmountExcludeTransferFee.toString();
     const rawAmountY =
       position.positionData.totalYAmountExcludeTransferFee.toString();
-    const rawReward1Amount =
-      position.positionData.rewardOneExcludeTransferFee.toString();
-    const rawReward2Amount =
-      position.positionData.rewardTwoExcludeTransferFee.toString();
+
+    const rawRewardAmounts = [
+      position.positionData.rewardOneExcludeTransferFee,
+      position.positionData.rewardTwoExcludeTransferFee,
+    ];
 
     const rawClaimedFeeX =
       position.positionData.totalClaimedFeeXAmount.toString();
     const rawClaimedFeeY =
       position.positionData.totalClaimedFeeYAmount.toString();
 
-    let reward1Amount = 0,
-      reward2Amount = 0;
     const feeX = new Decimal(rawFeeX)
       .div(Math.pow(10, baseToken.decimals))
       .toNumber();
@@ -200,42 +188,44 @@ export const syncMeteoraPositions = async ({
     let baseAmountUsd = 0,
       quoteAmountUsd = 0,
       baseFeeUsd = 0,
-      quoteFeeUsd = 0;
+      quoteFeeUsd = 0,
+      claimedFeeXUsd = 0,
+      claimedFeeYUsd = 0;
 
     if (priceX) {
       baseFeeUsd += priceX * feeX;
       baseAmountUsd += priceX * amountX;
-      claimedFeeUsd += priceX * claimedFeeX;
+      claimedFeeXUsd += priceX * claimedFeeX;
     }
 
     if (priceY) {
       quoteFeeUsd += priceY * feeY;
       quoteAmountUsd += priceY * amountY;
-      claimedFeeUsd += priceY * claimedFeeY;
+      claimedFeeYUsd += priceY * claimedFeeY;
     }
 
-    if (reward1Token) {
-      const priceReward1 = prices[reward1Token.mint.id];
-      reward1Amount = new Decimal(rawReward1Amount)
-        .div(Math.pow(10, reward1Token.mint.decimals))
-        .toNumber();
+    const rewardAmounts: number[] = [];
+    const rewardAmountsUsd: number[] = [];
 
-      if (priceReward1) rewardUsd += priceReward1.usd * reward1Amount;
+    for (const [index, rawRewardAmount] of rawRewardAmounts.entries()) {
+      const reward = rewardTokens[index];
+      if (reward) {
+        const rewardAmount = new Decimal(rawRewardAmount.toString())
+          .div(Math.pow(10, reward.mint.decimals))
+          .toNumber();
+        rewardAmounts.push(rewardAmount);
+        const price = prices[reward.mint.id]?.usd || 0;
+        rewardAmountsUsd.push(price * rewardAmount);
+      }
     }
 
-    if (reward2Token) {
-      const priceReward2 = prices[reward2Token.mint.id];
-      reward2Amount = new Decimal(rawReward2Amount)
-        .div(Math.pow(10, reward2Token.mint.decimals))
-        .toNumber();
-
-      if (priceReward2) rewardUsd += priceReward2.usd * reward2Amount;
-    }
-
-    const feeUsd = baseFeeUsd + quoteFeeUsd;
-    const amountUsd = baseAmountUsd + quoteAmountUsd;
     const tvl = offchainPosition.amountUsd;
-    const totalTVL = amountUsd + feeUsd + rewardUsd;
+    const amountUsd = baseAmountUsd + quoteAmountUsd;
+    const totalTVL =
+      amountUsd +
+      baseFeeUsd +
+      quoteFeeUsd +
+      rewardAmountsUsd.reduce((acc, reward) => acc + reward, 0);
     const pnlUsd = totalTVL - tvl;
 
     const currentPrice = fromPricePerLamport(
@@ -260,22 +250,24 @@ export const syncMeteoraPositions = async ({
       },
     });
     pnlUpdates.push({
-      feeUsd,
       pnlUsd,
-      rewardUsd,
-      amountUsd,
-      claimedFeeUsd,
       baseAmountUsd,
       quoteAmountUsd,
       state: "opened",
       updatedAt: new Date(),
       baseAmount: amountX,
       quoteAmount: amountY,
+      claimedBaseFee: claimedFeeX,
+      claimedQuoteFee: claimedFeeY,
+      claimedBaseFeeUsd: claimedFeeXUsd,
+      claimedQuoteFeeUsd: claimedFeeYUsd,
       unclaimedBaseFee: feeX,
       unclaimedQuoteFee: feeY,
+      position: offchainPosition.id,
       unclaimedBaseFeeUsd: baseFeeUsd,
       unclaimedQuoteFeeUsd: quoteFeeUsd,
-      position: offchainPosition.id,
+      unclaimedRewardsFee: rewardAmounts,
+      unclaimedRewardsFeeUsd: rewardAmountsUsd,
     });
   }
 
@@ -288,14 +280,15 @@ export const syncMeteoraPositions = async ({
           target: [pnls.position],
           set: buildConflictUpdateColumns(pnls, [
             "state",
-            "feeUsd",
             "pnlUsd",
             "updatedAt",
-            "rewardUsd",
-            "amountUsd",
             "baseAmount",
             "quoteAmount",
             "claimedFeeUsd",
+            "claimedBaseFee",
+            "claimedQuoteFee",
+            "claimedBaseFeeUsd",
+            "claimedQuoteFeeUsd",
             "baseAmountUsd",
             "quoteAmountUsd",
             "unclaimedBaseFee",

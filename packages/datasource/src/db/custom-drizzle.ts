@@ -7,6 +7,10 @@ export const updateJSON = <T extends Column, U extends T["_"]["data"]>(
   value: Partial<U>,
 ) => sql`${column} || ${JSON.stringify(value)}::jsonb`;
 
+export const unnest = <T extends Column | SQL<unknown> | SQL.Aliased>(
+  column: T,
+) => sql`UNNEST(${column})`;
+
 export const add = <T extends Array<Column | SQL<unknown> | SQL.Aliased>>(
   ...[a, b]: T
 ) => sql`COALESCE(${a}::decimal) + COALESCE(${b}::decimal, 0)`;

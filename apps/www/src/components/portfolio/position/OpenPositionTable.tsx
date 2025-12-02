@@ -98,8 +98,11 @@ export default function OpenPositionTable({
         const pnlPercentage = pnl.amountUsd
           ? (pnl.pnlUsd / pnl.amountUsd) * 100
           : 0;
+        const unCollectedFee =
+          pnl.unclaimedFeeUsd +
+          pnl.unclaimedRewardsFeeUsd.reduce((acc, reward) => acc + reward, 0);
         const unCollectedFeePercentage = pnl.amountUsd
-          ? (pnl.feeUsd / pnl.amountUsd) * 100
+          ? (unCollectedFee / pnl.amountUsd) * 100
           : 0;
         const collectedFeePercentage = pnl.amountUsd
           ? (pnl.claimedFeeUsd / pnl.amountUsd) * 100
@@ -107,15 +110,15 @@ export default function OpenPositionTable({
 
         const data = {
           pnlPercentage,
+          unCollectedFee,
           collectedFeePercentage,
           unCollectedFeePercentage,
           extra: position,
-          dex: position.pool.dex,
           id: position.id,
           pnl: pnl.pnlUsd,
           value: pnl.amountUsd,
+          dex: position.pool.dex,
           age: position.createdAt,
-          unCollectedFee: pnl.feeUsd,
           collectedFee: pnl.claimedFeeUsd,
           baseToken: position.pool.baseToken,
           quoteToken: position.pool.quoteToken,

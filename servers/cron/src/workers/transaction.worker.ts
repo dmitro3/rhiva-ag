@@ -1,3 +1,4 @@
+// todo: this worker can optimize the instruction and transaction step and eliminate preconfig of accounts in job data
 import { z } from "zod";
 import { cpus } from "os";
 import pRetry from "p-retry";
@@ -51,7 +52,7 @@ export const transactionWorkSchema = z
       ])
       .and(
         z.object({
-          type: z.enum(["create-position", "repositioned"]),
+          type: z.enum(["create-position", "repositioned", "claimed-rewards"]),
         }),
       ),
     z.object({
@@ -189,15 +190,14 @@ export const createTransactionPipeline = ({
 
 export const createInstructionPipeline = ({
   db,
+  coingecko,
   connection,
+  positionMint,
 }: {
   db: Database;
   coingecko: Coingecko;
-  rpc: Rpc<SolanaRpcApi>;
+  positionMint: string;
   connection: Connection;
-  positionMint?: string;
-  type?: z.infer<typeof transactionWorkSchema>["type"];
-  wallet: Pick<z.infer<typeof walletSelectSchema>, "id" | "user">;
 }) =>
   new Pipeline([
     new RaydiumProgramInstructionProcessor(connection).addConsumer(
@@ -205,8 +205,10 @@ export const createInstructionPipeline = ({
         syncRaydiumPositionStateFromInstructions({
           db,
           extra,
+          coingecko,
           connection,
           instructions,
+          positionMint,
         }),
     ),
 
@@ -215,8 +217,10 @@ export const createInstructionPipeline = ({
         syncOrcaPositionStateFromInstructions({
           db,
           extra,
+          coingecko,
           connection,
           instructions,
+          positionMint,
         }),
     ),
   ]);
@@ -251,7 +255,7 @@ export default async function createWorker({
             message: "Processing transaction",
           }),
         );
-        const pipeline = createTransactionPipeline({
+        const transactionPipeline = createTransactionPipeline({
           db,
           rpc,
           connection,
@@ -260,6 +264,16 @@ export default async function createWorker({
           wallet: data.wallet,
           positionMint: "positionMint" in data ? data.positionMint : undefined,
         });
+        let instructionPipeline:
+          | ReturnType<typeof createInstructionPipeline>
+          | undefined;
+        if ("positionMint" in data)
+          instructionPipeline = createInstructionPipeline({
+            db,
+            coingecko,
+            connection,
+            positionMint: data.positionMint,
+          });
         const bundle = await pRetry(() =>
           sender.safeGetBundle(data.bundleId, 30),
         );
@@ -280,7 +294,12 @@ export default async function createWorker({
           (transaction) => transaction,
         );
 
-        return pipeline.process(...response);
+        const result = await Promise.all([
+          transactionPipeline.process(...response),
+          instructionPipeline?.process(...response),
+        ]);
+
+        return result.flat();
       }
 
       logger.error(

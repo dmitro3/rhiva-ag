@@ -83,9 +83,9 @@ export default function PortfolioInfo(props: React.ComponentProps<"div">) {
             />
           </div>
           <div className="flex flex-col">
-            <p className="text-gray uppercase lt-sm:text-xs">Avg Invested</p>
+            <p className="text-gray uppercase lt-sm:text-xs">Total Invested</p>
             <Decimal
-              value={data.avgInvestedUsd}
+              value={data.investedUsd}
               intlArgs={currencyIntlArgs}
               className="text-base font-medium"
             />
@@ -127,17 +127,17 @@ export default function PortfolioInfo(props: React.ComponentProps<"div">) {
           </div>
           <div className="flex flex-col">
             <p className="text-nowrap text-gray uppercase lt-sm:text-xs">
-              Avg monthly profit
+              Months profit
             </p>
             <Decimal
-              value={data.avgMonthlyProfit}
+              value={data.monthProfit}
               intlArgs={{
                 ...currencyIntlArgs,
                 maximumFractionDigits: 6,
               }}
               className={clsx(
                 "text-base font-medium",
-                getNumberColor(data.avgMonthlyProfit),
+                getNumberColor(data.monthProfit),
               )}
             />
           </div>

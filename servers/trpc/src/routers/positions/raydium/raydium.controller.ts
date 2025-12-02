@@ -4,7 +4,6 @@ import type { z } from "zod";
 import Decimal from "decimal.js";
 import { PublicKey, type VersionedTransaction } from "@solana/web3.js";
 import { getAssociatedTokenAddressSync, NATIVE_MINT } from "@solana/spl-token";
-import { getTokenBalanceChangesFromBundleSimulation } from "@rhiva-ag/dex/utils";
 import {
   PoolUtils,
   TxVersion,
@@ -17,10 +16,11 @@ import {
 } from "@raydium-io/raydium-sdk-v2";
 import {
   isNative,
+  percentageFromBps,
   throwBundleSimulationError,
+  getTokenBalanceChangesFromBundleSimulation,
   type WalletAdapter,
   type SendTransaction,
-  percentageFromBps,
 } from "@rhiva-ag/shared";
 
 import type {

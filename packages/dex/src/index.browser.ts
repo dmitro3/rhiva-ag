@@ -6,7 +6,6 @@ import { SwapAggregator } from "./swap-ag";
 import { DLMM } from "./dlmm/index.browser";
 
 export * from "./clmm";
-export * from "./utils";
 export * from "./swap-ag";
 export * from "./dlmm/index.browser";
 

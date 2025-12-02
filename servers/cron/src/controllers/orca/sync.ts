@@ -267,15 +267,14 @@ export const syncOrcaPositions = async ({
 
     const priceRange: [number, number] = [lowerTickPrice, upperTickPrice];
 
-    let rewardUsd = 0,
-      baseAmountUsd = 0,
+    let baseAmountUsd = 0,
       quoteAmountUsd = 0,
       baseFeeUsd = 0,
       quoteFeeUsd = 0;
 
     const baseToken = offchainPosition.pool.baseToken;
     const quoteToken = offchainPosition.pool.quoteToken;
-    const [rewardToken] = offchainPosition.pool.rewardTokens;
+    const rewardTokens = offchainPosition.pool.rewardTokens;
     const baseFee = baseToken.extensions?.feeConfig
       ? {
           feeBps:
@@ -297,16 +296,18 @@ export const syncOrcaPositions = async ({
         }
       : undefined;
 
-    const rewardFee = rewardToken?.mint?.extensions?.feeConfig
-      ? {
-          feeBps:
-            rewardToken.mint.extensions.feeConfig.newerTransferFee
-              .transferFeeBasisPoints,
-          maxFee: BigInt(
-            rewardToken.mint.extensions.feeConfig.newerTransferFee.maximumFee,
-          ),
-        }
-      : undefined;
+    const rewardFeesConfigs = rewardTokens.map((reward) =>
+      reward.mint.extensions?.feeConfig
+        ? {
+            feeBps:
+              reward.mint.extensions.feeConfig.newerTransferFee
+                .transferFeeBasisPoints,
+            maxFee: BigInt(
+              reward.mint.extensions.feeConfig.newerTransferFee.maximumFee,
+            ),
+          }
+        : undefined,
+    );
 
     const { tokenEstA, tokenEstB } = decreaseLiquidityQuote(
       position.data.liquidity,
@@ -334,16 +335,14 @@ export const syncOrcaPositions = async ({
       epochInfo.epoch,
       baseFee,
       quoteFee,
-      rewardFee,
+      ...rewardFeesConfigs,
     );
 
     const rawAmountX = tokenEstA.toString();
     const rawFeeX = feeOwedA.toString();
     const rawFeeY = feeOwedB.toString();
     const rawAmountY = tokenEstB.toString();
-    const rawRewardAmount = rewards
-      .reduce((acc, curr) => acc + curr.rewardsOwed, BigInt(0))
-      .toString();
+    const rawRewardAmounts = rewards.map((reward) => reward.rewardsOwed);
 
     const feeX = new Decimal(rawFeeX)
       .div(Math.pow(10, baseToken.decimals))
@@ -356,9 +355,6 @@ export const syncOrcaPositions = async ({
       .toNumber();
     const amountY = new Decimal(rawAmountY)
       .div(Math.pow(10, quoteToken.decimals))
-      .toNumber();
-    const rewardAmount = new Decimal(rawRewardAmount)
-      .div(Math.pow(10, baseToken.decimals))
       .toNumber();
 
     const priceX = prices[baseToken.id];
@@ -374,16 +370,29 @@ export const syncOrcaPositions = async ({
       quoteAmountUsd += priceY.usd * amountY;
     }
 
-    if (rewardToken) {
-      const priceReward = prices[rewardToken.mint.id];
-      if (priceReward) rewardUsd += priceReward.usd * rewardAmount;
+    const rewardAmounts = [];
+    const rewardAmountsUsd = [];
+
+    for (const [index, rawRewardAmount] of rawRewardAmounts.entries()) {
+      const reward = rewardTokens[index];
+      if (reward) {
+        const rewardAmount = new Decimal(rawRewardAmount.toString())
+          .div(Math.pow(10, reward.mint.decimals))
+          .toNumber();
+        rewardAmounts.push(rewardAmount);
+        const price = prices[reward.mint.id]?.usd || 0;
+        rewardAmountsUsd.push(price * rewardAmount);
+      }
     }
 
-    const feeUsd = baseFeeUsd + quoteFeeUsd;
-    const amountUsd = baseAmountUsd + quoteAmountUsd;
     const tvl = offchainPosition.amountUsd;
-    const totalTVL = amountUsd + feeUsd + rewardUsd;
-    const pnlUsd = tvl - totalTVL;
+    const amountUsd = baseAmountUsd + quoteAmountUsd;
+    const totalTVL =
+      amountUsd +
+      baseFeeUsd +
+      quoteFeeUsd +
+      rewardAmountsUsd.reduce((acc, reward) => acc + reward, 0);
+    const pnlUsd = totalTVL - tvl;
 
     const currentPrice = tickIndexToPrice(
       pool.tickCurrentIndex,
@@ -408,10 +417,7 @@ export const syncOrcaPositions = async ({
       },
     });
     pnlUpdates.push({
-      feeUsd,
       pnlUsd,
-      rewardUsd,
-      amountUsd,
       baseAmountUsd,
       quoteAmountUsd,
       state: "opened",
@@ -423,6 +429,8 @@ export const syncOrcaPositions = async ({
       position: offchainPosition.id,
       unclaimedBaseFeeUsd: baseFeeUsd,
       unclaimedQuoteFeeUsd: quoteFeeUsd,
+      unclaimedRewardsFee: rewardAmounts,
+      unclaimedRewardsFeeUsd: rewardAmountsUsd,
     });
   }
   if (pnlUpdates.length > 0) {
@@ -434,10 +442,7 @@ export const syncOrcaPositions = async ({
           target: [pnls.position],
           set: buildConflictUpdateColumns(pnls, [
             "state",
-            "feeUsd",
             "pnlUsd",
-            "rewardUsd",
-            "amountUsd",
             "baseAmount",
             "quoteAmount",
             "claimedFeeUsd",

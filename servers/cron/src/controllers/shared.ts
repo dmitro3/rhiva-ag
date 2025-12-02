@@ -20,6 +20,12 @@ export const getPositionsWhere = async (
       amountUsd: true,
     },
     with: {
+      wallet: {
+        columns: {
+          id: true,
+          user: true,
+        },
+      },
       pool: {
         columns: {
           baseToken: false,
@@ -39,6 +45,7 @@ export const getPositionsWhere = async (
                   id: true,
                   decimals: true,
                   extensions: true,
+                  tokenProgram: true,
                 },
               },
             },

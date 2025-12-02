@@ -162,8 +162,7 @@ function OrcaOpenPositionForm({
       };
       let data:
         | typeof createPositionValue
-        | { transactions: string[]; positionMint: string } =
-        createPositionValue;
+        | { transactions: string[]; position: string } = createPositionValue;
       if (user.wallet.external) {
         if (wallet.publicKey) {
           const { transactions, positionMint } = await createOrcaPosition(
@@ -180,7 +179,7 @@ function OrcaOpenPositionForm({
 
           data = {
             tokens: values.tokens,
-            positionMint: positionMint.toBase58(),
+            position: positionMint.toBase58(),
             transactions: transactions.map((transaction) =>
               transaction.serialize().toBase64(),
             ),

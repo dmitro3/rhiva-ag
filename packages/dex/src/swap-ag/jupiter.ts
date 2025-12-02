@@ -1,5 +1,9 @@
 import type { QuoteResponse, SwapApi } from "@jup-ag/api";
-import { mapFilter, throwSimulationError } from "@rhiva-ag/shared";
+import {
+  getTokenBalanceChangesFromSimulation,
+  mapFilter,
+  throwSimulationError,
+} from "@rhiva-ag/shared";
 import {
   AccountLayout,
   getAssociatedTokenAddressSync,
@@ -9,8 +13,6 @@ import {
   type Connection,
   VersionedTransaction,
 } from "@solana/web3.js";
-
-import { getTokenBalanceChangesFromSimulation } from "../utils";
 
 type SwapArgs = {
   slippage: number;

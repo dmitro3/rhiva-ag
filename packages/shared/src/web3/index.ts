@@ -146,9 +146,11 @@ export class SendTransaction {
     let retries = 0;
 
     while (retries < maxRetries) {
-      const preflights = await this.getInflightBundleStatuses(bundleId).catch(
-        () => null,
-      );
+      const [preflights, bundles] = await Promise.all([
+        this.getInflightBundleStatuses(bundleId).catch(() => null),
+        this.getBundles(bundleId).catch(() => null),
+      ]);
+      const bundle = bundles?.find((value) => value.bundleId === bundleId);
       const preflight = preflights?.result.value.find(
         (value) => value?.bundle_id === bundleId,
       );
@@ -159,6 +161,11 @@ export class SendTransaction {
             transactions: preflight.transactions,
           };
       }
+
+      if (bundle)
+        return {
+          transactions: bundle.txSignatures,
+        };
 
       retries++;
       await sleep(retries * 5_000);

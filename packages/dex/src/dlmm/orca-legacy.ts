@@ -304,27 +304,29 @@ export class OrcaLegacyDLMM {
       },
     } as const;
 
-    const claimTxs = await this.buildClaimReward({
-      owner,
-      position,
-      latestBlockhash,
-      prependInstructions,
-    });
-
     const closePositionTxBuilders = await pool.closePosition(
       position.getAddress(),
       Percentage.fromDecimal(new Decimal(slippage)),
     );
 
-    transactions.push(...claimTxs);
+    for (const [index, txBuilder] of closePositionTxBuilders.entries())
+      if (index === 0 && prependInstructions) {
+        txBuilder.prependInstructions([
+          {
+            signers: [],
+            cleanupInstructions: [],
+            instructions: Array.isArray(prependInstructions)
+              ? prependInstructions
+              : [prependInstructions],
+          },
+        ]);
 
-    for (const txBuilder of closePositionTxBuilders) {
-      const { transaction, signers } = txBuilder.buildSync(txConfig);
-      if (isVersionedTransaction(transaction)) {
-        transaction.sign(signers);
-        transactions.push(transaction);
+        const { transaction, signers } = txBuilder.buildSync(txConfig);
+        if (isVersionedTransaction(transaction)) {
+          transaction.sign(signers);
+          transactions.push(transaction);
+        }
       }
-    }
 
     return transactions;
   };

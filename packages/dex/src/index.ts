@@ -7,7 +7,6 @@ import { SwapAggregator } from "./swap-ag";
 
 export * from "./dlmm";
 export * from "./clmm";
-export * from "./utils";
 export * from "./swap-ag";
 
 export default class Dex {

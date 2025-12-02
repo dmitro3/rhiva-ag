@@ -49,7 +49,8 @@ export const useClaimPositionReward = (
       };
 
       const isExternal = user.wallet.external && wallet.publicKey;
-      let data: typeof value | { transactions: string[] } = value;
+      let data: typeof value | { transactions: string[]; position: string } =
+        value;
 
       if (isExternal) {
         const dexConfig = {
@@ -82,6 +83,7 @@ export const useClaimPositionReward = (
           );
 
           data = {
+            position: position.id,
             transactions: transactions.map((transaction) =>
               transaction.serialize().toBase64(),
             ),

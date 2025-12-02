@@ -1,12 +1,5 @@
 import { getTokenDecoder } from "@solana-program/token";
 import { AccountLayout, NATIVE_MINT, type RawAccount } from "@solana/spl-token";
-import {
-  isNative,
-  isSystemProgram,
-  isTokenProgram,
-  mapFilter,
-  type SimulateBundleResponse,
-} from "@rhiva-ag/shared";
 import type {
   Address,
   Rpc,
@@ -16,8 +9,13 @@ import type {
 import {
   Connection,
   PublicKey,
+  type ParsedTransactionWithMeta,
   type SimulatedTransactionResponse,
 } from "@solana/web3.js";
+
+import { mapFilter } from "../../collection";
+import type { SimulateBundleResponse } from "../types";
+import { isNative, isSystemProgram, isTokenProgram } from "./assert";
 
 export const getTokenBalanceChangesFromSimulation = (
   result: RpcSimulateTransactionResult | SimulatedTransactionResponse,
@@ -148,6 +146,98 @@ export const getTokenBalanceChangesFromBundleSimulation = (
 
   return tokenBalanceChanges;
 };
+
+export function getTokenBalanceChangesFromTransactions({
+  transactions,
+  accounts,
+  skipNativeBalance = false,
+}: {
+  accounts: PublicKey[];
+  skipNativeBalance?: boolean;
+  transactions: ParsedTransactionWithMeta[];
+}) {
+  function calculateBalanceChangesForAccount(
+    targetAccount: PublicKey,
+  ): Record<string, bigint> {
+    const tokenBalances: Record<string, bigint> = {};
+
+    for (const parsedTransaction of transactions) {
+      if (!parsedTransaction?.meta) continue;
+
+      const accountIndex =
+        parsedTransaction.transaction.message.accountKeys.findIndex(
+          (accountKey) => accountKey.pubkey.equals(targetAccount),
+        );
+
+      if (accountIndex === -1) continue;
+
+      const {
+        meta: {
+          postBalances,
+          preBalances,
+          preTokenBalances,
+          postTokenBalances,
+        },
+      } = parsedTransaction;
+
+      const mintBalanceChanges: Record<string, bigint> = {};
+
+      if (preTokenBalances) {
+        for (const tokenBalance of preTokenBalances) {
+          if (tokenBalance.accountIndex !== accountIndex) continue;
+          const mint = tokenBalance.mint;
+          if (!mintBalanceChanges[mint]) {
+            mintBalanceChanges[mint] = BigInt(0);
+          }
+          mintBalanceChanges[mint] -= BigInt(tokenBalance.uiTokenAmount.amount);
+        }
+      }
+
+      if (postTokenBalances) {
+        for (const tokenBalance of postTokenBalances) {
+          if (tokenBalance.accountIndex !== accountIndex) continue;
+          const mint = tokenBalance.mint;
+          if (!mintBalanceChanges[mint]) {
+            mintBalanceChanges[mint] = BigInt(0);
+          }
+          mintBalanceChanges[mint] += BigInt(tokenBalance.uiTokenAmount.amount);
+        }
+      }
+
+      for (const [mint, change] of Object.entries(mintBalanceChanges)) {
+        tokenBalances[mint] = (tokenBalances[mint] || BigInt(0)) + change;
+      }
+
+      if (!skipNativeBalance)
+        if (
+          accountIndex < preBalances.length &&
+          accountIndex < postBalances.length
+        ) {
+          const solMint = NATIVE_MINT.toBase58();
+          const preBalance = preBalances[accountIndex] ?? 0;
+          const postBalance = postBalances[accountIndex] ?? 0;
+          const solBalanceChange = BigInt(postBalance) - BigInt(preBalance);
+          tokenBalances[solMint] =
+            (tokenBalances[solMint] || BigInt(0)) + solBalanceChange;
+        }
+    }
+
+    return tokenBalances;
+  }
+
+  const balanceChanges = accounts.map((account) =>
+    calculateBalanceChangesForAccount(account),
+  );
+  const tokenBalanceChange: Record<string, bigint> = {};
+  for (const balanceChange of balanceChanges) {
+    for (const [mint, balance] of Object.entries(balanceChange)) {
+      const previous = tokenBalanceChange[mint] ?? BigInt(0);
+      tokenBalanceChange[mint] = previous + balance;
+    }
+  }
+
+  return tokenBalanceChange;
+}
 
 export function getPreTokenBalanceForAccounts(
   rpc: Rpc<SolanaRpcApiMainnet>,

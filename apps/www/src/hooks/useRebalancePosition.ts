@@ -40,9 +40,8 @@ export const useRebalancePosition = (
       };
 
       const isExternal = user.wallet.external && wallet.publicKey;
-      let data:
-        | typeof value
-        | { transactions: string[]; positionMint: string } = value;
+      let data: typeof value | { transactions: string[]; position: string } =
+        value;
 
       if (isExternal) {
         const dexConfig = {
@@ -75,7 +74,7 @@ export const useRebalancePosition = (
           );
 
           data = {
-            positionMint: positionMint.toBase58(),
+            position: positionMint.toBase58(),
             transactions: transactions.map((transaction) =>
               transaction.serialize().toBase64(),
             ),

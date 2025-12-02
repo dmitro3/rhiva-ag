@@ -35,13 +35,19 @@ const meteoraInternalCreatePositionSchema = z.object({
     .optional(),
 });
 export const meteoraCreatePositionSchema = z
-  .union([meteoraInternalCreatePositionSchema, externalTransactionSchema])
+  .union([
+    meteoraInternalCreatePositionSchema.and(
+      z.object({
+        jitoConfig: jitoTipConfigSchema.default({
+          type: "dynamic",
+          priorityFeePercentile: "50ema",
+        }),
+      }),
+    ),
+    externalTransactionSchema,
+  ])
   .and(
     z.object({
-      jitoConfig: jitoTipConfigSchema.default({
-        type: "dynamic",
-        priorityFeePercentile: "50ema",
-      }),
       tokens: z
         .array(
           z.object({
@@ -57,27 +63,27 @@ export const meteoraCreatePositionSchema = z
         .describe("internal use only"),
     }),
   );
-export const meteoraClaimRewardSchema = z
-  .union([
-    z.object({
+export const meteoraClaimRewardSchema = z.union([
+  z
+    .object({
       pair: publicKey().describe("pair address"),
       slippage: z.number().describe("swap slippage"),
       position: publicKey().describe("position address"),
-    }),
-    externalTransactionSchema,
-  ])
-  .and(
-    z.object({
-      jitoConfig: jitoTipConfigSchema.default({
-        type: "dynamic",
-        priorityFeePercentile: "50ema",
+    })
+    .and(
+      z.object({
+        jitoConfig: jitoTipConfigSchema.default({
+          type: "dynamic",
+          priorityFeePercentile: "50ema",
+        }),
       }),
-    }),
-  );
+    ),
+  externalTransactionSchema,
+]);
 
-export const meteoraClosePositionSchema = z
-  .union([
-    z.object({
+export const meteoraClosePositionSchema = z.union([
+  z
+    .object({
       pair: publicKey().describe("pair address"),
       slippage: z.number().describe("swap slippage"),
       position: publicKey().describe("position address"),
@@ -86,17 +92,17 @@ export const meteoraClosePositionSchema = z
         .default(true)
         .optional()
         .describe("skip swapping to native mint"),
-    }),
-    externalTransactionSchema,
-  ])
-  .and(
-    z.object({
-      jitoConfig: jitoTipConfigSchema.default({
-        type: "dynamic",
-        priorityFeePercentile: "50ema",
+    })
+    .and(
+      z.object({
+        jitoConfig: jitoTipConfigSchema.default({
+          type: "dynamic",
+          priorityFeePercentile: "50ema",
+        }),
       }),
-    }),
-  );
+    ),
+  externalTransactionSchema,
+]);
 
 export const meteoraRebalanceSchema = z.union([
   z

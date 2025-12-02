@@ -2,7 +2,6 @@ import type z from "zod";
 import moment from "moment";
 import {
   and,
-  avg,
   count,
   desc,
   eq,
@@ -23,6 +22,7 @@ import {
   add,
   type Database,
   type walletSelectSchema,
+  unnest,
 } from "@rhiva-ag/datasource";
 
 export const getWalletPositions = async (
@@ -94,8 +94,18 @@ export const getWalletPositionsAggregrate = (
 
   return db
     .select({
-      feeUsd: coalesce(sum(qPnl.feeUsd), 0).mapWith(Number),
-      avgInvestedUsd: coalesce(avg(positions.amountUsd), 0).mapWith(Number),
+      feeUsd: coalesce(
+        sum(
+          add(
+            qPnl.unclaimedFeeUsd,
+            qPnl.claimedFeeUsd,
+            qPnl.claimedRewardsUsd,
+            sum(unnest(qPnl.unclaimedRewardsFeeUsd)),
+          ),
+        ),
+        0,
+      ).mapWith(Number),
+      investedUsd: coalesce(sum(positions.amountUsd), 0).mapWith(Number),
       networthUsd: coalesce(
         add(
           sum(decimal(caseWhen(eq(positions.state, "open"), qPnl.amountUsd))),
@@ -119,7 +129,7 @@ export const getWalletPositionsAggregrate = (
         sum(decimal(caseWhen(gt(qPnl.pnlUsd, 0), qPnl.pnlUsd))),
         0,
       ).mapWith(Number),
-      avgMonthlyProfit: coalesce(
+      monthProfit: coalesce(
         sum(decimal(caseWhen(gt(positions.createdAt, month), qPnl.pnlUsd))),
         0,
       ).mapWith(Number),

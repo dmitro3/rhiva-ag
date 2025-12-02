@@ -5,7 +5,6 @@ import Decimal from "decimal.js";
 import { Percentage } from "@orca-so/whirlpools-sdk/common-sdk";
 import { PublicKey, type VersionedTransaction } from "@solana/web3.js";
 import { getAssociatedTokenAddressSync, NATIVE_MINT } from "@solana/spl-token";
-import { getTokenBalanceChangesFromBundleSimulation } from "@rhiva-ag/dex/utils";
 import {
   increaseLiquidityQuoteByInputToken,
   PriceMath,
@@ -16,8 +15,9 @@ import {
 import {
   isNative,
   throwBundleSimulationError,
-  type SendTransaction,
+  getTokenBalanceChangesFromBundleSimulation,
   type WalletAdapter,
+  type SendTransaction,
 } from "@rhiva-ag/shared";
 
 import type {

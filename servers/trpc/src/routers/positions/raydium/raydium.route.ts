@@ -3,8 +3,8 @@ import { Work } from "@rhiva-ag/cron";
 import { TRPCError } from "@trpc/server";
 import type { Address } from "@solana/kit";
 import { fromLegacyPublicKey } from "@solana/compat";
-import { fromKeyPairToWalletAdapter, loadWallet } from "@rhiva-ag/shared";
 import { mints, buildConflictUpdateColumns } from "@rhiva-ag/datasource";
+import { fromKeyPairToWalletAdapter, loadWallet } from "@rhiva-ag/shared";
 
 import { createQueue } from "../shared";
 import { privateProcedure, router } from "../../../trpc";
@@ -37,7 +37,7 @@ export const raydiumRoute = router({
 
       let bundleId: string, positionMint: Address;
       if ("transactions" in input) {
-        positionMint = fromLegacyPublicKey(input.positionMint);
+        positionMint = fromLegacyPublicKey(input.position);
         bundleId = await ctx.sendTransaction
           .sendBundle(input.transactions)
           .then(({ result }) => result);
@@ -82,6 +82,8 @@ export const raydiumRoute = router({
     .input(raydiumClaimRewardSchema)
     .mutation(async ({ ctx, input }) => {
       let bundleId: string;
+      const positionMint = fromLegacyPublicKey(input.position);
+
       if ("transactions" in input) {
         bundleId = await ctx.sendTransaction
           .sendBundle(input.transactions)
@@ -106,8 +108,21 @@ export const raydiumRoute = router({
         bundleId = await execute();
       }
 
+      const response = await queue.add(
+        Work.syncTransaction,
+        {
+          bundleId,
+          positionMint,
+          dex: "raydium-clmm",
+          type: "claimed-rewards",
+          wallet: ctx.user.wallet,
+        },
+        { jobId: bundleId },
+      );
+
       return {
-        bundleId,
+        jobId: response.id,
+        ...response.data,
       };
     }),
   close: privateProcedure
@@ -161,7 +176,7 @@ export const raydiumRoute = router({
       let positionMint: Address;
 
       if ("transactions" in input) {
-        positionMint = fromLegacyPublicKey(input.positionMint);
+        positionMint = fromLegacyPublicKey(input.position);
         bundleId = await ctx.sendTransaction
           .sendBundle(input.transactions)
           .then(({ result }) => result);

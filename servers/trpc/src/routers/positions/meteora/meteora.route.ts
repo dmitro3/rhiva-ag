@@ -107,8 +107,20 @@ export const meteoraRoute = router({
         bundleId = await execute();
       }
 
+      const response = await queue.add(
+        Work.syncTransaction,
+        {
+          bundleId,
+          dex: "meteora",
+          type: "claimed-rewards",
+          wallet: ctx.user.wallet,
+        },
+        { jobId: bundleId },
+      );
+
       return {
-        bundleId,
+        jobId: response.id,
+        ...response.data,
       };
     }),
   close: privateProcedure

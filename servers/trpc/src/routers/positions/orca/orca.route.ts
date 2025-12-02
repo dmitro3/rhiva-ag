@@ -37,7 +37,7 @@ export const orcaRoute = router({
 
       let bundleId: string, positionMint: Address;
       if ("transactions" in input) {
-        positionMint = fromLegacyPublicKey(input.positionMint);
+        positionMint = fromLegacyPublicKey(input.position);
         bundleId = await ctx.sendTransaction
           .sendBundle(input.transactions)
           .then(({ result }) => result);
@@ -83,6 +83,8 @@ export const orcaRoute = router({
     .input(orcaClaimRewardSchema)
     .mutation(async ({ ctx, input }) => {
       let bundleId: string;
+      const positionMint = fromLegacyPublicKey(input.position);
+
       if ("transactions" in input) {
         bundleId = await ctx.sendTransaction
           .sendBundle(input.transactions)
@@ -109,8 +111,21 @@ export const orcaRoute = router({
         bundleId = await execute();
       }
 
+      const response = await queue.add(
+        Work.syncTransaction,
+        {
+          bundleId,
+          positionMint,
+          dex: "orca",
+          type: "claimed-rewards",
+          wallet: ctx.user.wallet,
+        },
+        { jobId: bundleId },
+      );
+
       return {
-        bundleId,
+        jobId: response.id,
+        ...response.data,
       };
     }),
 
@@ -163,10 +178,10 @@ export const orcaRoute = router({
   reposition: privateProcedure
     .input(orcaRepositionSchema)
     .mutation(async ({ ctx, input }) => {
-      let bundleId: string;
-      let positionMint: Address;
+      let bundleId: string, positionMint: Address;
+
       if ("transactions" in input) {
-        positionMint = fromLegacyPublicKey(input.positionMint);
+        positionMint = fromLegacyPublicKey(input.position);
         bundleId = await ctx.sendTransaction
           .sendBundle(input.transactions)
           .then(({ result }) => result);

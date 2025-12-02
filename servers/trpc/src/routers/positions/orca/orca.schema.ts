@@ -40,18 +40,19 @@ const orcaInternalCreatePositionSchema = z
 
 export const orcaCreatePositionSchema = z
   .union([
-    orcaInternalCreatePositionSchema,
-    externalTransactionSchema.extend({
-      positionMint: publicKey(),
-    }),
+    orcaInternalCreatePositionSchema.and(
+      z.object({
+        skipSig: z.boolean().optional(),
+        jitoConfig: jitoTipConfigSchema.default({
+          type: "dynamic",
+          priorityFeePercentile: "50ema",
+        }),
+      }),
+    ),
+    externalTransactionSchema.extend({ position: publicKey() }),
   ])
   .and(
     z.object({
-      skipSig: z.boolean().optional(),
-      jitoConfig: jitoTipConfigSchema.default({
-        type: "dynamic",
-        priorityFeePercentile: "50ema",
-      }),
       tokens: z
         .array(
           z.object({
@@ -70,26 +71,31 @@ export const orcaCreatePositionSchema = z
 
 export const orcaClaimRewardSchema = z
   .union([
-    z.object({
-      pair: publicKey().describe("pool address"),
-      slippage: z.number().describe("swap slippage"),
-      position: publicKey().describe("position address"),
-    }),
+    z
+      .object({
+        pair: publicKey().describe("pool address"),
+        slippage: z.number().describe("swap slippage"),
+      })
+      .and(
+        z.object({
+          skipSig: z.boolean().optional(),
+          jitoConfig: jitoTipConfigSchema.default({
+            type: "dynamic",
+            priorityFeePercentile: "50ema",
+          }),
+        }),
+      ),
     externalTransactionSchema,
   ])
   .and(
     z.object({
-      skipSig: z.boolean().optional(),
-      jitoConfig: jitoTipConfigSchema.default({
-        type: "dynamic",
-        priorityFeePercentile: "50ema",
-      }),
+      position: publicKey().describe("position address"),
     }),
   );
 
-export const orcaClosePositionSchema = z
-  .union([
-    z.object({
+export const orcaClosePositionSchema = z.union([
+  z
+    .object({
       pair: publicKey().describe("pool address"),
       slippage: z.number().describe("swap slippage"),
       position: publicKey().describe("position address"),
@@ -98,36 +104,39 @@ export const orcaClosePositionSchema = z
         .default(true)
         .optional()
         .describe("skip swapping to native mint"),
-    }),
-    externalTransactionSchema,
-  ])
-  .and(
-    z.object({
-      skipSig: z.boolean().optional(),
-      jitoConfig: jitoTipConfigSchema.default({
-        type: "dynamic",
-        priorityFeePercentile: "50ema",
-      }),
-    }),
-  );
-
-export const orcaRepositionSchema = z.union([
-  z
-    .object({
-      pair: publicKey(),
-      position: publicKey(),
-      type: z.enum(["swap", "swapless"]),
-      slippage: z.number().describe("swap slippage"),
     })
     .and(
       z.object({
+        skipSig: z.boolean().optional(),
         jitoConfig: jitoTipConfigSchema.default({
           type: "dynamic",
           priorityFeePercentile: "50ema",
         }),
       }),
     ),
-  externalTransactionSchema.extend({
-    positionMint: publicKey(),
-  }),
+  externalTransactionSchema,
 ]);
+
+export const orcaRepositionSchema = z
+  .union([
+    z
+      .object({
+        pair: publicKey(),
+        type: z.enum(["swap", "swapless"]),
+        slippage: z.number().describe("swap slippage"),
+      })
+      .and(
+        z.object({
+          jitoConfig: jitoTipConfigSchema.default({
+            type: "dynamic",
+            priorityFeePercentile: "50ema",
+          }),
+        }),
+      ),
+    externalTransactionSchema,
+  ])
+  .and(
+    z.object({
+      position: publicKey(),
+    }),
+  );

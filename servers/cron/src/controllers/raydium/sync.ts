@@ -1,4 +1,3 @@
-import BN from "bn.js";
 import type { z } from "zod/mini";
 import Decimal from "decimal.js";
 import { RaydiumCLMM } from "@rhiva-ag/dex";
@@ -211,15 +210,14 @@ export const syncRaydiumPositions = async ({
 
     const priceRange: [number, number] = [lowerTickPrice, upperTickPrice];
 
-    let rewardUsd = 0,
-      baseAmountUsd = 0,
+    let baseAmountUsd = 0,
       quoteAmountUsd = 0,
       baseFeeUsd = 0,
       quoteFeeUsd = 0;
 
     const baseToken = offchainPosition.pool.baseToken;
     const quoteToken = offchainPosition.pool.quoteToken;
-    const [rewardToken] = offchainPosition.pool.rewardTokens;
+    const rewardTokens = offchainPosition.pool.rewardTokens;
 
     const { amountA, amountB } = RaydiumCLMM.getAmountsFromLiquidity({
       epochInfo,
@@ -239,7 +237,7 @@ export const syncRaydiumPositions = async ({
         upperTickState!,
       );
 
-    const rewardAmounts = PositionUtils.GetPositionRewardsV2(
+    const rawRewardAmounts = PositionUtils.GetPositionRewardsV2(
       pool,
       position,
       lowerTickState!,
@@ -250,10 +248,6 @@ export const syncRaydiumPositions = async ({
     const rawFeeY = tokenFeeAmountB.toString();
     const rawAmountX = amountA.amount.toString();
     const rawAmountY = amountB.amount.toString();
-
-    const rawRewardAmount = rewardAmounts
-      .reduce((acc, curr) => acc.add(curr), new BN(0))
-      .toString();
 
     const feeX = new Decimal(rawFeeX)
       .div(Math.pow(10, baseToken.decimals))
@@ -280,21 +274,29 @@ export const syncRaydiumPositions = async ({
       quoteFeeUsd += priceY.usd * feeY;
       quoteAmountUsd += priceY.usd * amountY;
     }
+    const rewardAmounts = [];
+    const rewardAmountsUsd = [];
 
-    if (rewardToken) {
-      const rewardAmount = new Decimal(rawRewardAmount)
-        .div(Math.pow(10, rewardToken.mint.decimals))
-        .toNumber();
-
-      const priceReward = prices[rewardToken.mint.id];
-      if (priceReward) rewardUsd += priceReward.usd * rewardAmount;
+    for (const [index, rawRewardAmount] of rawRewardAmounts.entries()) {
+      const reward = rewardTokens[index];
+      if (reward) {
+        const rewardAmount = new Decimal(rawRewardAmount.toString())
+          .div(Math.pow(10, reward.mint.decimals))
+          .toNumber();
+        rewardAmounts.push(rewardAmount);
+        const price = prices[reward.mint.id]?.usd || 0;
+        rewardAmountsUsd.push(price * rewardAmount);
+      }
     }
 
-    const feeUsd = baseFeeUsd + quoteFeeUsd;
-    const amountUsd = baseAmountUsd + quoteAmountUsd;
     const tvl = offchainPosition.amountUsd;
-    const totalTVL = amountUsd + feeUsd + rewardUsd;
-    const pnlUsd = tvl - totalTVL;
+    const amountUsd = baseAmountUsd + quoteAmountUsd;
+    const totalTVL =
+      amountUsd +
+      baseFeeUsd +
+      quoteFeeUsd +
+      rewardAmountsUsd.reduce((acc, reward) => acc + reward, 0);
+    const pnlUsd = totalTVL - tvl;
 
     const currentPrice = SqrtPriceMath.sqrtPriceX64ToPrice(
       SqrtPriceMath.getSqrtPriceX64FromTick(pool.tickCurrent),
@@ -318,11 +320,9 @@ export const syncRaydiumPositions = async ({
         },
       },
     });
+
     pnlUpdates.push({
-      feeUsd,
       pnlUsd,
-      rewardUsd,
-      amountUsd,
       baseAmountUsd,
       quoteAmountUsd,
       state: "opened",
@@ -331,9 +331,11 @@ export const syncRaydiumPositions = async ({
       quoteAmount: amountY,
       unclaimedBaseFee: feeX,
       unclaimedQuoteFee: feeY,
+      position: offchainPosition.id,
       unclaimedBaseFeeUsd: baseFeeUsd,
       unclaimedQuoteFeeUsd: quoteFeeUsd,
-      position: offchainPosition.id,
+      unclaimedRewardsFee: rewardAmounts,
+      unclaimedRewardsFeeUsd: rewardAmountsUsd,
     });
   }
 
@@ -346,14 +348,10 @@ export const syncRaydiumPositions = async ({
           target: [pnls.position],
           set: buildConflictUpdateColumns(pnls, [
             "state",
-            "feeUsd",
             "pnlUsd",
-            "rewardUsd",
-            "amountUsd",
             "updatedAt",
             "baseAmount",
             "quoteAmount",
-            "claimedFeeUsd",
             "baseAmountUsd",
             "quoteAmountUsd",
             "unclaimedBaseFee",

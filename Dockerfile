@@ -51,7 +51,7 @@ WORKDIR /usr/src/app
 CMD sh -c "cd packages/datasource && \
   bun x drizzle-kit migrate && \
   cd ../../servers && \
-  bun x pm2-runtime start ecosystem.config.js"
+  bun x pm2-runtime start ecosystem.config.cjs"
 
 FROM builder as trpc
 WORKDIR /usr/src/app/servers/trpc

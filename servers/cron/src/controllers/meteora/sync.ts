@@ -1,7 +1,9 @@
 import moment from "moment";
 import Decimal from "decimal.js";
 import type { z } from "zod/mini";
+import type { Address } from "@solana/kit";
 import { and, eq, inArray, not } from "drizzle-orm";
+import { fromLegacyPublicKey } from "@solana/compat";
 import { flatMapFilter, mapFilter } from "@rhiva-ag/shared";
 import { PublicKey, type Connection } from "@solana/web3.js";
 import type Coingecko from "@coingecko/coingecko-typescript";
@@ -18,6 +20,7 @@ import {
 import { Work } from "../../constants";
 import { fromPricePerLamport } from "./shared";
 import { createQueue, getPositionsWhere } from "../shared";
+import type { positionManagerWorkSchema } from "../../external";
 
 export const syncMeteoraPositionsForWallet = async ({
   db,
@@ -121,7 +124,9 @@ export const syncMeteoraPositions = async ({
     update: Partial<typeof positions.$inferInsert>;
   }[] = [];
 
-  const inActivePositions: PublicKey[] = [];
+  const claimPositions: Address[] = [];
+  const inActivePositions: Address[] = [];
+  const compoundPositions: Address[] = [];
 
   for (const { lbPair, ...position } of lbPairWithPositions) {
     const activeBin = lbPair.activeId;
@@ -136,12 +141,31 @@ export const syncMeteoraPositions = async ({
       activeBin >= position.positionData.lowerBinId &&
       activeBin <= position.positionData.upperBinId;
 
-    if (!active && !offchainPosition.wallet.external) {
-      const deltaTime = moment().diff(
-        moment(offchainPosition.config.lastRepositionTime),
-      );
-      if (deltaTime >= offchainPosition.config.repositionTime)
-        inActivePositions.push(position.publicKey);
+    if (!offchainPosition.wallet.external) {
+      if (!active) {
+        const repositionDeltaTime = moment().diff(
+          moment(offchainPosition.config.lastRepositionTime),
+        );
+        const autoclaimDeltaTime = moment().diff(
+          moment(offchainPosition.config.lastRepositionTime),
+        );
+        const autocompoundDeltaTime = moment().diff(
+          moment(offchainPosition.config.lastRepositionTime),
+        );
+
+        if (repositionDeltaTime >= offchainPosition.config.repositionTime)
+          inActivePositions.push(fromLegacyPublicKey(position.publicKey));
+        if (
+          offchainPosition.config.enableAutoCompound &&
+          autocompoundDeltaTime >= offchainPosition.config.autocompoundTime
+        )
+          compoundPositions.push(fromLegacyPublicKey(position.publicKey));
+        else if (
+          offchainPosition.config.enableAutoClaim &&
+          autoclaimDeltaTime >= offchainPosition.config.autoclaimTime
+        )
+          claimPositions.push(fromLegacyPublicKey(position.publicKey));
+      }
     }
 
     const lowerBinPrice = fromPricePerLamport(
@@ -326,13 +350,35 @@ export const syncMeteoraPositions = async ({
     ]);
   }
 
-  if (inActivePositions.length > 0) {
-    const queue = createQueue(Work.positionManager);
-    queue.add(Work.positionManager, {
-      dex: "meteora",
-      positions: inActivePositions,
-    });
-  }
+  const queue = createQueue<z.infer<typeof positionManagerWorkSchema>>(
+    Work.positionManager,
+  );
+  const promises = [];
+  if (inActivePositions.length > 0)
+    promises.push(
+      queue.add(Work.positionManager, {
+        dex: "meteora",
+        type: "reposition",
+        positions: inActivePositions,
+      }),
+    );
+  if (claimPositions.length > 0)
+    promises.push(
+      queue.add(Work.positionManager, {
+        dex: "meteora",
+        type: "claim",
+        positions: claimPositions,
+      }),
+    );
+  if (compoundPositions.length > 0)
+    promises.push(
+      queue.add(Work.positionManager, {
+        dex: "meteora",
+        type: "compound",
+        positions: compoundPositions,
+      }),
+    );
+  await Promise.allSettled(promises);
 
   return result?.flat(2);
 };

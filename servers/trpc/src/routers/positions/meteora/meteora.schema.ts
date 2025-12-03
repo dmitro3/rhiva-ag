@@ -69,6 +69,11 @@ export const meteoraClaimRewardSchema = z.union([
       pair: publicKey().describe("pair address"),
       slippage: z.number().describe("swap slippage"),
       position: publicKey().describe("position address"),
+      swapToNative: z
+        .boolean()
+        .default(true)
+        .optional()
+        .describe("skip swapping to native mint"),
     })
     .and(
       z.object({
@@ -91,7 +96,7 @@ export const meteoraClosePositionSchema = z.union([
         .boolean()
         .default(true)
         .optional()
-        .describe("skip swapping to native mint"),
+        .describe("swap to native mint"),
     })
     .and(
       z.object({

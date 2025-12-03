@@ -101,7 +101,12 @@ export const syncRaydiumPositionStateFromEvent = async ({
               },
             },
             lastRepositionTime: new Date(),
+            lastAutoclaimTime: new Date(),
+            lastAutocompoundTime: new Date(),
+            autoclaimTime: userSettings.autoclaimTime,
+            repositionType: userSettings.rebalanceType,
             repositionTime: userSettings.rebalanceTime,
+            autocompoundTime: userSettings.autoclaimTime,
             enableAutoClaim: userSettings.enableAutoClaim,
             enableAutoCompound: userSettings.enableAutoClaim,
           },
@@ -255,7 +260,28 @@ export const syncRaydiumPositionStateFromEvent = async ({
 
       results.push(updatedPosition);
     } else if (event.name === "collectPersonalFeeEvent") {
-      // todo
+      const data = event.data;
+      const offchainPosition = await getPositionById(
+        db,
+        data.positionNftMint.toBase58(),
+      );
+
+      if (offchainPosition) {
+        const [updatedPosition] = await db
+          .update(positions)
+          .set({
+            state: "rebalanced",
+            config: {
+              ...offchainPosition.config,
+              lastAutoclaimTime: new Date(),
+              lastAutocompoundTime: new Date(),
+            },
+          })
+          .where(eq(positions.id, offchainPosition.id))
+          .returning();
+
+        results.push(updatedPosition);
+      }
     }
   }
 

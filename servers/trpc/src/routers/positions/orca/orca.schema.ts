@@ -71,20 +71,20 @@ export const orcaCreatePositionSchema = z
 
 export const orcaClaimRewardSchema = z
   .union([
-    z
-      .object({
-        pair: publicKey().describe("pool address"),
-        slippage: z.number().describe("swap slippage"),
-      })
-      .and(
-        z.object({
-          skipSig: z.boolean().optional(),
-          jitoConfig: jitoTipConfigSchema.default({
-            type: "dynamic",
-            priorityFeePercentile: "50ema",
-          }),
-        }),
-      ),
+    z.object({
+      skipSig: z.boolean().optional(),
+      pair: publicKey().describe("pool address"),
+      slippage: z.number().describe("swap slippage"),
+      jitoConfig: jitoTipConfigSchema.default({
+        type: "dynamic",
+        priorityFeePercentile: "50ema",
+      }),
+      swapToNative: z
+        .boolean()
+        .default(true)
+        .optional()
+        .describe("swap to native mint"),
+    }),
     externalTransactionSchema,
   ])
   .and(
@@ -94,26 +94,21 @@ export const orcaClaimRewardSchema = z
   );
 
 export const orcaClosePositionSchema = z.union([
-  z
-    .object({
-      pair: publicKey().describe("pool address"),
-      slippage: z.number().describe("swap slippage"),
-      position: publicKey().describe("position address"),
-      swapToNative: z
-        .boolean()
-        .default(true)
-        .optional()
-        .describe("skip swapping to native mint"),
-    })
-    .and(
-      z.object({
-        skipSig: z.boolean().optional(),
-        jitoConfig: jitoTipConfigSchema.default({
-          type: "dynamic",
-          priorityFeePercentile: "50ema",
-        }),
-      }),
-    ),
+  z.object({
+    skipSig: z.boolean().optional(),
+    pair: publicKey().describe("pool address"),
+    slippage: z.number().describe("swap slippage"),
+    position: publicKey().describe("position address"),
+    jitoConfig: jitoTipConfigSchema.default({
+      type: "dynamic",
+      priorityFeePercentile: "50ema",
+    }),
+    swapToNative: z
+      .boolean()
+      .default(true)
+      .optional()
+      .describe("swap to native mint"),
+  }),
   externalTransactionSchema,
 ]);
 

@@ -46,6 +46,7 @@ import {
 
 import { Work } from "../../constants";
 import { createQueue, getPositionsWhere } from "../shared";
+import type { positionManagerWorkSchema } from "../../external";
 
 export const syncOrcaPositionsForWallet = async ({
   rpc,
@@ -222,7 +223,8 @@ export const syncOrcaPositions = async ({
     update: Partial<typeof positions.$inferInsert>;
   }[] = [];
 
-  const inActivePositions: PublicKey[] = [];
+  const claimPositions: Address[] = [];
+  const inActivePositions: Address[] = [];
   const epochInfo = await rpc.getEpochInfo().send();
 
   for (const { pool, ...position } of whirlpoolPositionsWithTickAddress) {
@@ -258,12 +260,24 @@ export const syncOrcaPositions = async ({
       pool.tickCurrentIndex >= position.data.tickLowerIndex &&
       pool.tickCurrentIndex <= position.data.tickUpperIndex;
 
-    if (!active && !offchainPosition.wallet.external) {
-      const deltaTime = moment().diff(
-        moment(offchainPosition.config.lastRepositionTime),
-      );
-      if (deltaTime >= offchainPosition.config.repositionTime)
-        inActivePositions.push(new PublicKey(position.pubkey));
+    // push to position manager queue
+    if (!offchainPosition.wallet.external) {
+      if (!active) {
+        const repositionDeltaTime = moment().diff(
+          moment(offchainPosition.config.lastRepositionTime),
+        );
+        const autoclaimDeltaTime = moment().diff(
+          moment(offchainPosition.config.lastRepositionTime),
+        );
+
+        if (repositionDeltaTime >= offchainPosition.config.repositionTime)
+          inActivePositions.push(position.pubkey);
+        if (
+          offchainPosition.config.enableAutoClaim &&
+          autoclaimDeltaTime >= offchainPosition.config.autoclaimTime
+        )
+          claimPositions.push(position.pubkey);
+      }
     }
 
     const lowerTickPrice = tickIndexToPrice(
@@ -482,14 +496,28 @@ export const syncOrcaPositions = async ({
       ),
     ]);
   }
+  const queue = createQueue<z.infer<typeof positionManagerWorkSchema>>(
+    Work.positionManager,
+  );
+  const promises = [];
+  if (inActivePositions.length > 0)
+    promises.push(
+      queue.add(Work.positionManager, {
+        dex: "orca",
+        type: "reposition",
+        positions: inActivePositions,
+      }),
+    );
+  if (claimPositions.length > 0)
+    promises.push(
+      queue.add(Work.positionManager, {
+        dex: "orca",
+        type: "claim",
+        positions: claimPositions,
+      }),
+    );
 
-  if (inActivePositions.length > 0) {
-    const queue = createQueue(Work.positionManager);
-    queue.add(Work.positionManager, {
-      dex: "meteora",
-      positions: inActivePositions,
-    });
-  }
+  await Promise.allSettled(promises);
 
   return result?.flat(2);
 };

@@ -1,10 +1,5 @@
 import z from "zod";
-import {
-  address,
-  publicKey,
-  userSelectSchema,
-  walletSchema,
-} from "@rhiva-ag/datasource";
+import { address, walletSchema } from "@rhiva-ag/datasource";
 
 import { supportedDexes } from "../constants";
 
@@ -64,8 +59,19 @@ export const transactionEventSchema = z
     }),
   );
 
-export const positionManagerWorkSchema = z.object({
-  dex: z.enum(supportedDexes),
-  user: userSelectSchema.shape.id,
-  positions: z.array(publicKey()),
-});
+export const positionManagerWorkSchema = z
+  .union([
+    z.object({
+      dex: z.enum(["meteora"]),
+      type: z.enum(["compound"]),
+    }),
+    z.object({
+      dex: z.enum(supportedDexes),
+      type: z.enum(["claim", "reposition", "rebalance"]),
+    }),
+  ])
+  .and(
+    z.object({
+      positions: z.array(address()),
+    }),
+  );

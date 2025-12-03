@@ -11,6 +11,7 @@ import {
   TickUtil,
   TokenExtensionUtil,
   type IncreaseLiquidityQuote,
+  type Whirlpool,
 } from "@orca-so/whirlpools-sdk";
 import {
   isNative,
@@ -197,9 +198,16 @@ export const claimReward = async (
     slippage,
     skipSig,
     jitoConfig,
-  }: Exclude<z.infer<typeof orcaClaimRewardSchema>, { transactions: string[] }>,
+    swapToNative,
+    ...args
+  }: Exclude<
+    z.infer<typeof orcaClaimRewardSchema>,
+    { transactions: string[] }
+  > & { pool?: Whirlpool },
 ) => {
-  const pool = await dex.dlmm.orcaLegacy.client.getPool(pair);
+  const pool = args.pool
+    ? args.pool
+    : await dex.dlmm.orcaLegacy.client.getPool(pair);
   const tokenAInfo = pool.getTokenAInfo();
   const tokenBInfo = pool.getTokenBInfo();
   const tipInstruction = await sender.getJitoTipInstruction(
@@ -212,56 +220,59 @@ export const claimReward = async (
     prependInstructions: tipInstruction,
   });
 
-  const tokenAAta = getAssociatedTokenAddressSync(
-    tokenAInfo.address,
-    wallet.publicKey,
-    false,
-    tokenAInfo.tokenProgram,
-  );
-  const tokenBAta = getAssociatedTokenAddressSync(
-    tokenBInfo.address,
-    wallet.publicKey,
-    false,
-    tokenBInfo.tokenProgram,
-  );
-
-  const accountConfigs = claimRewardV0Transactions.map(() => ({
-    encoding: "base64" as const,
-    addresses: [tokenAAta.toBase58(), tokenBAta.toBase58()],
-  }));
-
-  const simulationResponse = await sender.simulateBundle({
-    skipSigVerify: true,
-    transactions: claimRewardV0Transactions.map((transaction) =>
-      transaction.serialize().toBase64(),
-    ),
-    postExecutionAccountsConfigs: accountConfigs,
-    preExecutionAccountsConfigs: accountConfigs,
-  });
-  throwBundleSimulationError(simulationResponse.result.value);
-
-  const tokenBalanceChanges = getTokenBalanceChangesFromBundleSimulation(
-    simulationResponse.result.value,
-  );
-
   const swapV0Transactions = [];
-  const tokens = [tokenAInfo, tokenBInfo];
 
-  for (const token of tokens) {
-    if (!isNative(token.mint)) {
-      const quoteAmount =
-        tokenBalanceChanges[token.address.toBase58()] ?? BigInt(0);
-      if (quoteAmount > BigInt(0)) {
-        const { transaction } = await dex.swap.jupiter.buildSwap({
-          slippage,
-          skipSimulation: true,
-          owner: wallet.publicKey,
-          outputMint: NATIVE_MINT,
-          amount: quoteAmount.toString(),
-          inputMint: new PublicKey(token.mint),
-        });
+  if (swapToNative) {
+    const tokenAAta = getAssociatedTokenAddressSync(
+      tokenAInfo.address,
+      wallet.publicKey,
+      false,
+      tokenAInfo.tokenProgram,
+    );
+    const tokenBAta = getAssociatedTokenAddressSync(
+      tokenBInfo.address,
+      wallet.publicKey,
+      false,
+      tokenBInfo.tokenProgram,
+    );
 
-        swapV0Transactions.push(transaction);
+    const accountConfigs = claimRewardV0Transactions.map(() => ({
+      encoding: "base64" as const,
+      addresses: [tokenAAta.toBase58(), tokenBAta.toBase58()],
+    }));
+
+    const simulationResponse = await sender.simulateBundle({
+      skipSigVerify: true,
+      transactions: claimRewardV0Transactions.map((transaction) =>
+        transaction.serialize().toBase64(),
+      ),
+      postExecutionAccountsConfigs: accountConfigs,
+      preExecutionAccountsConfigs: accountConfigs,
+    });
+    throwBundleSimulationError(simulationResponse.result.value);
+
+    const tokenBalanceChanges = getTokenBalanceChangesFromBundleSimulation(
+      simulationResponse.result.value,
+    );
+
+    const tokens = [tokenAInfo, tokenBInfo];
+
+    for (const token of tokens) {
+      if (!isNative(token.mint)) {
+        const quoteAmount =
+          tokenBalanceChanges[token.address.toBase58()] ?? BigInt(0);
+        if (quoteAmount > BigInt(0)) {
+          const { transaction } = await dex.swap.jupiter.buildSwap({
+            slippage,
+            skipSimulation: true,
+            owner: wallet.publicKey,
+            outputMint: NATIVE_MINT,
+            amount: quoteAmount.toString(),
+            inputMint: new PublicKey(token.mint),
+          });
+
+          swapV0Transactions.push(transaction);
+        }
       }
     }
   }
@@ -466,9 +477,12 @@ export const reposition = async (
   let transactions: VersionedTransaction[];
 
   if (swapToNative) {
-    const inputAmount = new Decimal(
-      tokenBalanceChanges[NATIVE_MINT.toBase58()] || BigInt(0),
-    )
+    const rawInputAmount = tokenBalanceChanges[NATIVE_MINT.toBase58()];
+    assert(
+      rawInputAmount && rawInputAmount > BigInt(0),
+      "expect an amount > 0",
+    );
+    const inputAmount = new Decimal(rawInputAmount)
       .div(Math.pow(10, 9))
       .toNumber();
     const response = await createPosition(dex, sender, wallet, {

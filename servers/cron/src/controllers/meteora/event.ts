@@ -102,7 +102,12 @@ export const syncMeteoraPositionStateFromEvent = async ({
               },
             },
             lastRepositionTime: new Date(),
+            lastAutoclaimTime: new Date(),
+            lastAutocompoundTime: new Date(),
+            autoclaimTime: userSettings.autoclaimTime,
+            repositionType: userSettings.rebalanceType,
             repositionTime: userSettings.rebalanceTime,
+            autocompoundTime: userSettings.autoclaimTime,
             enableAutoClaim: userSettings.enableAutoClaim,
             enableAutoCompound: userSettings.enableAutoClaim,
           },
@@ -246,6 +251,33 @@ export const syncMeteoraPositionStateFromEvent = async ({
           .update(positions)
           .set({
             state: "rebalanced",
+            config: {
+              ...offchainPosition.config,
+              lastRepositionTime: new Date(),
+            },
+          })
+          .where(eq(positions.id, offchainPosition.id))
+          .returning();
+
+        results.push(updatedPosition);
+      }
+    } else if ("claimFee" === event.name || "claimReward" === event.name) {
+      const data = event.data;
+      const offchainPosition = await getPositionById(
+        db,
+        data.position.toBase58(),
+      );
+
+      if (offchainPosition) {
+        const [updatedPosition] = await db
+          .update(positions)
+          .set({
+            state: "rebalanced",
+            config: {
+              ...offchainPosition.config,
+              lastAutoclaimTime: new Date(),
+              lastAutocompoundTime: new Date(),
+            },
           })
           .where(eq(positions.id, offchainPosition.id))
           .returning();

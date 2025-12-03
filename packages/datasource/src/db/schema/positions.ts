@@ -38,9 +38,14 @@ export const positions = pgTable("positions", {
       history?: HistoricalData;
       priceRange?: [number, number];
       repositionTime: number;
+      autocompoundTime: number;
+      autoclaimTime: number;
       enableAutoClaim: boolean;
       lastRepositionTime?: Date;
+      lastAutoclaimTime?: Date;
+      lastAutocompoundTime?: Date;
       enableAutoCompound: boolean;
+      repositionType: "swap" | "swapless";
     }>()
     .notNull(),
   wallet: text()

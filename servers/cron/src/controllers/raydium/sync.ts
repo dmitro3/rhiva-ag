@@ -1,8 +1,10 @@
+import type { z } from "zod";
 import moment from "moment";
-import type { z } from "zod/mini";
 import Decimal from "decimal.js";
+import type { Address } from "@solana/kit";
 import { RaydiumCLMM } from "@rhiva-ag/dex";
 import { and, eq, inArray, not } from "drizzle-orm";
+import { fromLegacyPublicKey } from "@solana/compat";
 import { PublicKey, type Connection } from "@solana/web3.js";
 import type Coingecko from "@coingecko/coingecko-typescript";
 import {
@@ -32,6 +34,7 @@ import {
 
 import { Work } from "../../constants";
 import { createQueue, getPositionsWhere } from "../shared";
+import type { positionManagerWorkSchema } from "../../workers/schema";
 
 export const syncRaydiumPositionsForWallet = async ({
   db,
@@ -177,7 +180,8 @@ export const syncRaydiumPositions = async ({
     update: Partial<typeof positions.$inferInsert>;
   }[] = [];
 
-  const inActivePositions: PublicKey[] = [];
+  const claimPositions: Address[] = [];
+  const inActivePositions: Address[] = [];
 
   for (const { pool, ...position } of clmmPositionsWithTickAddress) {
     const lowerTickArray = tickArraysMap.get(
@@ -201,12 +205,24 @@ export const syncRaydiumPositions = async ({
       pool.tickCurrent >= position.tickLower &&
       pool.tickCurrent <= position.tickUpper;
 
-    if (!active && !offchainPosition.wallet.external) {
-      const deltaTime = moment().diff(
-        moment(offchainPosition.config.lastRepositionTime),
-      );
-      if (deltaTime >= offchainPosition.config.repositionTime)
-        inActivePositions.push(position.publicKey);
+    // push to position manager queue
+    if (!offchainPosition.wallet.external) {
+      if (!active) {
+        const repositionDeltaTime = moment().diff(
+          moment(offchainPosition.config.lastRepositionTime),
+        );
+        const autoclaimDeltaTime = moment().diff(
+          moment(offchainPosition.config.lastRepositionTime),
+        );
+
+        if (repositionDeltaTime >= offchainPosition.config.repositionTime)
+          inActivePositions.push(fromLegacyPublicKey(position.publicKey));
+        if (
+          offchainPosition.config.enableAutoClaim &&
+          autoclaimDeltaTime >= offchainPosition.config.autoclaimTime
+        )
+          claimPositions.push(fromLegacyPublicKey(position.publicKey));
+      }
     }
 
     const lowerTickPrice = SqrtPriceMath.sqrtPriceX64ToPrice(
@@ -389,13 +405,28 @@ export const syncRaydiumPositions = async ({
     ]);
   }
 
-  if (inActivePositions.length > 0) {
-    const queue = createQueue(Work.positionManager);
-    queue.add(Work.positionManager, {
-      dex: "meteora",
-      positions: inActivePositions,
-    });
-  }
+  const queue = createQueue<z.infer<typeof positionManagerWorkSchema>>(
+    Work.positionManager,
+  );
+  const promises = [];
+  if (inActivePositions.length > 0)
+    promises.push(
+      queue.add(Work.positionManager, {
+        dex: "raydium-clmm",
+        type: "reposition",
+        positions: inActivePositions,
+      }),
+    );
+  if (claimPositions.length > 0)
+    promises.push(
+      queue.add(Work.positionManager, {
+        dex: "raydium-clmm",
+        type: "claim",
+        positions: claimPositions,
+      }),
+    );
+
+  await Promise.allSettled(promises);
 
   return result?.flat(2);
 };

@@ -1,5 +1,7 @@
 import Decimal from "decimal.js";
+import { eq } from "drizzle-orm";
 import type Coingecko from "@coingecko/coingecko-typescript";
+import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import type { Whirlpool } from "@rhiva-ag/decoder/programs/idls/types/orca";
 import type { ProgramInstructionType, TInstruction } from "@rhiva-ag/decoder";
 import {
@@ -11,8 +13,6 @@ import {
   type Connection,
   type ParsedTransactionWithMeta,
 } from "@solana/web3.js";
-import { eq } from "drizzle-orm";
-import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import {
   buildConflictUpdateColumns,
   pnls,
@@ -56,6 +56,19 @@ export const syncOrcaPositionStateFromInstructions = async ({
     ]);
 
     if (position) {
+      await db
+        .update(positions)
+        .set({
+          state: "rebalanced",
+          config: {
+            ...position.config,
+            lastAutoclaimTime: new Date(),
+            lastAutocompoundTime: new Date(),
+          },
+        })
+        .where(eq(positions.id, position.id))
+        .returning();
+
       const owner = new PublicKey(position.wallet.id);
       const tokenA = new PublicKey(position.pool.baseToken.id);
       const tokenB = new PublicKey(position.pool.quoteToken.id);

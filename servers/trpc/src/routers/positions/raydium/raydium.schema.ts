@@ -58,19 +58,19 @@ export const raydiumCreatePositionSchema = z
 
 export const raydiumClaimRewardSchema = z
   .union([
-    z
-      .object({
-        pair: publicKey().describe("pool address"),
-        slippage: z.number().describe("swap slippage"),
-      })
-      .and(
-        z.object({
-          jitoConfig: jitoTipConfigSchema.default({
-            type: "dynamic",
-            priorityFeePercentile: "50ema",
-          }),
-        }),
-      ),
+    z.object({
+      pair: publicKey().describe("pool address"),
+      slippage: z.number().describe("swap slippage"),
+      jitoConfig: jitoTipConfigSchema.default({
+        type: "dynamic",
+        priorityFeePercentile: "50ema",
+      }),
+      swapToNative: z
+        .boolean()
+        .default(true)
+        .optional()
+        .describe("swap to native mint"),
+    }),
     externalTransactionSchema,
   ])
   .and(
@@ -80,45 +80,36 @@ export const raydiumClaimRewardSchema = z
   );
 
 export const raydiumClosePositionSchema = z.union([
-  z
-    .object({
-      skipSig: z.boolean().optional(),
-      pair: publicKey().describe("pool address"),
-      slippage: z.number().describe("swap slippage"),
-      position: publicKey().describe("position address"),
-      swapToNative: z
-        .boolean()
-        .default(true)
-        .optional()
-        .describe("skip swapping to native mint"),
-    })
-    .and(
-      z.object({
-        jitoConfig: jitoTipConfigSchema.default({
-          type: "dynamic",
-          priorityFeePercentile: "50ema",
-        }),
-      }),
-    ),
+  z.object({
+    skipSig: z.boolean().optional(),
+    pair: publicKey().describe("pool address"),
+    slippage: z.number().describe("swap slippage"),
+    position: publicKey().describe("position address"),
+
+    jitoConfig: jitoTipConfigSchema.default({
+      type: "dynamic",
+      priorityFeePercentile: "50ema",
+    }),
+    swapToNative: z
+      .boolean()
+      .default(true)
+      .optional()
+      .describe("swap to native mint"),
+  }),
   externalTransactionSchema,
 ]);
 
 export const raydiumRepositionSchema = z
   .union([
-    z
-      .object({
-        pair: publicKey(),
-        type: z.enum(["swap", "swapless"]),
-        slippage: z.number().describe("swap slippage"),
-      })
-      .and(
-        z.object({
-          jitoConfig: jitoTipConfigSchema.default({
-            type: "dynamic",
-            priorityFeePercentile: "50ema",
-          }),
-        }),
-      ),
+    z.object({
+      pair: publicKey(),
+      type: z.enum(["swap", "swapless"]),
+      slippage: z.number().describe("swap slippage"),
+      jitoConfig: jitoTipConfigSchema.default({
+        type: "dynamic",
+        priorityFeePercentile: "50ema",
+      }),
+    }),
     externalTransactionSchema,
   ])
   .and(

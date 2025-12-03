@@ -7,7 +7,10 @@ import type {
   settingsSelectSchema,
 } from "@rhiva-ag/datasource";
 
-export type Position = Pick<z.infer<typeof positionSelectSchema>, "id"> & {
+export type Position = Pick<
+  z.infer<typeof positionSelectSchema>,
+  "id" | "config"
+> & {
   wallet: Omit<z.infer<typeof walletSchema>, "user"> & {
     user: Pick<z.infer<typeof userSelectSchema>, "id"> & {
       settings: Pick<

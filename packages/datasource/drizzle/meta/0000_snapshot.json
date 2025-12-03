@@ -1,5 +1,5 @@
 {
-  "id": "a5230a8d-f0d0-4110-b42c-4fe7e3f43496",
+  "id": "3c9f7bb5-fa09-44bb-8311-cc50b2a1370b",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -27,29 +27,12 @@
           "primaryKey": false,
           "notNull": false
         },
-        "feeUsd": {
-          "name": "feeUsd",
-          "type": "double precision",
-          "primaryKey": false,
-          "notNull": true
-        },
         "pnlUsd": {
           "name": "pnlUsd",
           "type": "double precision",
           "primaryKey": false,
-          "notNull": true
-        },
-        "rewardUsd": {
-          "name": "rewardUsd",
-          "type": "double precision",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "amountUsd": {
-          "name": "amountUsd",
-          "type": "double precision",
-          "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "default": 0
         },
         "baseAmount": {
           "name": "baseAmount",
@@ -79,8 +62,36 @@
           "notNull": true,
           "default": 0
         },
-        "claimedFeeUsd": {
-          "name": "claimedFeeUsd",
+        "claimedBaseFee": {
+          "name": "claimedBaseFee",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "claimedQuoteFee": {
+          "name": "claimedQuoteFee",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "claimedBaseFeeUsd": {
+          "name": "claimedBaseFeeUsd",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "claimedQuoteFeeUsd": {
+          "name": "claimedQuoteFeeUsd",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "claimedRewardsUsd": {
+          "name": "claimedRewardsUsd",
           "type": "double precision",
           "primaryKey": false,
           "notNull": true,
@@ -114,6 +125,20 @@
           "notNull": true,
           "default": 0
         },
+        "unclaimedRewardsFee": {
+          "name": "unclaimedRewardsFee",
+          "type": "double precision[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "unclaimedRewardsFeeUsd": {
+          "name": "unclaimedRewardsFeeUsd",
+          "type": "double precision[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
         "createdAt": {
           "name": "createdAt",
           "type": "timestamp with time zone",
@@ -134,6 +159,36 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'opened'"
+        },
+        "amountUsd": {
+          "name": "amountUsd",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true,
+          "generated": {
+            "as": "COALESCE(\"pnls\".\"baseAmountUsd\"::decimal) + COALESCE(\"pnls\".\"quoteAmountUsd\"::decimal, 0)",
+            "type": "stored"
+          }
+        },
+        "unclaimedFeeUsd": {
+          "name": "unclaimedFeeUsd",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true,
+          "generated": {
+            "as": "COALESCE(\"pnls\".\"unclaimedBaseFeeUsd\"::decimal) + COALESCE(\"pnls\".\"unclaimedQuoteFeeUsd\"::decimal, 0)",
+            "type": "stored"
+          }
+        },
+        "claimedFeeUsd": {
+          "name": "claimedFeeUsd",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true,
+          "generated": {
+            "as": "COALESCE(\"pnls\".\"claimedBaseFee\"::decimal) + COALESCE(\"pnls\".\"claimedQuoteFee\"::decimal, 0)",
+            "type": "stored"
+          }
         }
       },
       "indexes": {},
@@ -693,6 +748,13 @@
           "primaryKey": true,
           "notNull": true
         },
+        "extra": {
+          "name": "extra",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{\"claim\":{\"swapToNative\":true},\"close\":{\"swapToNative\":true}}'::jsonb"
+        },
         "slippage": {
           "name": "slippage",
           "type": "double precision",
@@ -700,12 +762,26 @@
           "notNull": true,
           "default": 0.5
         },
+        "autoclaimTime": {
+          "name": "autoclaimTime",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 3600000
+        },
+        "autocompoundTime": {
+          "name": "autocompoundTime",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 3600000
+        },
         "rebalanceTime": {
           "name": "rebalanceTime",
           "type": "double precision",
           "primaryKey": false,
           "notNull": true,
-          "default": 60
+          "default": 60000
         },
         "gasPriorityFee": {
           "name": "gasPriorityFee",

@@ -1,3 +1,5 @@
+import type z from "zod";
+import pRetry from "p-retry";
 import type Dex from "@rhiva-ag/dex";
 import { PublicKey } from "@solana/web3.js";
 import { fromLegacyPublicKey } from "@solana/compat";
@@ -13,6 +15,7 @@ import {
 import { Work } from "../../constants";
 import { createQueue } from "../shared";
 import type { Position } from "../types";
+import type { transactionWorkSchema } from "../../workers/schema";
 
 export const repositionOrcaPositions = async (
   {
@@ -26,36 +29,51 @@ export const repositionOrcaPositions = async (
   },
   ...positions: Position[]
 ) => {
-  const queue = createQueue(Work.syncTransaction);
+  const queue = createQueue<z.infer<typeof transactionWorkSchema>>(
+    Work.syncTransaction,
+  );
 
-  for (const position of positions) {
-    const wallet = await loadWallet(position.wallet, secret);
-    const { execute, positionMint } = await repositionOrcaPosition(
-      dex,
-      sender,
-      fromKeyPairToWalletAdapter(wallet),
-      {
-        type: position.wallet.user.settings.rebalanceType,
-        slippage: position.wallet.user.settings.slippage * 100,
-        pair: new PublicKey(position.pool.id),
-        position: new PublicKey(position.id),
-        jitoConfig: {
-          type: "dynamic",
-          priorityFeePercentile: "50ema",
+  return Promise.allSettled(
+    positions.map(async (position) => {
+      const wallet = await loadWallet(position.wallet, secret);
+      const fn = async () => {
+        const { execute, positionMint } = await repositionOrcaPosition(
+          dex,
+          sender,
+          fromKeyPairToWalletAdapter(wallet),
+          {
+            pair: new PublicKey(position.pool.id),
+            position: new PublicKey(position.id),
+            type: position.config.repositionType,
+            slippage: position.wallet.user.settings.slippage * 100,
+            jitoConfig: {
+              type: "dynamic",
+              priorityFeePercentile: "50ema",
+            },
+          },
+        );
+
+        return {
+          positionMint,
+          bundleId: await execute(),
+        };
+      };
+      const { bundleId, positionMint } = await pRetry(fn, { retries: 4 });
+
+      return queue.add(
+        Work.syncTransaction,
+        {
+          bundleId,
+          dex: "orca",
+          type: "repositioned",
+          positionMint: fromLegacyPublicKey(positionMint),
+          wallet: {
+            id: position.wallet.id,
+            user: position.wallet.user.id,
+          },
         },
-      },
-    );
-
-    const bundleId = await execute();
-    await queue.add(Work.syncTransaction, {
-      bundleId,
-      dex: "orca",
-      type: "repositioned",
-      wallet: {
-        id: position.wallet.id,
-        user: position.wallet.user.id,
-      },
-      positionMint: fromLegacyPublicKey(positionMint),
-    });
-  }
+        { jobId: bundleId, deduplication: { id: bundleId } },
+      );
+    }),
+  );
 };

@@ -13,6 +13,7 @@ import {
   getPdaPersonalPositionAddress,
   type ApiV3PoolInfoConcentratedItem,
   type ReturnTypeGetLiquidityAmountOut,
+  type ApiV3PoolInfoItem,
 } from "@raydium-io/raydium-sdk-v2";
 import {
   isNative,
@@ -190,23 +191,25 @@ export const claimReward = async (
   {
     pair,
     slippage,
-
     jitoConfig,
-    position: positionPubkey,
+    swapToNative,
+    ...args
   }: Exclude<
     z.infer<typeof raydiumClaimRewardSchema>,
     { transactions: string[] }
-  >,
+  > & { poolInfo?: ApiV3PoolInfoItem },
 ) => {
   const accountInfo = await dex.connection.getAccountInfo(
-    getPdaPersonalPositionAddress(CLMM_PROGRAM_ID, positionPubkey).publicKey,
+    getPdaPersonalPositionAddress(CLMM_PROGRAM_ID, args.position).publicKey,
   );
   assert(accountInfo, "position not found.");
 
   const position = PositionInfoLayout.decode(accountInfo.data);
-  const [poolInfo] = await dex.clmm.raydium.raydium.api.fetchPoolById({
-    ids: pair.toBase58(),
-  });
+  const [poolInfo] = args.poolInfo
+    ? [args.poolInfo]
+    : await dex.clmm.raydium.raydium.api.fetchPoolById({
+        ids: pair.toBase58(),
+      });
 
   assert(poolInfo, "pool not found.");
 
@@ -225,54 +228,57 @@ export const claimReward = async (
   const { transactions: claimRewardV0Transactions } =
     await builder.buildV0MultiTx({});
 
-  const tokenAAta = getAssociatedTokenAddressSync(
-    new PublicKey(poolInfo.mintA.address),
-    wallet.publicKey,
-    false,
-    new PublicKey(poolInfo.mintA.programId),
-  );
-  const tokenBAta = getAssociatedTokenAddressSync(
-    new PublicKey(poolInfo.mintB.address),
-    wallet.publicKey,
-    false,
-    new PublicKey(poolInfo.mintB.programId),
-  );
-
-  const accountConfigs = claimRewardV0Transactions.map(() => ({
-    encoding: "base64" as const,
-    addresses: [tokenAAta.toBase58(), tokenBAta.toBase58()],
-  }));
-  const simulationResponse = await sender.simulateBundle({
-    skipSigVerify: true,
-    replaceRecentBlockhash: true,
-    transactions: claimRewardV0Transactions,
-    preExecutionAccountsConfigs: accountConfigs,
-    postExecutionAccountsConfigs: accountConfigs,
-  });
-  console.log(simulationResponse, { depth: null });
-  throwBundleSimulationError(simulationResponse.result.value);
-
-  const tokenBalanceChanges = getTokenBalanceChangesFromBundleSimulation(
-    simulationResponse.result.value,
-  );
-
   const swapV0Transactions = [];
-  const tokens = [poolInfo.mintA, poolInfo.mintB];
 
-  for (const token of tokens) {
-    if (!isNative(token.address)) {
-      const quoteAmount = tokenBalanceChanges[token.address] ?? BigInt(0);
-      if (quoteAmount > BigInt(0)) {
-        const { transaction } = await dex.swap.jupiter.buildSwap({
-          slippage,
-          skipSimulation: true,
-          owner: wallet.publicKey,
-          outputMint: NATIVE_MINT,
-          amount: quoteAmount.toString(),
-          inputMint: new PublicKey(token.address),
-        });
+  if (swapToNative) {
+    const tokenAAta = getAssociatedTokenAddressSync(
+      new PublicKey(poolInfo.mintA.address),
+      wallet.publicKey,
+      false,
+      new PublicKey(poolInfo.mintA.programId),
+    );
+    const tokenBAta = getAssociatedTokenAddressSync(
+      new PublicKey(poolInfo.mintB.address),
+      wallet.publicKey,
+      false,
+      new PublicKey(poolInfo.mintB.programId),
+    );
 
-        swapV0Transactions.push(transaction);
+    const accountConfigs = claimRewardV0Transactions.map(() => ({
+      encoding: "base64" as const,
+      addresses: [tokenAAta.toBase58(), tokenBAta.toBase58()],
+    }));
+    const simulationResponse = await sender.simulateBundle({
+      skipSigVerify: true,
+      replaceRecentBlockhash: true,
+      transactions: claimRewardV0Transactions,
+      preExecutionAccountsConfigs: accountConfigs,
+      postExecutionAccountsConfigs: accountConfigs,
+    });
+
+    throwBundleSimulationError(simulationResponse.result.value);
+
+    const tokenBalanceChanges = getTokenBalanceChangesFromBundleSimulation(
+      simulationResponse.result.value,
+    );
+
+    const tokens = [poolInfo.mintA, poolInfo.mintB];
+
+    for (const token of tokens) {
+      if (!isNative(token.address)) {
+        const quoteAmount = tokenBalanceChanges[token.address] ?? BigInt(0);
+        if (quoteAmount > BigInt(0)) {
+          const { transaction } = await dex.swap.jupiter.buildSwap({
+            slippage,
+            skipSimulation: true,
+            owner: wallet.publicKey,
+            outputMint: NATIVE_MINT,
+            amount: quoteAmount.toString(),
+            inputMint: new PublicKey(token.address),
+          });
+
+          swapV0Transactions.push(transaction);
+        }
       }
     }
   }
@@ -520,9 +526,12 @@ export const reposition = async (
   const tickUpper = Math.max(...ticks);
 
   if (swapToNative) {
-    const inputAmount = new Decimal(
-      tokenBalanceChanges[NATIVE_MINT.toBase58()] || BigInt(0),
-    )
+    const rawInputAmount = tokenBalanceChanges[NATIVE_MINT.toBase58()];
+    assert(
+      rawInputAmount && rawInputAmount > BigInt(0),
+      "expected amount to be greater than 0",
+    );
+    const inputAmount = new Decimal(rawInputAmount)
       .div(Math.pow(10, 9))
       .toNumber();
     const response = await createPosition(dex, sender, wallet, {

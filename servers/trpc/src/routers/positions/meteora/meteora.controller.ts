@@ -152,14 +152,15 @@ export const claimReward = async (
     pair,
     slippage,
     jitoConfig,
-    position: positionPubkey,
+    swapToNative,
+    ...args
   }: Exclude<
     z.infer<typeof meteoraClaimRewardSchema>,
     { transactions: string[] }
-  >,
+  > & { pool?: DLMM },
 ) => {
-  const pool = await DLMM.create(dex.connection, pair);
-  const position = await pool.getPosition(positionPubkey);
+  const pool = args.pool ? args.pool : await DLMM.create(dex.connection, pair);
+  const position = await pool.getPosition(args.position);
   const claimRewardTransactions = await dex.dlmm.meteora.buildClaimReward({
     pool,
     position,
@@ -204,39 +205,42 @@ export const claimReward = async (
     addresses: [tokenAAta.toBase58(), tokenBAta.toBase58()],
   }));
 
-  const simulationResponse = await sender.simulateBundle({
-    transactions: claimRewardV0Transactions,
-    skipSigVerify: false,
-    preExecutionAccountsConfigs: accountConfigs,
-    postExecutionAccountsConfigs: accountConfigs,
-  });
+  const swapV0Transactions: VersionedTransaction[] = [];
 
-  throwBundleSimulationError(simulationResponse.result.value);
+  if (swapToNative) {
+    const simulationResponse = await sender.simulateBundle({
+      transactions: claimRewardV0Transactions,
+      skipSigVerify: false,
+      preExecutionAccountsConfigs: accountConfigs,
+      postExecutionAccountsConfigs: accountConfigs,
+    });
 
-  const tokenBalanceChanges = getTokenBalanceChangesFromBundleSimulation(
-    simulationResponse.result.value,
-  );
+    throwBundleSimulationError(simulationResponse.result.value);
 
-  const swapV0Transactions = [];
-  const tokenConfigs: [PublicKey, number][] = [
-    [pool.tokenX.mint.address, pool.tokenX.mint.decimals],
-    [pool.tokenY.mint.address, pool.tokenY.mint.decimals],
-  ];
+    const tokenBalanceChanges = getTokenBalanceChangesFromBundleSimulation(
+      simulationResponse.result.value,
+    );
 
-  for (const [mint] of tokenConfigs) {
-    if (!isNative(mint)) {
-      const quoteAmount = tokenBalanceChanges[mint.toBase58()] ?? BigInt(0);
-      if (quoteAmount > BigInt(0)) {
-        const { transaction } = await dex.swap.jupiter.buildSwap({
-          slippage,
-          inputMint: mint,
-          skipSimulation: true,
-          owner: wallet.publicKey,
-          outputMint: NATIVE_MINT,
-          amount: quoteAmount.toString(),
-        });
+    const tokenConfigs: [PublicKey, number][] = [
+      [pool.tokenX.mint.address, pool.tokenX.mint.decimals],
+      [pool.tokenY.mint.address, pool.tokenY.mint.decimals],
+    ];
 
-        swapV0Transactions.push(transaction);
+    for (const [mint] of tokenConfigs) {
+      if (!isNative(mint)) {
+        const quoteAmount = tokenBalanceChanges[mint.toBase58()] ?? BigInt(0);
+        if (quoteAmount > BigInt(0)) {
+          const { transaction } = await dex.swap.jupiter.buildSwap({
+            slippage,
+            inputMint: mint,
+            skipSimulation: true,
+            owner: wallet.publicKey,
+            outputMint: NATIVE_MINT,
+            amount: quoteAmount.toString(),
+          });
+
+          swapV0Transactions.push(transaction);
+        }
       }
     }
   }
@@ -250,11 +254,14 @@ export const claimReward = async (
     transactions,
     skipSigVerify: true,
     replaceRecentBlockhash: true,
+    preExecutionAccountsConfigs: accountConfigs,
+    postExecutionAccountsConfigs: accountConfigs,
   });
 
   throwBundleSimulationError(bundleSimulationResponse.result.value);
 
   return {
+    position,
     transactions,
     bundleSimulationResponse,
     async execute() {

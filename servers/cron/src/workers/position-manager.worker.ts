@@ -1,8 +1,8 @@
 import type z from "zod";
-import { eq } from "drizzle-orm";
-import type { Job } from "bullmq";
-import type { Logger } from "pino";
 import Dex from "@rhiva-ag/dex";
+import { eq } from "drizzle-orm";
+import type { Logger } from "pino";
+import { Worker, type Job } from "bullmq";
 import { settings, type Database } from "@rhiva-ag/datasource";
 import type { KMSSecret, Secret, SendTransaction } from "@rhiva-ag/shared";
 

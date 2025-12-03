@@ -42,7 +42,7 @@ COPY --from=codegen /usr/src/app/repl.config.ts ./repl.config.ts
 COPY --from=codegen /usr/src/app/out/full .
 RUN --mount=type=cache,target=/root/.bun/cache\
   bun install --frozen-lockfile  # instead of copying turbo json folder cache install instead.
-COPY --from=codegen /usr/src/app/servers/ecosystem.config.js servers/ecosystem.config.js
+COPY --from=codegen /usr/src/app/servers/ecosystem.config.cjs servers/ecosystem.config.cjs
 
 RUN bun x turbo run build
 

@@ -1,3 +1,4 @@
+import assert from "assert";
 import Decimal from "decimal.js";
 import { eq } from "drizzle-orm";
 import type { z } from "zod/mini";
@@ -8,6 +9,7 @@ import type { Whirlpool } from "@rhiva-ag/decoder/programs/idls/types/orca";
 import {
   pnls,
   rewards,
+  settings,
   positions,
   type Database,
   type walletSelectSchema,
@@ -17,7 +19,7 @@ import { upsertPool } from "./shared";
 import { syncOrcaPositions } from "./sync";
 import { sendNotification } from "../send-notification";
 import { getPositionById, getPositionsWhere } from "../shared";
-import type { transactionWorkSchema } from "../../workers/transaction.worker";
+import type { transactionWorkSchema } from "../../workers/schema";
 
 export const syncOrcaPositionStateFromEvent = async ({
   db,
@@ -45,6 +47,11 @@ export const syncOrcaPositionStateFromEvent = async ({
       const data = event.data;
       const positionId = data.position.toBase58();
       const pool = await upsertPool(db, rpc, data.whirlpool.toBase58());
+      const userSettings = await db.query.settings.findFirst({
+        where: eq(settings.user, wallet.user),
+      });
+
+      assert(userSettings, "userSettings expected not to be null");
 
       if (pool) {
         let amountUsd = 0;
@@ -92,6 +99,10 @@ export const syncOrcaPositionStateFromEvent = async ({
                 quoteToken: quoteTokenPrice,
               },
             },
+            lastRepositionTime: new Date(),
+            repositionTime: userSettings.rebalanceTime,
+            enableAutoClaim: userSettings.enableAutoClaim,
+            enableAutoCompound: userSettings.enableAutoClaim,
           },
         };
         const [position] = await db

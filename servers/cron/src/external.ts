@@ -3,4 +3,5 @@ export { positionWorkSchema } from "./workers/position.worker";
 export {
   transactionWorkSchema,
   transactionEventSchema,
-} from "./workers/transaction.worker";
+  positionManagerWorkSchema,
+} from "./workers/schema";

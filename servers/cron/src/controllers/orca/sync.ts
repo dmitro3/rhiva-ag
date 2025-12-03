@@ -1,4 +1,5 @@
 import type z from "zod";
+import moment from "moment";
 import Decimal from "decimal.js";
 import { PublicKey } from "@solana/web3.js";
 import { and, eq, inArray, not } from "drizzle-orm";
@@ -37,13 +38,14 @@ import {
   type Rpc,
   type Address,
   type GetEpochInfoApi,
-  type GetMultipleAccountsApi,
-  type GetProgramAccountsApi,
-  type GetTokenAccountsByOwnerApi,
   type ProgramDerivedAddress,
+  type GetProgramAccountsApi,
+  type GetMultipleAccountsApi,
+  type GetTokenAccountsByOwnerApi,
 } from "@solana/kit";
 
-import { getPositionsWhere } from "../shared";
+import { Work } from "../../constants";
+import { createQueue, getPositionsWhere } from "../shared";
 
 export const syncOrcaPositionsForWallet = async ({
   rpc,
@@ -220,6 +222,7 @@ export const syncOrcaPositions = async ({
     update: Partial<typeof positions.$inferInsert>;
   }[] = [];
 
+  const inActivePositions: PublicKey[] = [];
   const epochInfo = await rpc.getEpochInfo().send();
 
   for (const { pool, ...position } of whirlpoolPositionsWithTickAddress) {
@@ -254,6 +257,15 @@ export const syncOrcaPositions = async ({
     const active =
       pool.tickCurrentIndex >= position.data.tickLowerIndex &&
       pool.tickCurrentIndex <= position.data.tickUpperIndex;
+
+    if (!active && !offchainPosition.wallet.external) {
+      const deltaTime = moment().diff(
+        moment(offchainPosition.config.lastRepositionTime),
+      );
+      if (deltaTime >= offchainPosition.config.repositionTime)
+        inActivePositions.push(new PublicKey(position.pubkey));
+    }
+
     const lowerTickPrice = tickIndexToPrice(
       position.data.tickLowerIndex,
       offchainPosition.pool.baseToken.decimals,
@@ -433,8 +445,11 @@ export const syncOrcaPositions = async ({
       unclaimedRewardsFeeUsd: rewardAmountsUsd,
     });
   }
+
+  let result = null;
+
   if (pnlUpdates.length > 0) {
-    const result = await Promise.all([
+    result = await Promise.all([
       db
         .insert(pnls)
         .values(pnlUpdates)
@@ -466,7 +481,15 @@ export const syncOrcaPositions = async ({
           .returning(),
       ),
     ]);
-
-    return result.flat(2);
   }
+
+  if (inActivePositions.length > 0) {
+    const queue = createQueue(Work.positionManager);
+    queue.add(Work.positionManager, {
+      dex: "meteora",
+      positions: inActivePositions,
+    });
+  }
+
+  return result?.flat(2);
 };

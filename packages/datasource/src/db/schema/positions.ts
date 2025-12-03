@@ -37,6 +37,10 @@ export const positions = pgTable("positions", {
       extra?: Extra;
       history?: HistoricalData;
       priceRange?: [number, number];
+      repositionTime: number;
+      enableAutoClaim: boolean;
+      lastRepositionTime?: Date;
+      enableAutoCompound: boolean;
     }>()
     .notNull(),
   wallet: text()

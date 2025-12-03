@@ -1,4 +1,5 @@
 import Pino from "pino";
+import Dex from "@rhiva-ag/dex";
 import type Redis from "ioredis";
 import { DexApi } from "@rhiva-ag/dex-api";
 import type { RedisOptions } from "ioredis";
@@ -28,6 +29,7 @@ export const secret =
       });
 
 export const solanaConnection = new Connection(getEnv("SOLANA_RPC_URL"));
+export const dex = new Dex(solanaConnection);
 export const sender = new SendTransaction(
   getEnv("HELIUS_API_URL"),
   getEnv("HELIUS_API_KEY"),

@@ -1,4 +1,5 @@
 import type z from "zod";
+import assert from "assert";
 import Decimal from "decimal.js";
 import { eq } from "drizzle-orm";
 import type { Connection } from "@solana/web3.js";
@@ -11,13 +12,14 @@ import {
   rewards,
   type walletSelectSchema,
   type Database,
+  settings,
 } from "@rhiva-ag/datasource";
 
 import { upsertPool } from "./shared";
 import { syncMeteoraPositions } from "./sync";
 import { sendNotification } from "../send-notification";
 import { getPositionById, getPositionsWhere } from "../shared";
-import type { transactionWorkSchema } from "../../workers/transaction.worker";
+import type { transactionWorkSchema } from "../../workers/schema";
 
 export const syncMeteoraPositionStateFromEvent = async ({
   db,
@@ -49,6 +51,11 @@ export const syncMeteoraPositionStateFromEvent = async ({
       const data = event.data;
       const positionId = data.position.toBase58();
       const pool = await upsertPool(db, connection, data.lbPair.toBase58());
+      const userSettings = await db.query.settings.findFirst({
+        where: eq(settings.user, wallet.user),
+      });
+
+      assert(userSettings, "userSettings expected not to be null");
 
       if (pool) {
         const [rawAmountX, rawAmountY] = data.amounts;
@@ -94,6 +101,10 @@ export const syncMeteoraPositionStateFromEvent = async ({
                 quoteToken: quoteTokenPrice,
               },
             },
+            lastRepositionTime: new Date(),
+            repositionTime: userSettings.rebalanceTime,
+            enableAutoClaim: userSettings.enableAutoClaim,
+            enableAutoCompound: userSettings.enableAutoClaim,
           },
         };
 

@@ -1,3 +1,4 @@
+import moment from "moment";
 import type { z } from "zod/mini";
 import Decimal from "decimal.js";
 import { RaydiumCLMM } from "@rhiva-ag/dex";
@@ -29,7 +30,8 @@ import {
   getPdaPersonalPositionAddress,
 } from "@raydium-io/raydium-sdk-v2";
 
-import { getPositionsWhere } from "../shared";
+import { Work } from "../../constants";
+import { createQueue, getPositionsWhere } from "../shared";
 
 export const syncRaydiumPositionsForWallet = async ({
   db,
@@ -175,6 +177,8 @@ export const syncRaydiumPositions = async ({
     update: Partial<typeof positions.$inferInsert>;
   }[] = [];
 
+  const inActivePositions: PublicKey[] = [];
+
   for (const { pool, ...position } of clmmPositionsWithTickAddress) {
     const lowerTickArray = tickArraysMap.get(
       position.lowerTickArrayAddress.toBase58(),
@@ -196,6 +200,15 @@ export const syncRaydiumPositions = async ({
     const active =
       pool.tickCurrent >= position.tickLower &&
       pool.tickCurrent <= position.tickUpper;
+
+    if (!active && !offchainPosition.wallet.external) {
+      const deltaTime = moment().diff(
+        moment(offchainPosition.config.lastRepositionTime),
+      );
+      if (deltaTime >= offchainPosition.config.repositionTime)
+        inActivePositions.push(position.publicKey);
+    }
+
     const lowerTickPrice = SqrtPriceMath.sqrtPriceX64ToPrice(
       SqrtPriceMath.getSqrtPriceX64FromTick(position.tickLower),
       offchainPosition.pool.baseToken.decimals,
@@ -339,8 +352,10 @@ export const syncRaydiumPositions = async ({
     });
   }
 
+  let result = null;
+
   if (pnlUpdates.length > 0) {
-    const result = await Promise.all([
+    result = await Promise.all([
       db
         .insert(pnls)
         .values(pnlUpdates)
@@ -372,7 +387,15 @@ export const syncRaydiumPositions = async ({
           .returning(),
       ),
     ]);
-
-    return result.flat(2);
   }
+
+  if (inActivePositions.length > 0) {
+    const queue = createQueue(Work.positionManager);
+    queue.add(Work.positionManager, {
+      dex: "meteora",
+      positions: inActivePositions,
+    });
+  }
+
+  return result?.flat(2);
 };

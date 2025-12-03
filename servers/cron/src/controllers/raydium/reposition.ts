@@ -1,52 +1,41 @@
-import type z from "zod";
-import { PublicKey } from "@solana/web3.js";
 import type Dex from "@rhiva-ag/dex";
+import { PublicKey } from "@solana/web3.js";
 import { fromLegacyPublicKey } from "@solana/compat";
 import { repositionRaydiumPosition } from "@rhiva-ag/trpc";
-import type {
-  positionSelectSchema,
-  settingsSelectSchema,
-  walletSchema,
-} from "@rhiva-ag/datasource";
 import {
   fromKeyPairToWalletAdapter,
   loadWallet,
+  type Secret,
   type KMSSecret,
   type SendTransaction,
 } from "@rhiva-ag/shared";
 
 import { Work } from "../../constants";
+import type { Position } from "../types";
 import { createQueue } from "../../../../trpc/src/routers/positions/shared";
 
 export const repositionRaydiumPositions = async (
   {
     dex,
     sender,
-    settings,
     secret,
-    ...args
   }: {
     dex: Dex;
-    secret: KMSSecret;
     sender: SendTransaction;
-    settings: z.infer<typeof settingsSelectSchema>;
-    wallet: Pick<
-      z.infer<typeof walletSchema>,
-      "id" | "key" | "user" | "wrappedDek"
-    >;
+    secret: KMSSecret | Secret;
   },
-  ...positions: Pick<z.infer<typeof positionSelectSchema>, "id" | "pool">[]
+  ...positions: Position[]
 ) => {
   const queue = createQueue();
   for (const position of positions) {
-    const wallet = await loadWallet(args.wallet, secret);
+    const wallet = await loadWallet(position.wallet, secret);
     const { execute, positionMint } = await repositionRaydiumPosition(
       dex,
       sender,
       fromKeyPairToWalletAdapter(wallet),
       {
-        type: settings.rebalanceType,
-        slippage: settings.slippage * 100,
+        type: position.wallet.user.settings.rebalanceType,
+        slippage: position.wallet.user.settings.slippage * 100,
         pair: new PublicKey(position.pool.id),
         position: new PublicKey(position.id),
         jitoConfig: {
@@ -62,8 +51,8 @@ export const repositionRaydiumPositions = async (
       dex: "raydium-clmm",
       type: "repositioned",
       wallet: {
-        id: args.wallet.id,
-        user: args.wallet.user,
+        id: position.wallet.id,
+        user: position.wallet.user.id,
       },
       positionMint: fromLegacyPublicKey(positionMint),
     });

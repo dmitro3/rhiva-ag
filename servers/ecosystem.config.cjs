@@ -1,9 +1,26 @@
+const path = require("path");
+const { readdirSync } = require("fs");
+
 require("dotenv").config();
 
 const os = require("os");
 const { execSync } = require("child_process");
+const { format } = require("util");
 
 const interpreter = execSync("which bun").toString().trim();
+
+const scriptPath = "cron/src/workers";
+const workerScripts = readdirSync(scriptPath, { recursive: true });
+
+const workerEntries = workerScripts
+  .filter((script) => /worker.*$/.test(script))
+  .map((script) => ({
+    interpreter,
+    exec_mode: "fork",
+    script: path.join(scriptPath, script),
+    name: format("%s-worker", script.split(/.worker.*$/)[0]),
+    instances: Math.min(3, Math.round(os.cpus().length / 2)),
+  }));
 
 module.exports = {
   apps: [
@@ -38,12 +55,6 @@ module.exports = {
       exec_mode: "fork",
       script: "cron/src/schedules/index.ts",
     },
-    {
-      interpreter,
-      name: "workers",
-      exec_mode: "fork",
-      script: "cron/src/workers/index.ts",
-      instances: Math.min(3, Math.round(os.cpus().length / 2)),
-    },
+    ...workerEntries,
   ],
 };

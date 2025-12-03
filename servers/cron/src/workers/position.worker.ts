@@ -1,5 +1,4 @@
 import z from "zod";
-import { cpus } from "os";
 import type { Logger } from "pino";
 import { type Job, Worker } from "bullmq";
 import { createSolanaRpc } from "@solana/kit";
@@ -7,11 +6,18 @@ import type { Connection } from "@solana/web3.js";
 import type { Database } from "@rhiva-ag/datasource";
 import type Coingecko from "@coingecko/coingecko-typescript";
 
-import { Work } from "../constants";
-import { createRedis } from "../instances";
+import { runWorker } from "../runner";
+import { CONCURRENT_WORK, Work } from "../constants";
 import { syncOrcaPositionsForWallet } from "../controllers/orca";
 import { syncRaydiumPositionsForWallet } from "../controllers/raydium";
 import { syncMeteoraPositionsForWallet } from "../controllers/meteora";
+import {
+  db,
+  logger,
+  coingecko,
+  createRedis,
+  solanaConnection,
+} from "../instances";
 
 export const positionWorkSchema = z.object({
   wallet: z.object({
@@ -20,7 +26,7 @@ export const positionWorkSchema = z.object({
   dex: z.enum(["meteora", "orca", "raydium-clmm"]),
 });
 
-export default async function createWorker({
+const fn = async ({
   db,
   logger,
   coingecko,
@@ -30,7 +36,7 @@ export default async function createWorker({
   logger: Logger;
   coingecko: Coingecko;
   connection: Connection;
-}) {
+}) => {
   const worker = new Worker(
     Work.syncPosition,
     async ({ data }: Job<z.infer<typeof positionWorkSchema>>) => {
@@ -72,7 +78,7 @@ export default async function createWorker({
       );
     },
     {
-      concurrency: cpus().length,
+      concurrency: CONCURRENT_WORK,
       connection: createRedis({ maxRetriesPerRequest: null }),
     },
   );
@@ -108,4 +114,13 @@ export default async function createWorker({
     await worker.close();
     await worker.disconnect();
   };
-}
+};
+
+export default runWorker(
+  fn({
+    db,
+    logger,
+    coingecko,
+    connection: solanaConnection,
+  }),
+);

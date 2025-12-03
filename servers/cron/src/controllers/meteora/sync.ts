@@ -1,3 +1,4 @@
+import moment from "moment";
 import Decimal from "decimal.js";
 import type { z } from "zod/mini";
 import { and, eq, inArray, not } from "drizzle-orm";
@@ -14,8 +15,9 @@ import {
   type walletSchema,
 } from "@rhiva-ag/datasource";
 
-import { getPositionsWhere } from "../shared";
+import { Work } from "../../constants";
 import { fromPricePerLamport } from "./shared";
+import { createQueue, getPositionsWhere } from "../shared";
 
 export const syncMeteoraPositionsForWallet = async ({
   db,
@@ -119,6 +121,8 @@ export const syncMeteoraPositions = async ({
     update: Partial<typeof positions.$inferInsert>;
   }[] = [];
 
+  const inActivePositions: PublicKey[] = [];
+
   for (const { lbPair, ...position } of lbPairWithPositions) {
     const activeBin = lbPair.activeId;
 
@@ -131,6 +135,15 @@ export const syncMeteoraPositions = async ({
     const active =
       activeBin >= position.positionData.lowerBinId &&
       activeBin <= position.positionData.upperBinId;
+
+    if (!active && !offchainPosition.wallet.external) {
+      const deltaTime = moment().diff(
+        moment(offchainPosition.config.lastRepositionTime),
+      );
+      if (deltaTime >= offchainPosition.config.repositionTime)
+        inActivePositions.push(position.publicKey);
+    }
+
     const lowerBinPrice = fromPricePerLamport(
       getPriceOfBinByBinId(position.positionData.lowerBinId, lbPair.binStep),
       pool.baseToken.decimals,
@@ -271,8 +284,10 @@ export const syncMeteoraPositions = async ({
     });
   }
 
+  let result = null;
+
   if (pnlUpdates.length > 0) {
-    const result = await Promise.all([
+    result = await Promise.all([
       db
         .insert(pnls)
         .values(pnlUpdates)
@@ -309,7 +324,15 @@ export const syncMeteoraPositions = async ({
           .returning(),
       ),
     ]);
-
-    return result.flat(2);
   }
+
+  if (inActivePositions.length > 0) {
+    const queue = createQueue(Work.positionManager);
+    queue.add(Work.positionManager, {
+      dex: "meteora",
+      positions: inActivePositions,
+    });
+  }
+
+  return result?.flat(2);
 };

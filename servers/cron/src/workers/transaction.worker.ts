@@ -1,6 +1,5 @@
 // todo: this worker can optimize the instruction and transaction step and eliminate preconfig of accounts in job data
-import { z } from "zod";
-import { cpus } from "os";
+import type { z } from "zod";
 import pRetry from "p-retry";
 import { Worker } from "bullmq";
 import type { Logger } from "pino";
@@ -8,13 +7,8 @@ import { Pipeline } from "@rhiva-ag/decoder";
 import type { Connection } from "@solana/web3.js";
 import type Coingecko from "@coingecko/coingecko-typescript";
 import { mapFilter, type SendTransaction } from "@rhiva-ag/shared";
+import type { walletSelectSchema, Database } from "@rhiva-ag/datasource";
 import { createSolanaRpc, type Rpc, type SolanaRpcApi } from "@solana/kit";
-import {
-  address,
-  walletSchema,
-  type walletSelectSchema,
-  type Database,
-} from "@rhiva-ag/datasource";
 import {
   RaydiumProgramEventProcessor,
   RaydiumProgramInstructionProcessor,
@@ -30,71 +24,24 @@ import {
   MeteoraProgramInstructionEventProcessor,
 } from "@rhiva-ag/decoder/programs/meteora/index";
 
-import { Work } from "../constants";
-import { createRedis } from "../instances";
+import { CONCURRENT_WORK, Work } from "../constants";
+import { runWorker } from "../runner";
+import { transactionWorkSchema } from "./schema";
 import { syncOrcaPositionStateFromEvent } from "../controllers/orca";
 import { syncRaydiumPositionStateFromEvent } from "../controllers/raydium";
 import { syncMeteoraPositionStateFromEvent } from "../controllers/meteora";
 import { syncOrcaPositionStateFromInstructions } from "../controllers/orca/instruction";
 import { syncRaydiumPositionStateFromInstructions } from "../controllers/raydium/instruction";
+import {
+  db,
+  logger,
+  sender,
+  coingecko,
+  createRedis,
+  solanaConnection,
+} from "../instances";
 
-export const transactionWorkSchema = z
-  .union([
-    z
-      .union([
-        z.object({
-          dex: z.literal("meteora"),
-        }),
-        z.object({
-          positionMint: address(),
-          dex: z.enum(["orca", "raydium-clmm"]),
-        }),
-      ])
-      .and(
-        z.object({
-          type: z.enum(["create-position", "repositioned", "claimed-rewards"]),
-        }),
-      ),
-    z.object({
-      dex: z.enum(["orca", "meteora", "raydium-clmm"]),
-      type: z.enum(["closed-position", "rebalanced-position"]),
-    }),
-  ])
-  .and(
-    z.object({
-      bundleId: z.string(),
-      wallet: walletSchema.pick({ id: true, user: true }),
-    }),
-  );
-export const transactionEventSchema = z
-  .union([
-    z.object({
-      result: z.unknown().optional(),
-      status: z.enum(["queued", "pending", "completed"]),
-    }),
-    z.object({
-      status: z.literal("error"),
-      failedReason: z.string().optional(),
-      stacktrace: z.array(z.string()).optional(),
-    }),
-    z.object({
-      status: z.literal("progress"),
-    }),
-  ])
-  .and(
-    z.object({
-      jobId: z.string(),
-      message: z.string().optional(),
-      type: z.enum([
-        "create-position",
-        "closed-position",
-        "rebalanced-position",
-        "repositioned",
-      ]),
-    }),
-  );
-
-export const createTransactionPipeline = ({
+const createTransactionPipeline = ({
   db,
   rpc,
   type,
@@ -225,7 +172,7 @@ export const createInstructionPipeline = ({
     ),
   ]);
 
-export default async function createWorker({
+const fn = async ({
   db,
   logger,
   sender,
@@ -237,7 +184,7 @@ export default async function createWorker({
   coingecko: Coingecko;
   connection: Connection;
   sender: SendTransaction;
-}) {
+}) => {
   const rpc = createSolanaRpc(connection.rpcEndpoint);
   const worker = new Worker<z.infer<typeof transactionWorkSchema>>(
     Work.syncTransaction,
@@ -308,7 +255,7 @@ export default async function createWorker({
       );
     },
     {
-      concurrency: cpus().length,
+      concurrency: CONCURRENT_WORK,
       connection: createRedis({ maxRetriesPerRequest: null }),
     },
   );
@@ -380,4 +327,14 @@ export default async function createWorker({
     await worker.close();
     await worker.disconnect();
   };
-}
+};
+
+export default runWorker(
+  fn({
+    db,
+    logger,
+    sender,
+    coingecko,
+    connection: solanaConnection,
+  }),
+);

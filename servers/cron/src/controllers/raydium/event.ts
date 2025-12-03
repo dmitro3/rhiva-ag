@@ -1,5 +1,6 @@
 import type z from "zod";
 import moment from "moment";
+import assert from "assert";
 import Decimal from "decimal.js";
 import { eq } from "drizzle-orm";
 import { Raydium } from "@raydium-io/raydium-sdk-v2";
@@ -8,18 +9,19 @@ import type Coingecko from "@coingecko/coingecko-typescript";
 import { PublicKey, type Connection } from "@solana/web3.js";
 import type { AmmV3 } from "@rhiva-ag/decoder/programs/idls/types/raydium";
 import {
+  pnls,
+  rewards,
+  settings,
+  positions,
   type Database,
   type walletSelectSchema,
-  pnls,
-  positions,
-  rewards,
 } from "@rhiva-ag/datasource";
 
 import { upsertPool } from "./shared";
 import { syncRaydiumPositions } from "./sync";
 import { sendNotification } from "../send-notification";
 import { getPositionById, getPositionsWhere } from "../shared";
-import type { transactionWorkSchema } from "../../workers/transaction.worker";
+import type { transactionWorkSchema } from "../../workers/schema";
 
 export const syncRaydiumPositionStateFromEvent = async ({
   db,
@@ -47,6 +49,11 @@ export const syncRaydiumPositionStateFromEvent = async ({
     if (event.name === "createPersonalPositionEvent") {
       const data = event.data;
       const pool = await upsertPool(db, connection, data.poolState.toBase58());
+      const userSettings = await db.query.settings.findFirst({
+        where: eq(settings.user, wallet.user),
+      });
+
+      assert(userSettings, "userSettings expected not to be null");
 
       if (pool && positionMint) {
         let amountUsd = 0;
@@ -93,6 +100,10 @@ export const syncRaydiumPositionStateFromEvent = async ({
                 quoteToken: quoteTokenPrice,
               },
             },
+            lastRepositionTime: new Date(),
+            repositionTime: userSettings.rebalanceTime,
+            enableAutoClaim: userSettings.enableAutoClaim,
+            enableAutoCompound: userSettings.enableAutoClaim,
           },
         };
         const isRebalanced = type === "rebalanced-position";

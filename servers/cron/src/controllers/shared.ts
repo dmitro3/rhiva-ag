@@ -6,6 +6,9 @@ import {
   type poolSelectSchema,
   positions,
 } from "@rhiva-ag/datasource";
+import { Queue } from "bullmq";
+import { createRedis } from "../instances";
+import type { Work } from "../constants";
 
 export const getPositionsWhere = async (
   db: Database,
@@ -24,6 +27,7 @@ export const getPositionsWhere = async (
         columns: {
           id: true,
           user: true,
+          external: true,
         },
       },
       pool: {
@@ -132,3 +136,6 @@ export const getPositionById = async (
       where: eq(positions.id, id),
     })
     .execute();
+
+export const createQueue = <T>(queueName: Work) =>
+  new Queue<T>(queueName, { connection: createRedis() });

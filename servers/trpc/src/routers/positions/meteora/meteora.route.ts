@@ -48,6 +48,7 @@ export const meteoraRoute = router({
 
         const dex = new Dex(ctx.connection);
         const owner = await loadWallet(ctx.user.wallet, ctx.secret);
+        console.log(ctx.user.wallet, owner.publicKey.toBase58());
         const wallet = fromKeyPairToWalletAdapter(owner);
         const { execute } = await createPosition(
           dex,

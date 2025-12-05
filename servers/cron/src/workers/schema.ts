@@ -3,6 +3,13 @@ import { address, walletSchema } from "@rhiva-ag/datasource";
 
 import { supportedDexes } from "../constants";
 
+export const positionWorkSchema = z.object({
+  wallet: z.object({
+    id: z.string(),
+  }),
+  dex: z.enum(["meteora", "orca", "raydium-clmm"]),
+});
+
 export const transactionWorkSchema = z
   .union([
     z

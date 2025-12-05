@@ -34,11 +34,11 @@ export const createWallet = async (
       user: input.user,
     };
   } else {
-    const keypair = Keypair.generate();
+    let keypair = Keypair.generate();
     let wrappedDek: string | undefined, encryptedText: string | undefined;
 
     if (secret instanceof KMSSecret) {
-      const keypair = Keypair.generate();
+      keypair = Keypair.generate();
       const { wrappedDek: dek, encryptedText: key } = await secret.encrypt(
         keypair.secretKey.toBase64(),
       );

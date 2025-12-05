@@ -1,4 +1,4 @@
-import z from "zod";
+import type z from "zod";
 import type { Logger } from "pino";
 import { type Job, Worker } from "bullmq";
 import { createSolanaRpc } from "@solana/kit";
@@ -7,6 +7,7 @@ import type { Database } from "@rhiva-ag/datasource";
 import type Coingecko from "@coingecko/coingecko-typescript";
 
 import { runWorker } from "../runner";
+import { positionWorkSchema } from "./schema";
 import { CONCURRENT_WORK, Work } from "../constants";
 import { syncOrcaPositionsForWallet } from "../controllers/orca";
 import { syncRaydiumPositionsForWallet } from "../controllers/raydium";
@@ -18,13 +19,6 @@ import {
   createRedis,
   solanaConnection,
 } from "../instances";
-
-export const positionWorkSchema = z.object({
-  wallet: z.object({
-    id: z.string(),
-  }),
-  dex: z.enum(["meteora", "orca", "raydium-clmm"]),
-});
 
 const fn = async ({
   db,

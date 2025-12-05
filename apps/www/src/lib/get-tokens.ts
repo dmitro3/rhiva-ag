@@ -53,7 +53,7 @@ export const getWalletTokens = async (
 
   const tokenAccounts = tokenAccountInfos.flat();
 
-  if (tokenAccounts.length === 0 || nativeBalance === 0) return [];
+  if (tokenAccounts.length === 0 && nativeBalance === 0) return [];
 
   const mints = [
     NATIVE_MINT.toString(),
@@ -91,6 +91,7 @@ export const getWalletPNL = async (
   ...args: Parameters<typeof getWalletTokens>
 ) => {
   const tokens = await getWalletTokens(...args);
+  console.log(tokens);
   let balance24h = 0;
   let balance = 0;
 

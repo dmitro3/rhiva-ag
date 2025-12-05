@@ -52,7 +52,7 @@ export const mcpClient = new McpClient(
 export const createRedis = (options?: RedisOptions) => {
   let redis: Redis;
 
-  if (process.env.NODE_ENV === "production")
+  if (!process.env.NODE_ENV === "production")
     redis = defaultCreateRedis({
       name: getEnv("REDIS_MASTER_NAME"),
       max: getEnv("REDIS_MAX_SENTINELS", Number),

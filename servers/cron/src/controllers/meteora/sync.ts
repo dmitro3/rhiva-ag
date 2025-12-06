@@ -323,7 +323,6 @@ export const syncMeteoraPositions = async ({
             "updatedAt",
             "baseAmount",
             "quoteAmount",
-            "claimedFeeUsd",
             "claimedBaseFee",
             "claimedQuoteFee",
             "claimedBaseFeeUsd",

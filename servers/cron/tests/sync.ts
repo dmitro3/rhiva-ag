@@ -1,13 +1,13 @@
 import { solanaConnection, db, coingecko } from "../src/instances";
-import { syncRaydiumPositionsForWallet } from "../src/controllers/raydium";
+import { syncMeteoraPositionsForWallet } from "../src/controllers/meteora";
 
 (async () => {
   console.log(
-    await syncRaydiumPositionsForWallet({
+    await syncMeteoraPositionsForWallet({
       db,
       coingecko,
       wallet: {
-        id: "GQFJibdqFGdNXm5PKvm4MmEDgNXHP1JcXNonedi2Z7kT",
+        id: "DUhm8aTpGsaYzbo2JQ5hhrNf9KANxuQcqNXJSCQsWpfX",
       },
       connection: solanaConnection,
     }),

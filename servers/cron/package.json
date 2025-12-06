@@ -18,7 +18,7 @@
     "check": "tsc --noEmit",
     "codegen": "bun x @rhiva-ag/env",
     "build": "tsup src/external.ts src/schedules/index.ts src/workers/index.ts --minify --treeshake",
-    "dev": "bun run --watch src/schedules/index.ts & bun run --watch src/workers/index.ts"
+    "dev": "bun run --watch src/schedules/index.ts & bun run --watch src/workers/position.worker.ts & bun run --watch src/workers/transaction.worker.ts & bun run --watch src/workers/position-manager.worker.ts"
   },
   "peerDependencies": {
     "@meteora-ag/dlmm": "../../bin/meteora-ag-dlmm-0.0.0.tgz",

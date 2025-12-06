@@ -472,9 +472,9 @@ export const syncOrcaPositions = async ({
           set: buildConflictUpdateColumns(pnls, [
             "state",
             "pnlUsd",
+            "updatedAt",
             "baseAmount",
             "quoteAmount",
-            "claimedFeeUsd",
             "baseAmountUsd",
             "quoteAmountUsd",
             "unclaimedBaseFee",

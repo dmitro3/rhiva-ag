@@ -129,7 +129,7 @@ const fn = async ({
   };
 
   const worker = new Worker(
-    Work.syncPosition,
+    Work.positionManager,
     async ({ data }: Job<z.infer<typeof positionManagerWorkSchema>>) => {
       logger.info({ data }, "position.manager.worker");
       const result = positionManagerWorkSchema.safeParse(data);

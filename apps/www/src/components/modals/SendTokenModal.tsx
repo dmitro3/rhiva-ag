@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import Decimal from "decimal.js";
 import { toast } from "react-toastify";
 import { MdClose } from "react-icons/md";
 import { number, object, string } from "yup";
@@ -81,7 +82,7 @@ function SendTokenForm(props: React.ComponentProps<typeof Form>) {
       <Formik
         validationSchema={object({
           recipient: string().required(),
-          inputAmount: number()
+          amount: number()
             .label("amount")
             .min(0, "Invalid amount")
             .max(token.balance)
@@ -98,8 +99,11 @@ function SendTokenForm(props: React.ComponentProps<typeof Form>) {
               recipient: values.recipient,
               inputDecimals: token.decimals,
               inputTokenProgram: token.tokenProgram,
-              inputAmount:
-                BigInt(values.amount) * BigInt(Math.pow(10, token.decimals)),
+              inputAmount: BigInt(
+                new Decimal(values.amount)
+                  .mul(Math.pow(10, token.decimals))
+                  .toFixed(0),
+              ),
             };
             const signature = await mutateAsync(sendValues);
             if (analytics)

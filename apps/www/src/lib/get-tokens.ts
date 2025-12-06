@@ -91,7 +91,6 @@ export const getWalletPNL = async (
   ...args: Parameters<typeof getWalletTokens>
 ) => {
   const tokens = await getWalletTokens(...args);
-  console.log(tokens);
   let balance24h = 0;
   let balance = 0;
 

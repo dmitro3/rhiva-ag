@@ -136,18 +136,20 @@ export async function GET(request: NextRequest) {
               {name}
             </Text>
           </div>
-          {!pnl.hideProfit && (
-            <Text
-              style={{
-                fontSize: 64,
-                fontWeight: 900,
-                fontFamily: "Gobold",
-                color: getNumberColor(pnl.pnlUsd),
-              }}
-            >
-              {currencyWithSignIntl.format(pnl.pnlUsd)}
-            </Text>
-          )}
+
+          <Text
+            style={{
+              fontSize: 64,
+              fontWeight: 900,
+              fontFamily: "Gobold",
+              color: getNumberColor(pnl.pnlUsd),
+            }}
+          >
+            {pnl.hideProfit
+              ? percentageIntl.format(pnlPercentage)
+              : currencyWithSignIntl.format(pnl.pnlUsd)}
+          </Text>
+
           <div style={{ display: "flex", flexDirection: "row", columnGap: 64 }}>
             {!pnl.hideBalance && (
               <div
@@ -165,25 +167,27 @@ export async function GET(request: NextRequest) {
                 </Text>
               </div>
             )}
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-end",
-              }}
-            >
-              <Text style={{ color: grey, textTransform: "uppercase" }}>
-                PNL
-              </Text>
-              <Text
+            {!pnl.hideProfit && (
+              <div
                 style={{
-                  color: getNumberColor(pnlPercentage),
-                  fontWeight: 600,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-end",
                 }}
               >
-                {percentageIntl.format(pnlPercentage)}
-              </Text>
-            </div>
+                <Text style={{ color: grey, textTransform: "uppercase" }}>
+                  PNL
+                </Text>
+                <Text
+                  style={{
+                    color: getNumberColor(pnlPercentage),
+                    fontWeight: 600,
+                  }}
+                >
+                  {percentageIntl.format(pnlPercentage)}
+                </Text>
+              </div>
+            )}
           </div>
         </div>
       </div>,

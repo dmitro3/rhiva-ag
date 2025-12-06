@@ -108,14 +108,14 @@ export default function PositionDetailModal({
               <div className="flex space-x-4">
                 <div className="flex items-center space-x-2">
                   <Toggle
-                    value={showProfit}
+                    value={!showProfit}
                     onChange={setShowProfit}
                   />
                   <span>Hide Profit</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Toggle
-                    value={showBalance}
+                    value={!showBalance}
                     onChange={setShowBalance}
                   />
                   <span>Hide Balance</span>
@@ -139,10 +139,10 @@ export default function PositionDetailModal({
               </button>
               <Link
                 href={pnlUrl}
-                download
                 type="button"
                 target="_blank"
                 rel="noopener noreferrer"
+                download={format("%s.png", position.id)}
                 className="w-36 flex items-center justify-center space-x-2 bg-primary text-black px-4 py-2 rounded"
               >
                 <BsDownload size={18} />

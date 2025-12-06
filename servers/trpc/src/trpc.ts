@@ -7,36 +7,25 @@ import type { Context } from "./context";
 
 const t = initTRPC.context<Context>().create({
   transformer: superjson,
-  errorFormatter(opts) {
-    const { shape, error } = opts;
-    console.error(error);
-    if (error.cause instanceof XiorError) {
-      return {
-        ...shape,
-        message: error.cause.response?.data,
-        data: {
-          ...shape.data,
-          code: "INTERNAL_SERVER_ERROR",
-        },
-      };
-    }
-    if (error.cause instanceof SimulationError)
-      return {
-        ...shape,
-        message: error.cause.logs,
-        data: {
-          ...shape.data,
-          code: "BAD_REQUEST",
-        },
-      };
-
-    return shape;
-  },
 });
 
 export const router = t.router;
-export const publicProcedure = t.procedure;
-export const privateProcedure = t.procedure.use(({ ctx, next, input }) => {
+export const publicProcedure = t.procedure.use(async ({ ctx, next, input }) => {
+  const response = await next({ ctx, input });
+  if (response.ok) return response;
+  if (response.error.cause instanceof XiorError)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: response.error.cause.response?.data,
+    });
+  if (response.error.cause instanceof SimulationError)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: response.error.cause?.logs.join("\n"),
+    });
+  return response;
+});
+export const privateProcedure = publicProcedure.use(({ ctx, next, input }) => {
   if (ctx.user) return next({ ctx: { ...ctx, user: ctx.user }, input });
 
   throw new TRPCError({ code: "UNAUTHORIZED" });

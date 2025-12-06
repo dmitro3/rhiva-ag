@@ -122,13 +122,12 @@ export const createPosition = async (
       tokenExtension,
     );
 
-    const quoteResponse = await dex.swap.jupiter.jupiter.quoteGet({
+    const quoteResponse = await dex.swap.jupiter.quoteGet({
       outputMint: NATIVE_MINT.toBase58(),
       inputMint: (baseIn
         ? poolData.tokenMintB
         : poolData.tokenMintA
       ).toString(),
-      //@ts-expect-error
       amount: baseIn ? quote.tokenEstB.toString() : quote.tokenEstA.toString(),
     });
 
@@ -529,12 +528,11 @@ export const reposition = async (
       );
       const mintBBalance = new BN(mintBBalanceResponse.value.amount);
       if (quote.tokenEstB.gt(mintBBalance)) {
-        const quoteResponse = await dex.swap.jupiter.jupiter.quoteGet({
+        const quoteResponse = await dex.swap.jupiter.quoteGet({
           slippageBps: args.slippage,
           outputMint: NATIVE_MINT.toBase58(),
           inputMint: tokenBInfo.address.toBase58(),
-          // @ts-expect-error
-          amount: quote.amountB.amount.toString(),
+          amount: quote.tokenEstB.toString(),
         });
 
         const { transaction } = await dex.swap.jupiter.buildSwap({
@@ -545,6 +543,7 @@ export const reposition = async (
           inputMint: quoteResponse.outputMint,
           outputMint: quoteResponse.inputMint,
         });
+
         swapV0Transactions.push(transaction);
       }
     }

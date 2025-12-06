@@ -115,11 +115,9 @@ function SwapForm({
             prioritizationFeeLamports: {
               jitoTipLamports,
             },
-            amount: BigInt(
-              new Decimal(values.inputAmount)
-                .mul(Math.pow(10, values.inputToken.decimals))
-                .toFixed(0),
-            ),
+            amount: new Decimal(values.inputAmount)
+              .mul(Math.pow(10, values.inputToken.decimals))
+              .toFixed(0),
           });
 
           data = {
@@ -168,15 +166,12 @@ function SwapForm({
       values.inputAmount,
     ],
     queryFn: () =>
-      dex.swap.jupiter.jupiter.quoteGet({
+      dex.swap.jupiter.quoteGet({
         inputMint: values.inputToken.mint,
         outputMint: values.outputToken.mint,
-        // @ts-expect-error invalid openapi type
-        amount: BigInt(
-          new Decimal(values.inputAmount)
-            .mul(Math.pow(10, values.inputToken.decimals))
-            .toFixed(0),
-        ),
+        amount: new Decimal(values.inputAmount)
+          .mul(Math.pow(10, values.inputToken.decimals))
+          .toFixed(0),
       }),
   });
 

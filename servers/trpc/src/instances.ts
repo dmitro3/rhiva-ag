@@ -14,7 +14,7 @@ import {
 import { getEnv } from "./env";
 
 export const secret =
-  process.env.NODE_ENV === "production"
+  "NODE_ENV" in process.env
     ? new KMSSecret(getEnv("AWS_KMS_KEY_ID"), getEnv("AWS_REGION"), {
         ivLength: 12,
         algorithm: "aes-256-gcm",

@@ -1,8 +1,9 @@
-import type { QuoteResponse, SwapApi } from "@jup-ag/api";
+import xior, { type XiorInstance } from "xior";
 import {
-  getTokenBalanceChangesFromSimulation,
   mapFilter,
   throwSimulationError,
+  buildPathWithQueryString,
+  getTokenBalanceChangesFromSimulation,
 } from "@rhiva-ag/shared";
 import {
   AccountLayout,
@@ -13,6 +14,12 @@ import {
   type Connection,
   VersionedTransaction,
 } from "@solana/web3.js";
+import type {
+  SwapResponse,
+  SwapQuoteResponse,
+  SwapRequestQueryParams,
+  SwapQuoteRequestQueryParams,
+} from "./types";
 
 type SwapArgs = {
   slippage: number;
@@ -27,19 +34,40 @@ type SwapArgs = {
 };
 
 export class Jupiter {
+  readonly xior: XiorInstance;
   constructor(
-    readonly jupiter: SwapApi,
+    readonly baseURL: string,
     private readonly connection: Connection,
-  ) {}
+  ) {
+    this.xior = xior.create({
+      baseURL: this.baseURL,
+    });
+  }
+
+  async quoteGet(params: SwapQuoteRequestQueryParams) {
+    const { data } = await this.xior.get<SwapQuoteResponse>(
+      buildPathWithQueryString("/swap/v1/quote", params),
+    );
+
+    return data;
+  }
+
+  async swapPost(params: SwapRequestQueryParams) {
+    const { data } = await this.xior.post<SwapResponse>(
+      "/swap/v1/swap",
+      params,
+    );
+    return data;
+  }
 
   buildSwap(args: SwapArgs & { skipSimulation?: false }): Promise<{
     transaction: VersionedTransaction;
     quote: { [k: string]: bigint };
-    quoteResponse: QuoteResponse;
+    quoteResponse: SwapQuoteResponse;
   }>;
   buildSwap(args: SwapArgs & { skipSimulation: true }): Promise<{
     transaction: VersionedTransaction;
-    quoteResponse: QuoteResponse;
+    quoteResponse: SwapQuoteResponse;
   }>;
   async buildSwap({
     owner,
@@ -63,26 +91,22 @@ export class Jupiter {
       outputMintPubkey,
       ownerPubkey,
     );
-
-    const quoteResponse = await this.jupiter.quoteGet({
+    const quoteResponse = await this.quoteGet({
       slippageBps: slippage,
-      // @ts-expect-error jupiter v6 api expect bigint string
       amount: amount.toString(),
       inputMint: inputMintPubkey.toBase58(),
       outputMint: outputMintPubkey.toBase58(),
     });
 
-    const swapResponse = await this.jupiter.swapPost({
-      swapRequest: {
-        quoteResponse,
-        dynamicSlippage: true,
-        prioritizationFeeLamports,
-        dynamicComputeUnitLimit: true,
-        userPublicKey: ownerPubkey.toBase58(),
-        destinationTokenAccount: destinationTokenAccount
-          ? new PublicKey(destinationTokenAccount).toBase58()
-          : undefined,
-      },
+    const swapResponse = await this.swapPost({
+      quoteResponse,
+      dynamicSlippage: true,
+      prioritizationFeeLamports,
+      dynamicComputeUnitLimit: true,
+      userPublicKey: ownerPubkey.toBase58(),
+      destinationTokenAccount: destinationTokenAccount
+        ? new PublicKey(destinationTokenAccount).toBase58()
+        : undefined,
     });
 
     const swapV0Transaction = VersionedTransaction.deserialize(

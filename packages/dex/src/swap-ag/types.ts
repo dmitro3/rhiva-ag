@@ -1,0 +1,94 @@
+export type Uint64 = string;
+
+export enum SwapMode {
+  ExactIn = "ExactIn",
+  ExactOut = "ExactOut",
+}
+export type SwapQuoteRequestQueryParams = {
+  inputMint: string;
+  outputMint: string;
+  amount: Uint64;
+  slippageBps?: number;
+  swapMode?: SwapMode;
+  dexes?: string[];
+  excludeDexes?: string[];
+  restricIntermediateTokens?: boolean;
+  onlyDirectRoutes?: boolean;
+  asLegacyTransation?: boolean;
+  platformFeeBps?: number;
+  maxAccounts?: number;
+  instructionVersion?: "V1" | "V2";
+  dynamicSlippage?: boolean;
+};
+
+type RoutePlan = {
+  swapInfo: {
+    ammKey: string;
+    inputMint: string;
+    outputMint: string;
+    inAmount: string;
+    outAmount: string;
+    label: string;
+    feeAmount: string;
+    feeMint: string;
+  };
+  percentage: number;
+  bps: number;
+};
+
+export type SwapQuoteResponse = {
+  inputMint: string;
+  inAmount: string;
+  outputMint: string;
+  outAmount: string;
+  otherAmountThreshold: string;
+  swapMode: SwapMode;
+  slippageBps: number;
+  priceImpactPct: string;
+  routePlan: RoutePlan[];
+  platformFee: {
+    amount: string;
+    feeBps: number;
+  };
+  contextSlot: number;
+  timeTaken: number;
+};
+
+export type SwapRequestQueryParams = {
+  userPublicKey: string;
+  quoteResponse: SwapQuoteResponse;
+  payer?: string;
+  wrapAndUnwrapSol?: boolean;
+  useSharedAccounts?: boolean;
+  feeAccount?: string;
+  trackingAccount?: string;
+  prioritizationFeeLamports?:
+    | {
+        priorityLevelWithMaxLamports?: {
+          global: boolean;
+          maxLamports: Uint64;
+          priorityLevel: "medium" | "high" | "veryHigh";
+        };
+      }
+    | { jitoTipLamports?: Uint64 | number }
+    | {
+        jitoTipLamportsWithPayer?: {
+          lamports: Uint64;
+          payer: string;
+        };
+      };
+  asLegacyTransaction?: boolean;
+  destinationTokenAccount?: string;
+  nativeDestinationAccount?: string;
+  dynamicComputeUnitLimit?: boolean;
+  skipUserAcccountsRpcCalls?: boolean;
+  dynamicSlippage?: boolean;
+  computeUnitPriceMicroLamports?: Uint64;
+  blockhashSlotsToExpiry?: number;
+};
+
+export type SwapResponse = {
+  swapTransaction: string;
+  lastValidBlockHeight: Uint64;
+  proritizationFeeLamport: Uint64;
+};

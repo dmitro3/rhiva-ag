@@ -95,17 +95,17 @@ export const tokenRoute = router({
 
         const dex = new Dex(ctx.connection);
         const wallet = await loadWallet(ctx.user.wallet, ctx.secret);
-        const jitoTipLamports = Number(
-          ctx.sendTransaction.recentJitoTip("50ema"),
-        );
+        const jitoTipLamports =
+          await ctx.sendTransaction.recentJitoTip("50ema");
         const { quote, transaction } = await dex.swap.jupiter.buildSwap({
           ...input,
           owner: wallet.publicKey,
           prioritizationFeeLamports: {
-            jitoTipLamports,
+            jitoTipLamports: Number(jitoTipLamports),
           },
-          amount:
-            BigInt(input.amount) * BigInt(Math.pow(10, input.inputDecimals)),
+          amount: new Decimal(input.amount)
+            .mul(Math.pow(10, input.inputDecimals))
+            .toFixed(0),
         });
 
         const prices = (await ctx.coingecko.simple.tokenPrice.getID("solana", {

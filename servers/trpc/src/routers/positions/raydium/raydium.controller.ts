@@ -96,7 +96,6 @@ export const createPosition = async (
         inputMint,
         slippage,
         amount,
-        skipSimulation: true,
         owner: wallet.publicKey,
         outputMint: poolInfo.mintA.address,
       });
@@ -129,7 +128,6 @@ export const createPosition = async (
     const { transaction } = await dex.swap.jupiter.buildSwap({
       inputMint,
       slippage,
-      skipSimulation: true,
       owner: wallet.publicKey,
       amount: quoteResponse.outAmount,
       outputMint: baseIn ? poolInfo.mintB.address : poolInfo.mintA.address,
@@ -269,7 +267,6 @@ export const claimReward = async (
         if (quoteAmount > BigInt(0)) {
           const { transaction } = await dex.swap.jupiter.buildSwap({
             slippage,
-            skipSimulation: true,
             owner: wallet.publicKey,
             outputMint: NATIVE_MINT,
             amount: quoteAmount.toString(),
@@ -399,7 +396,6 @@ export const closePosition = async (
           const { transaction, quoteResponse } =
             await dex.swap.jupiter.buildSwap({
               slippage,
-              skipSimulation: true,
               owner: wallet.publicKey,
               outputMint: NATIVE_MINT,
               amount: quoteAmount.toString(),
@@ -583,7 +579,6 @@ export const reposition = async (
         });
 
         const { transaction } = await dex.swap.jupiter.buildSwap({
-          skipSimulation: true,
           owner: wallet.publicKey,
           slippage: args.slippage,
           amount: quoteResponse.outAmount,

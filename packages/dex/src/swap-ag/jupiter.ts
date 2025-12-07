@@ -1,19 +1,6 @@
 import xior, { type XiorInstance } from "xior";
-import {
-  mapFilter,
-  throwSimulationError,
-  buildPathWithQueryString,
-  getTokenBalanceChangesFromSimulation,
-} from "@rhiva-ag/shared";
-import {
-  AccountLayout,
-  getAssociatedTokenAddressSync,
-} from "@solana/spl-token";
-import {
-  PublicKey,
-  type Connection,
-  VersionedTransaction,
-} from "@solana/web3.js";
+import { buildPathWithQueryString } from "@rhiva-ag/shared";
+import { PublicKey, VersionedTransaction } from "@solana/web3.js";
 import type {
   SwapResponse,
   SwapQuoteResponse,
@@ -35,10 +22,7 @@ type SwapArgs = {
 
 export class Jupiter {
   readonly xior: XiorInstance;
-  constructor(
-    readonly baseURL: string,
-    private readonly connection: Connection,
-  ) {
+  constructor(readonly baseURL: string) {
     this.xior = xior.create({
       baseURL: this.baseURL,
     });
@@ -60,37 +44,19 @@ export class Jupiter {
     return data;
   }
 
-  buildSwap(args: SwapArgs & { skipSimulation?: false }): Promise<{
-    transaction: VersionedTransaction;
-    quote: { [k: string]: bigint };
-    quoteResponse: SwapQuoteResponse;
-  }>;
-  buildSwap(args: SwapArgs & { skipSimulation: true }): Promise<{
-    transaction: VersionedTransaction;
-    quoteResponse: SwapQuoteResponse;
-  }>;
   async buildSwap({
     owner,
     amount,
     slippage,
     inputMint,
     outputMint,
-    skipSimulation,
     destinationTokenAccount,
     prioritizationFeeLamports,
-  }: SwapArgs & { skipSimulation?: boolean }) {
+  }: SwapArgs) {
     const ownerPubkey = new PublicKey(owner);
     const inputMintPubkey = new PublicKey(inputMint);
     const outputMintPubkey = new PublicKey(outputMint);
 
-    const inputMintAta = getAssociatedTokenAddressSync(
-      inputMintPubkey,
-      outputMintPubkey,
-    );
-    const outputMintAta = getAssociatedTokenAddressSync(
-      outputMintPubkey,
-      ownerPubkey,
-    );
     const quoteResponse = await this.quoteGet({
       slippageBps: slippage,
       amount: amount.toString(),
@@ -113,44 +79,6 @@ export class Jupiter {
       Buffer.from(swapResponse.swapTransaction, "base64"),
     );
 
-    if (skipSimulation)
-      return { transaction: swapV0Transaction, quoteResponse };
-
-    const atas = [inputMintAta, outputMintAta];
-    const preAccountInfos = await this.connection.getMultipleAccountsInfo(atas);
-
-    const preTokenBalanceChanges = Object.fromEntries(
-      mapFilter(preAccountInfos, (accountInfo) => {
-        if (accountInfo) {
-          const account = AccountLayout.decode(accountInfo.data);
-          return [account.mint, account.amount];
-        }
-      }),
-    );
-
-    const simulateSwapResponse = await this.connection.simulateTransaction(
-      swapV0Transaction,
-      {
-        accounts: {
-          encoding: "base64",
-          addresses: atas.map((a) => a.toBase58()),
-        },
-        sigVerify: false,
-        replaceRecentBlockhash: true,
-      },
-    );
-
-    throwSimulationError(simulateSwapResponse.value);
-
-    const tokenBalanceChanges = getTokenBalanceChangesFromSimulation(
-      simulateSwapResponse.value,
-      preTokenBalanceChanges,
-    );
-
-    return {
-      quoteResponse,
-      quote: tokenBalanceChanges,
-      transaction: swapV0Transaction,
-    };
+    return { transaction: swapV0Transaction, quoteResponse };
   }
 }

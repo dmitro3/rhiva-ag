@@ -52,6 +52,7 @@ export default function SettingsPage() {
                     </label>
                     <Field
                       name="slippage"
+                      type="number"
                       className="p-2 border border-white/10 rounded focus:border-primary lt-sm:flex-1 md:min-w-md"
                     />
                   </div>

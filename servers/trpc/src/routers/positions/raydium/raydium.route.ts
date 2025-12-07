@@ -20,6 +20,7 @@ import {
   raydiumCreatePositionSchema,
   raydiumClosePositionSchema,
 } from "./raydium.schema";
+import { Raydium } from "@raydium-io/raydium-sdk-v2";
 
 const queue = createQueue();
 export const raydiumRoute = router({
@@ -47,9 +48,15 @@ export const raydiumRoute = router({
             code: "NOT_IMPLEMENTED",
             message: "external wallet not supported",
           });
-
-        const dex = new Dex(ctx.connection);
         const owner = await loadWallet(ctx.user.wallet, ctx.secret);
+
+        const raydium = await Raydium.load({
+          connection: ctx.connection,
+          owner,
+          disableLoadToken: true,
+          disableFeatureCheck: true,
+        });
+        const dex = new Dex(ctx.connection, raydium);
         const wallet = fromKeyPairToWalletAdapter(owner);
         const { execute, ...args } = await createPosition(
           dex,

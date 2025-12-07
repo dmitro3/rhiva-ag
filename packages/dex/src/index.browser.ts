@@ -21,6 +21,6 @@ export default class Dex {
   ) {
     this.clmm = new CLMM(raydium);
     this.dlmm = new DLMM(connection, owner);
-    this.swap = new SwapAggregator(connection);
+    this.swap = new SwapAggregator();
   }
 }

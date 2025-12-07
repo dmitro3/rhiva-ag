@@ -72,7 +72,6 @@ export const createPosition = async (
             slippage,
             inputMint,
             outputMint: side,
-            skipSimulation: true,
             owner: wallet.publicKey,
             amount: BigInt(amount.toString()),
           },
@@ -130,7 +129,7 @@ export const createPosition = async (
   const bundleSimulationResponse = await sender.simulateBundle({
     transactions,
   });
-
+  console.log(bundleSimulationResponse.result, { depth: null });
   throwBundleSimulationError(bundleSimulationResponse.result.value);
 
   return {
@@ -233,7 +232,6 @@ export const claimReward = async (
           const { transaction } = await dex.swap.jupiter.buildSwap({
             slippage,
             inputMint: mint,
-            skipSimulation: true,
             owner: wallet.publicKey,
             outputMint: NATIVE_MINT,
             amount: quoteAmount.toString(),
@@ -361,7 +359,6 @@ export const closePosition = async (
           const { transaction } = await dex.swap.jupiter.buildSwap({
             slippage,
             inputMint: mint,
-            skipSimulation: true,
             owner: wallet.publicKey,
             outputMint: NATIVE_MINT,
             amount: quoteAmount.toString(),

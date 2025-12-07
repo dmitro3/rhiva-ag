@@ -92,3 +92,70 @@ export type SwapResponse = {
   lastValidBlockHeight: Uint64;
   proritizationFeeLamport: Uint64;
 };
+
+export type SwapOrderRequestQueryParams = {
+  inputMint: string;
+  ouputMint: string;
+  amount: Uint64;
+  taker?: string;
+  receiver?: string;
+  payer?: string;
+  closeAuthority?: string;
+  referralAccount?: string;
+  referralFee?: number;
+  excludeRouters?: string;
+  excludeDexes?: string;
+};
+
+export type SwapOrderResponse = {
+  mode: string;
+  inputMint: string;
+  outputMint: string;
+  inAmount: string;
+  outAmount: string;
+  otherAmountThreshold: string;
+  swapMode: string;
+  slippageBps: number;
+  priceImpactPct: string;
+  routePlan: {
+    swapInfo: {
+      ammKey: string;
+      label: string;
+      inputMint: string;
+      outputMint: string;
+      inAmount: string;
+      outAmount: string;
+      feeAmount: string;
+      feeMint: string;
+    };
+    percent: number;
+    bps: number;
+    usdValue: number;
+  }[];
+  feeBps: number;
+  platformFee: { feeBps: number; amount: string }[];
+  signatureFeeLamports: number;
+  signatureFeePayer: string | null;
+  prioritizationFeeLamports: number;
+  prioritizationFeePayer: string | null;
+  rentFeeLamports: number;
+  rentFeePayer: string | null;
+  swapType: string;
+  router: string;
+  transaction: string | null;
+  gasless: boolean;
+  requestId: string;
+  totalTime: number;
+  taker: string | null;
+  inUsdValue: number;
+  outUsdValue: number;
+  priceImpact: number;
+  swapUsdValue: number;
+  referralAccount: string;
+  feeMint: string;
+  quoteId: string;
+  maker: string;
+  expireAt: string;
+  errorCode: number;
+  errorMessage: string;
+};

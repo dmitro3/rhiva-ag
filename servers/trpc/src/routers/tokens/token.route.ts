@@ -97,16 +97,18 @@ export const tokenRoute = router({
         const wallet = await loadWallet(ctx.user.wallet, ctx.secret);
         const jitoTipLamports =
           await ctx.sendTransaction.recentJitoTip("50ema");
-        const { quote, transaction } = await dex.swap.jupiter.buildSwap({
-          ...input,
-          owner: wallet.publicKey,
-          prioritizationFeeLamports: {
-            jitoTipLamports: Number(jitoTipLamports),
+        const { quoteResponse, transaction } = await dex.swap.jupiter.buildSwap(
+          {
+            ...input,
+            owner: wallet.publicKey,
+            prioritizationFeeLamports: {
+              jitoTipLamports: Number(jitoTipLamports),
+            },
+            amount: new Decimal(input.amount)
+              .mul(Math.pow(10, input.inputDecimals))
+              .toFixed(0),
           },
-          amount: new Decimal(input.amount)
-            .mul(Math.pow(10, input.inputDecimals))
-            .toFixed(0),
-        });
+        );
 
         const prices = (await ctx.coingecko.simple.tokenPrice.getID("solana", {
           vs_currencies: "usd",
@@ -114,8 +116,8 @@ export const tokenRoute = router({
         })) as Record<string, { usd: number }>;
 
         let amountUsd = 0;
-        const rawInputAmount = quote[input.inputMint];
-        const rawOutputAmount = quote[input.outputMint];
+        const rawInputAmount = quoteResponse.inAmount;
+        const rawOutputAmount = quoteResponse.outAmount;
 
         if (rawInputAmount) {
           const inputAmount = new Decimal(rawInputAmount)

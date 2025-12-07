@@ -270,7 +270,6 @@ export const syncRaydiumPositionStateFromEvent = async ({
         const [updatedPosition] = await db
           .update(positions)
           .set({
-            state: "rebalanced",
             config: {
               ...offchainPosition.config,
               lastAutoclaimTime: new Date(),

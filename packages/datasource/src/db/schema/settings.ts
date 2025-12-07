@@ -35,7 +35,7 @@ export const settings = pgTable("settings", {
       },
     })
     .notNull(),
-  slippage: doublePrecision().default(0.5).notNull(),
+  slippage: doublePrecision().default(10).notNull(),
   autoclaimTime: doublePrecision().default(3_600_000).notNull(),
   autocompoundTime: doublePrecision().default(3_600_000).notNull(),
   rebalanceTime: doublePrecision().default(60_000).notNull(),

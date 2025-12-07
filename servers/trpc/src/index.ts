@@ -1,6 +1,6 @@
 import fastify from "fastify";
-import { RedisStore } from "connect-redis";
 import fastifyCors from "@fastify/cors";
+import { RedisStore } from "connect-redis";
 import fastifyCookie from "@fastify/cookie";
 import fastifySession from "@fastify/session";
 import { getAuth } from "firebase-admin/auth";

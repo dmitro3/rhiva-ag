@@ -17,7 +17,6 @@ export default function HeaderAction(props: React.ComponentProps<"div">) {
       >
         Legal
       </Link>
-
       <LoginButton />
     </div>
   );

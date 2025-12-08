@@ -1,0 +1,1 @@
+ALTER TABLE "settings" ALTER COLUMN "slippage" SET DEFAULT 10;

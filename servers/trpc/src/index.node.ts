@@ -1,10 +1,10 @@
 export type { AppRouter } from "./routers";
 export { JWTAuthMiddleware } from "./controllers";
 export { getPools } from "./routers/pools/pool.controller";
-export { safeAuthUserSchema } from "./routes/auth/auth.schema";
 export { safeWalletSchema } from "./routers/wallets/wallet.schema";
 export { extendedUserSelectSchema } from "./routers/users/user.schema";
 export { getWalletPositions } from "./routers/positions/position.controller";
+export { safeAuthUserSchema, extraAuthSchema } from "./routes/auth/auth.schema";
 export {
   poolFilterSchema,
   poolAnalyticSchema,

@@ -30,6 +30,7 @@ const walletSignInRoute = async (
       db,
       {
         uid: data.message.publicKey,
+        displayName: data.extra?.displayName,
       },
       async (user) =>
         await createWallet(db, secret, {
@@ -64,6 +65,7 @@ const firebaseTokenSignInRoute = async (
     {
       uid: decodedUser.uid,
       email: decodedUser.email,
+      displayName: data.extra?.displayName,
     },
     async (user) =>
       await createWallet(db, secret, {

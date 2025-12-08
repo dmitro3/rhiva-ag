@@ -36,9 +36,9 @@ type User = z.infer<typeof safeAuthUserSchema>;
 export type TAuthContext = {
   user?: User;
   isAuthenticated: boolean;
-  signIn: () => Promise<User>;
   signOut: () => Promise<void>;
   updateUser: (user?: Partial<User>) => void;
+  signIn: (cancellable?: boolean) => Promise<User>;
 };
 
 export const AuthContext = createContext<TAuthContext | null>(null);
@@ -68,6 +68,7 @@ export default withCookieProvider(function AuthProvider({
 
   const manualFetchUser = useRef(false);
   const disableWalletConnect = useRef(false);
+  const [cancellable, setCancellable] = useState(true);
   const signInRejecter = useRef<(error: Error) => void>(null);
   const signInResolver = useRef<(user: User) => void>(null);
 
@@ -79,15 +80,20 @@ export default withCookieProvider(function AuthProvider({
 
   const auth = useMemo(() => getAuth(), []);
 
-  const signIn = useCallback(async () => {
-    if (user) return Promise.resolve(user);
-    manualFetchUser.current = true;
-    setShowAuthModal(true);
-    return new Promise<User>((resolve, reject) => {
-      signInRejecter.current = reject;
-      signInResolver.current = resolve;
-    });
-  }, [user]);
+  const signIn = useCallback(
+    async (cancellable?: boolean) => {
+      if (cancellable != null) setCancellable(cancellable);
+
+      if (user) return Promise.resolve(user);
+      manualFetchUser.current = true;
+      setShowAuthModal(true);
+      return new Promise<User>((resolve, reject) => {
+        signInRejecter.current = reject;
+        signInResolver.current = resolve;
+      });
+    },
+    [user],
+  );
 
   const signOut = useCallback(async () => {
     disableWalletConnect.current = true;
@@ -189,14 +195,17 @@ export default withCookieProvider(function AuthProvider({
     >
       {children}
       <AuthModal
+        cancellable={cancellable}
         logo={logo}
         open={showAuthModal}
         onClose={(closed) => {
-          if (closed && signInRejecter.current) {
-            signInRejecter.current(new Error("User cancelled signIn"));
-            signInRejecter.current = null;
+          if (cancellable) {
+            if (closed && signInRejecter.current) {
+              signInRejecter.current(new Error("User cancelled signIn"));
+              signInRejecter.current = null;
+            }
+            setShowAuthModal(closed);
           }
-          setShowAuthModal(closed);
         }}
         onSignIn={fetchServerUser}
       />

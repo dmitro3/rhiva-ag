@@ -34,6 +34,7 @@ class AppleAuthProvider extends OAuthProvider {
 }
 
 export type AuthModalProps = {
+  cancellable?: boolean;
   logo: React.ReactNode;
   onSignIn(user: User): Promise<z.infer<typeof safeAuthUserSchema>>;
 } & React.ComponentProps<typeof Dialog>;
@@ -51,8 +52,9 @@ type AuthConnector = {
 };
 
 export default function AuthModal({
-  onSignIn,
   logo,
+  onSignIn,
+  cancellable,
   ...props
 }: AuthModalProps) {
   const { wallets } = useWallet();
@@ -100,13 +102,15 @@ export default function AuthModal({
         <DialogBackdrop className="absolute inset-0 bg-black/50 backdrop-blur-sm -z-10" />
         <DialogPanel className="m-auto flex flex-col space-y-8 bg-dark p-4 rounded-2xl z-10 lt-sm:min-w-xs sm:w-sm">
           <header className="flex flex-col">
-            <button
-              type="button"
-              className="self-end"
-              onClick={() => props.onClose(false)}
-            >
-              <MdClose size={18} />
-            </button>
+            {cancellable && (
+              <button
+                type="button"
+                className="self-end"
+                onClick={() => props.onClose(false)}
+              >
+                <MdClose size={18} />
+              </button>
+            )}
             <div className="self-center flex flex-col space-y-2">
               {logo}
               <p className="text-center">Log in or create account</p>

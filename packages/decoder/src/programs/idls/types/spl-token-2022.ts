@@ -1,0 +1,307 @@
+export type SPLToken2022 = {
+  address: "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb";
+  metadata: {
+    name: "spl-token-2022";
+    version: "2.1.0";
+    spec: "0.1.0";
+  };
+  errors: [
+    {
+      code: 0;
+      name: "NotRentExempt";
+      msg: "Lamport balance below rent-exempt threshold";
+    },
+    { code: 1; name: "InsufficientFunds"; msg: "Insufficient funds" },
+    { code: 2; name: "InvalidMint"; msg: "Invalid Mint" },
+    {
+      code: 3;
+      name: "MintMismatch";
+      msg: "Account not associated with this Mint";
+    },
+    { code: 4; name: "OwnerMismatch"; msg: "Owner does not match" },
+    { code: 5; name: "FixedSupply"; msg: "Fixed supply" },
+    { code: 6; name: "AlreadyInUse"; msg: "Already in use" },
+    {
+      code: 7;
+      name: "InvalidNumberOfProvidedSigners";
+      msg: "Invalid number of provided signers";
+    },
+    {
+      code: 8;
+      name: "InvalidNumberOfRequiredSigners";
+      msg: "Invalid number of required signers";
+    },
+    { code: 9; name: "UninitializedState"; msg: "State is uninitialized" },
+    {
+      code: 10;
+      name: "NativeNotSupported";
+      msg: "Instruction does not support native tokens";
+    },
+    {
+      code: 11;
+      name: "NonNativeHasBalance";
+      msg: "Non-native account can only be closed if its balance is zero";
+    },
+    { code: 12; name: "InvalidInstruction"; msg: "Invalid instruction" },
+    {
+      code: 13;
+      name: "InvalidState";
+      msg: "State is invalid for requested operation";
+    },
+    { code: 14; name: "Overflow"; msg: "Operation overflowed" },
+    {
+      code: 15;
+      name: "AuthorityTypeNotSupported";
+      msg: "Account does not support specified authority type";
+    },
+    {
+      code: 16;
+      name: "MintCannotFreeze";
+      msg: "This token mint cannot freeze accounts";
+    },
+    { code: 17; name: "AccountFrozen"; msg: "Account is frozen" },
+    {
+      code: 18;
+      name: "MintDecimalsMismatch";
+      msg: "The provided decimals value different from the Mint decimals";
+    },
+    {
+      code: 19;
+      name: "NonNativeNotSupported";
+      msg: "Instruction does not support non-native tokens";
+    },
+    {
+      code: 20;
+      name: "ExtensionTypeMismatch";
+      msg: "Extension type does not match already existing extensions";
+    },
+    {
+      code: 21;
+      name: "ExtensionBaseMismatch";
+      msg: "Extension does not match the base type provided";
+    },
+    {
+      code: 22;
+      name: "ExtensionAlreadyInitialized";
+      msg: "Extension already initialized on this account";
+    },
+    {
+      code: 23;
+      name: "ConfidentialTransferAccountHasBalance";
+      msg: "An account can only be closed if its confidential balance is zero";
+    },
+    {
+      code: 24;
+      name: "ConfidentialTransferAccountNotApproved";
+      msg: "Account not approved for confidential transfers";
+    },
+    {
+      code: 25;
+      name: "ConfidentialTransferDepositsAndTransfersDisabled";
+      msg: "Account not accepting deposits or transfers";
+    },
+    {
+      code: 26;
+      name: "ConfidentialTransferElGamalPubkeyMismatch";
+      msg: "ElGamal public key mismatch";
+    },
+    {
+      code: 27;
+      name: "ConfidentialTransferBalanceMismatch";
+      msg: "Balance mismatch";
+    },
+    {
+      code: 28;
+      name: "MintHasSupply";
+      msg: "Mint has non-zero supply. Burn all tokens before closing the mint";
+    },
+    {
+      code: 29;
+      name: "NoAuthorityExists";
+      msg: "No authority exists to perform the desired operation";
+    },
+    {
+      code: 30;
+      name: "TransferFeeExceedsMaximum";
+      msg: "Transfer fee exceeds maximum of 10,000 basis points";
+    },
+    {
+      code: 31;
+      name: "MintRequiredForTransfer";
+      msg: "Mint required for this account to transfer tokens";
+    },
+    {
+      code: 32;
+      name: "FeeMismatch";
+      msg: "Calculated fee does not match expected fee";
+    },
+    {
+      code: 33;
+      name: "FeeParametersMismatch";
+      msg: "Fee parameters associated with zero-knowledge proofs do not match fee parameters in mint";
+    },
+    {
+      code: 34;
+      name: "ImmutableOwner";
+      msg: "The owner authority cannot be changed";
+    },
+    {
+      code: 35;
+      name: "AccountHasWithheldTransferFees";
+      msg: "An account can only be closed if its withheld fee balance is zero";
+    },
+    {
+      code: 36;
+      name: "NoMemo";
+      msg: "No memo in previous instruction; required for recipient to receive a transfer";
+    },
+    {
+      code: 37;
+      name: "NonTransferable";
+      msg: "Transfer is disabled for this mint";
+    },
+    {
+      code: 38;
+      name: "NonTransferableNeedsImmutableOwnership";
+      msg: "Non-transferable tokens can't be minted to an account without immutable ownership";
+    },
+    {
+      code: 39;
+      name: "MaximumPendingBalanceCreditCounterExceeded";
+      msg: "The total number of `Deposit` and `Transfer` instructions exceeded the limit";
+    },
+    {
+      code: 40;
+      name: "MaximumDepositAmountExceeded";
+      msg: "Deposit amount exceeds maximum limit";
+    },
+    {
+      code: 41;
+      name: "CpiGuardSettingsLocked";
+      msg: "CPI Guard cannot be enabled or disabled in CPI";
+    },
+    {
+      code: 42;
+      name: "CpiGuardTransferBlocked";
+      msg: "CPI Guard is enabled, and a program attempted to transfer user funds";
+    },
+    {
+      code: 43;
+      name: "CpiGuardBurnBlocked";
+      msg: "CPI Guard is enabled, and a program attempted to burn user funds";
+    },
+    {
+      code: 44;
+      name: "CpiGuardCloseAccountBlocked";
+      msg: "CPI Guard is enabled, and a program attempted to close an account";
+    },
+    {
+      code: 45;
+      name: "CpiGuardApproveBlocked";
+      msg: "CPI Guard is enabled, and a program attempted to approve a delegate";
+    },
+    {
+      code: 46;
+      name: "CpiGuardSetAuthorityBlocked";
+      msg: "CPI Guard is enabled, and a program attempted to add or replace an authority";
+    },
+    {
+      code: 47;
+      name: "CpiGuardOwnerChangeBlocked";
+      msg: "Account ownership cannot be changed while CPI Guard is enabled";
+    },
+    {
+      code: 48;
+      name: "ExtensionNotFound";
+      msg: "Extension not found in account data";
+    },
+    {
+      code: 49;
+      name: "NonConfidentialTransfersDisabled";
+      msg: "Non-confidential transfers disabled";
+    },
+    {
+      code: 50;
+      name: "ConfidentialTransferFeeAccountHasWithheldFee";
+      msg: "An account can only be closed if the confidential withheld fee is zero";
+    },
+    {
+      code: 51;
+      name: "InvalidExtensionCombination";
+      msg: "Invalid combination of extensions";
+    },
+    {
+      code: 52;
+      name: "InvalidLengthForAlloc";
+      msg: "Extension allocation with overwrite must use the same length";
+    },
+    {
+      code: 53;
+      name: "AccountDecryption";
+      msg: "Failed to decrypt a confidential transfer account";
+    },
+    { code: 54; name: "ProofGeneration"; msg: "Failed to generate proof" },
+    {
+      code: 55;
+      name: "InvalidProofInstructionOffset";
+      msg: "An invalid proof instruction offset was provided";
+    },
+    {
+      code: 56;
+      name: "HarvestToMintDisabled";
+      msg: "Harvest of withheld tokens to mint is disabled";
+    },
+    {
+      code: 57;
+      name: "SplitProofContextStateAccountsNotSupported";
+      msg: "Split proof context state accounts not supported";
+    },
+    {
+      code: 58;
+      name: "NotEnoughProofContextStateAccounts";
+      msg: "Not enough proof context state accounts provided";
+    },
+    { code: 59; name: "MalformedCiphertext"; msg: "Ciphertext is malformed" },
+    {
+      code: 60;
+      name: "CiphertextArithmeticFailed";
+      msg: "Ciphertext arithmetic failed";
+    },
+    {
+      code: 61;
+      name: "PedersenCommitmentMismatch";
+      msg: "Pedersen commitment mismatch";
+    },
+    {
+      code: 62;
+      name: "RangeProofLengthMismatch";
+      msg: "Range proof length mismatch";
+    },
+    {
+      code: 63;
+      name: "IllegalBitLength";
+      msg: "Illegal transfer amount bit length";
+    },
+    { code: 64; name: "FeeCalculation"; msg: "Fee calculation failed" },
+    {
+      code: 65;
+      name: "IllegalMintBurnConversion";
+      msg: "Withdraw / Deposit not allowed for confidential-mint-burn";
+    },
+    {
+      code: 66;
+      name: "InvalidScale";
+      msg: "Invalid scale for scaled ui amount";
+    },
+    {
+      code: 67;
+      name: "MintPaused";
+      msg: "Transferring, minting, and burning is paused on this mint";
+    },
+    {
+      code: 68;
+      name: "PendingBalanceNonZero";
+      msg: "Key rotation attempted while pending balance is not zero";
+    },
+  ];
+};

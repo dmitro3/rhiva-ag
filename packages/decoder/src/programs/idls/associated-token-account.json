@@ -1,0 +1,15 @@
+{
+  "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
+  "metadata": {
+    "name": "associated-token-account",
+    "version": "8.0.0",
+    "spec": "0.1.0"
+  },
+  "errors": [
+    {
+      "code": 0,
+      "name": "InvalidOwner",
+      "msg": "Associated token account owner does not match address derivation"
+    }
+  ]
+}

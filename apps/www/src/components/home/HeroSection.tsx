@@ -1,14 +1,20 @@
 "use client";
 import clsx from "clsx";
+import type z from "zod";
 import Image from "next/image";
+import { useCookies } from "react-cookie";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@rhiva-ag/auth-ui/client";
+import type { extraAuthSchema } from "@rhiva-ag/trpc";
 
 import Banner from "@/assets/bg/banner.svg";
+
+type Extra = z.infer<typeof extraAuthSchema>;
 
 export default function HeroSection(props: React.ComponentProps<"section">) {
   const { user } = useAuth();
   const t = useTranslations("HomePage.HeroSection");
+  const [cookies] = useCookies<keyof Extra, Partial<Extra>>(["displayName"]);
 
   return (
     <section
@@ -20,7 +26,9 @@ export default function HeroSection(props: React.ComponentProps<"section">) {
     >
       <div className="relative z-10 flex flex-col justify-center p-6 space-y-4 lt-xl:max-w-6/10 md:px-8 lg:px-12 max-w-2xl">
         <p className="text-sm text-gray-400 md:text-base lg:text-lg">
-          {t("greetings", { name: user?.displayName ?? "User" })}
+          {t("greetings", {
+            name: user?.displayName || cookies.displayName || "User",
+          })}
         </p>
 
         <div className="flex flex-col space-y-2 md:space-y-3">

@@ -1,25 +1,33 @@
 "use client";
+import type z from "zod";
 import Image from "next/image";
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useCookies } from "react-cookie";
 import { useAuth } from "@rhiva-ag/auth-ui/client";
+import type { extraAuthSchema } from "@rhiva-ag/trpc";
 import { TabGroup, TabPanels, TabList, Tab } from "@headlessui/react";
 
-import IcLogo from "../../assets/logo.png";
 import ReferralForm from "./ReferralForm";
+import IcLogo from "../../assets/logo.png";
 import DisplayNameForm from "./DisplayNameForm";
+
+type Extra = z.infer<typeof extraAuthSchema> & { verified?: string };
 
 export default function OnboardingWrapper({
   children,
 }: React.PropsWithChildren) {
-  const { user, signIn } = useAuth();
-  const [selectedPage, setSelectedPage] = useState(0);
+  const { user } = useAuth();
+  const [cookies] = useCookies<keyof Extra, Partial<Extra>>([
+    "displayName",
+    "verified",
+  ]);
 
-  useEffect(() => {
-    if (!user) signIn(false);
-  }, [user, signIn]);
+  const [selectedPage, setSelectedPage] = useState(() =>
+    cookies.verified ? 1 : 0,
+  );
 
-  if (user && user.displayName) return children;
+  if ((user && user.displayName) || cookies.displayName) return children;
   else
     return (
       <div className="fixed inset-0 bg-dark">

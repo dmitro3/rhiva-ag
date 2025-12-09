@@ -11,10 +11,10 @@ export function registerAuthRoutes(apiURL = process.env.NEXT_PUBLIC_API_URL) {
     const { pathname } = new URL(request.url);
     const isPathname = (value: string) => pathname.includes(value);
 
-    async function firebaseSignIn(token: string) {
+    async function firebaseSignIn(body: object) {
       const { data } = await xior.post<z.infer<typeof safeAuthUserSchema>>(
         format("%s/auth/firebase", apiURL),
-        { token },
+        body,
       );
       return data;
     }
@@ -34,17 +34,8 @@ export function registerAuthRoutes(apiURL = process.env.NEXT_PUBLIC_API_URL) {
 
     let user: z.infer<typeof safeAuthUserSchema> | null;
     if (isPathname("firebase")) {
-      const { token } = body;
-
-      user = await firebaseSignIn(token).catch(() => {
-        cookie.delete("user").delete("session");
-        return null;
-      });
-    } else if (isPathname("wallet"))
-      user = await walletSignIn(body).catch(() => {
-        cookie.delete("user").delete("session");
-        return null;
-      });
+      user = await firebaseSignIn(body);
+    } else if (isPathname("wallet")) user = await walletSignIn(body);
     else
       return NextResponse.json(
         { message: "invalid auth endpoint" },

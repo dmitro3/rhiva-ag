@@ -76,7 +76,10 @@ export default withCookieProvider(function AuthProvider({
   const [user, setUser] = useState(serverUser);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(Boolean(user));
-  const [cookies] = useCookies<"email", { email?: string }>(["email"]);
+  const [cookies] = useCookies<
+    "email" | "displayName",
+    { email?: string; displayName?: string }
+  >(["email", "displayName"]);
 
   const auth = useMemo(() => getAuth(), []);
 
@@ -117,20 +120,26 @@ export default withCookieProvider(function AuthProvider({
     );
   }, []);
 
-  const fetchServerUser = useCallback(async (user: FirebaseUser) => {
-    const token = await user.getIdToken();
-    const { data } = await xior.post<User>("/api/auth/firebase/", { token });
-    setUser(data);
-    setIsAuthenticated(true);
+  const fetchServerUser = useCallback(
+    async (user: FirebaseUser) => {
+      const token = await user.getIdToken();
+      const { data } = await xior.post<User>("/api/auth/firebase/", {
+        token,
+        extra: { displayName: cookies.displayName },
+      });
+      setUser(data);
+      setIsAuthenticated(true);
 
-    if (signInResolver.current) {
-      signInResolver.current(data);
-      signInResolver.current = null;
-    }
+      if (signInResolver.current) {
+        signInResolver.current(data);
+        signInResolver.current = null;
+      }
 
-    setShowAuthModal(false);
-    return data;
-  }, []);
+      setShowAuthModal(false);
+      return data;
+    },
+    [cookies.displayName],
+  );
 
   const signInWithWallet = useCallback(async () => {
     const message = {
@@ -146,6 +155,7 @@ export default withCookieProvider(function AuthProvider({
       const { data: user } = await xior.post<User>("/api/auth/wallet", {
         message,
         signature: serializedSignature,
+        extra: { displayName: cookies.displayName },
       });
       setUser(user);
       setIsAuthenticated(true);
@@ -155,7 +165,7 @@ export default withCookieProvider(function AuthProvider({
     }
 
     toast.error("Oops! This wallet is not supported.");
-  }, [wallet]);
+  }, [wallet, cookies.displayName]);
 
   useEffect(() => {
     const emailLink = location.href;

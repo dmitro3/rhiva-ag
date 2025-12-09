@@ -1,16 +1,34 @@
 import clsx from "clsx";
 import { object, string } from "yup";
+import { useCookies } from "react-cookie";
 import { TabPanel } from "@headlessui/react";
 import { Formik, Form, Field } from "formik";
+import { useMutation } from "@tanstack/react-query";
 
 import { useTRPCClient } from "@/trpc.client";
 
 type ReferralFormProps = {
   onNext?: () => void;
 };
-
+type Extra = { verified?: string };
 export default function ReferralForm({ onNext }: ReferralFormProps) {
-  const trpc = useTRPCClient();
+  const trpcClient = useTRPCClient();
+
+  const [, setCookies] = useCookies<keyof Extra, Partial<Extra>>(["verified"]);
+  const { mutateAsync } = useMutation({
+    async mutationFn(values: { code: string }) {
+      const response = await trpcClient.refer.verify.query(values);
+      if (response.referer)
+        await trpcClient.refer.create.mutate({ referer: response.referer.id });
+      return response;
+    },
+    onSuccess(values) {
+      if (values.exists) {
+        setCookies("verified", values.exists);
+        return onNext?.();
+      }
+    },
+  });
 
   return (
     <Formik
@@ -22,12 +40,8 @@ export default function ReferralForm({ onNext }: ReferralFormProps) {
         code: "",
       }}
       onSubmit={async (values, { setFieldError }) => {
-        const response = await trpc.refer.verify.query(values);
-        if (response.exists) {
-          if (response.referer)
-            await trpc.refer.create.mutate({ referer: response.referer.id });
-          return onNext?.();
-        }
+        const response = await mutateAsync(values);
+        if (response.exists) return;
 
         setFieldError("code", "This code is invalid.");
       }}

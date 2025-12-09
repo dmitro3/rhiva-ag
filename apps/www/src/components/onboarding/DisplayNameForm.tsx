@@ -1,25 +1,20 @@
 import clsx from "clsx";
+import type z from "zod";
 import { object, string } from "yup";
-import { useRouter } from "next/navigation";
+import { useCookies } from "react-cookie";
 import { TabPanel } from "@headlessui/react";
 import { Formik, Form, Field } from "formik";
-import { useAuth } from "@rhiva-ag/auth-ui/client";
 import { useMutation } from "@tanstack/react-query";
+import type { extraAuthSchema } from "@rhiva-ag/trpc";
 
-import { useTRPC } from "@/trpc.client";
+type Extra = z.infer<typeof extraAuthSchema>;
 
 export default function DisplayNameForm() {
-  const trpc = useTRPC();
-  const router = useRouter();
-  const { updateUser } = useAuth();
-  const { mutateAsync } = useMutation(
-    trpc.user.update.mutationOptions({
-      onSuccess(user) {
-        updateUser(user);
-        router.push("/");
-      },
-    }),
-  );
+  const [cookies, setCookies] = useCookies<keyof Extra, Extra>(["displayName"]);
+  const { mutateAsync } = useMutation({
+    mutationFn: async (values: Extra) =>
+      setCookies("displayName", values.displayName),
+  });
 
   return (
     <Formik
@@ -28,7 +23,7 @@ export default function DisplayNameForm() {
         displayName: string().label("Display name").trim().required(),
       })}
       initialValues={{
-        displayName: "",
+        displayName: cookies.displayName,
       }}
       onSubmit={(values) => mutateAsync(values)}
     >

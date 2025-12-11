@@ -18,7 +18,7 @@ export const dexApi = new DexApi();
 export const db = createDB(getEnv("DATABASE_URL"));
 
 export const secret =
-  process.env.NODE_ENV === "production"
+  "AWS_KMS_KEY_ID" in process.env && "AWS_REGION" in process.env
     ? new KMSSecret(getEnv("AWS_KMS_KEY_ID"), getEnv("AWS_REGION"), {
         ivLength: 12,
         algorithm: "aes-256-gcm",
@@ -44,12 +44,17 @@ export const coingecko = new Coingecko({
 export const createRedis = (options?: RedisOptions) => {
   let redis: Redis;
 
-  if (process.env.NODE_ENV === "production")
+  if (
+    "REDIS_MASTER_NAME" in process.env &&
+    "REDIS_SENTINEL_PORT" in process.env &&
+    "REDIS_SENTINEL_HOSTNAME" in process.env &&
+    "REDIS_PASSWORD" in process.env
+  )
     redis = defaultCreateRedis({
       name: getEnv("REDIS_MASTER_NAME"),
-      max: getEnv("REDIS_MAX_SENTINELS", Number),
       port: getEnv("REDIS_SENTINEL_PORT", Number),
       host: getEnv("REDIS_SENTINEL_HOSTNAME"),
+      password: getEnv("REDIS_PASSWORD"),
       ...options,
     });
   else if (options) redis = defaultCreateRedis(getEnv("REDIS_URL"), options);

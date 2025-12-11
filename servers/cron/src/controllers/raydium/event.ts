@@ -20,8 +20,8 @@ import {
 import { upsertPool } from "./shared";
 import { syncRaydiumPositions } from "./sync";
 import { sendNotification } from "../send-notification";
+import type { transactionWorkSchema } from "../../schemas";
 import { getPositionById, getPositionsWhere } from "../shared";
-import type { transactionWorkSchema } from "../../workers/schema";
 
 export const syncRaydiumPositionStateFromEvent = async ({
   db,

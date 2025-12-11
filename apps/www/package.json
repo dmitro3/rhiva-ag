@@ -25,6 +25,7 @@
     "@opennextjs/cloudflare": "^1.11.0",
     "@rhiva-ag/auth-ui": "*",
     "@rhiva-ag/datasource": "*",
+    "@rhiva-ag/dex": "*",
     "@rhiva-ag/dex-api": "*",
     "@rhiva-ag/shared": "*",
     "@rhiva-ag/trpc": "*",

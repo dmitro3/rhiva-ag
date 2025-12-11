@@ -22,7 +22,7 @@ import {
 import { Work } from "../../constants";
 import { createQueue } from "../shared";
 import type { Position } from "../types";
-import type { transactionWorkSchema } from "../../external";
+import type { transactionWorkSchema } from "../../schemas";
 import { claimMeteoraReward } from "../../../../trpc/src/index.node";
 
 export const autocompoundMeteoraPositions = async (

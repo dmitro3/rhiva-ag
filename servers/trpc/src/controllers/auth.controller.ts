@@ -45,15 +45,19 @@ export abstract class AuthMiddleware {
       : false;
     const currentStreak = user ? (resetStreak ? 1 : user.currentStreak + 1) : 1;
 
+    const setValues: Partial<typeof users.$inferInsert> = {
+      lastLogin: new Date(),
+      currentStreak: currentStreak >= maxStreak ? 1 : currentStreak,
+    };
+
+    if (values.displayName) setValues.displayName = values?.displayName;
+
     [user] = await drizzle
       .insert(users)
       .values(values)
       .onConflictDoUpdate({
         target: users.uid,
-        set: {
-          lastLogin: new Date(),
-          currentStreak: currentStreak >= maxStreak ? 1 : currentStreak,
-        },
+        set: setValues,
       })
       .returning();
 

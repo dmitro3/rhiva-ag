@@ -24,9 +24,9 @@ import {
   MeteoraProgramInstructionEventProcessor,
 } from "@rhiva-ag/decoder/programs/meteora/index";
 
-import { CONCURRENT_WORK, Work } from "../constants";
 import { runWorker } from "../runner";
-import { transactionWorkSchema } from "./schema";
+import { transactionWorkSchema } from "../schemas";
+import { CONCURRENT_WORK, Work } from "../constants";
 import { syncOrcaPositionStateFromEvent } from "../controllers/orca";
 import { syncRaydiumPositionStateFromEvent } from "../controllers/raydium";
 import { syncMeteoraPositionStateFromEvent } from "../controllers/meteora";

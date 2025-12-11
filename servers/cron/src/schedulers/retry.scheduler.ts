@@ -2,13 +2,10 @@ import type { Logger } from "pino";
 import { Queue, Worker } from "bullmq";
 
 import { Work } from "../constants";
-import { createRedis } from "../instances";
+import { runWorker } from "../runner";
+import { createRedis, logger } from "../instances";
 
-export default async function createRetrySchedule({
-  logger,
-}: {
-  logger: Logger;
-}) {
+const fn = async ({ logger }: { logger: Logger }) => {
   const scheduleQueue = new Queue(Work.retry, {
     connection: createRedis(),
   });
@@ -74,4 +71,10 @@ export default async function createRetrySchedule({
     await worker.disconnect();
     await scheduleQueue.disconnect();
   };
-}
+};
+
+export default runWorker(
+  fn({
+    logger,
+  }),
+);

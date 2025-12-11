@@ -4,16 +4,11 @@ import type { Logger } from "pino";
 import { Queue, Worker } from "bullmq";
 import type { Database } from "@rhiva-ag/datasource";
 
-import { createRedis } from "../instances";
+import { runWorker } from "../runner";
+import { createRedis, db, logger } from "../instances";
 import { supportedDexes, Work } from "../constants";
 
-export default async function createSchedule({
-  db,
-  logger,
-}: {
-  db: Database;
-  logger: Logger;
-}) {
+const fn = async ({ db, logger }: { db: Database; logger: Logger }) => {
   const syncQueue = new Queue(Work.syncPosition, {
     connection: createRedis(),
     defaultJobOptions: {
@@ -114,4 +109,11 @@ export default async function createSchedule({
     await syncQueue.disconnect();
     await scheduleQueue.disconnect();
   };
-}
+};
+
+export default runWorker(
+  fn({
+    db,
+    logger,
+  }),
+);

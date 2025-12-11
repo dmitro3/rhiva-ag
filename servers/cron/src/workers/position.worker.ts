@@ -7,7 +7,7 @@ import type { Database } from "@rhiva-ag/datasource";
 import type Coingecko from "@coingecko/coingecko-typescript";
 
 import { runWorker } from "../runner";
-import { positionWorkSchema } from "./schema";
+import { positionWorkSchema } from "../schemas";
 import { CONCURRENT_WORK, Work } from "../constants";
 import { syncOrcaPositionsForWallet } from "../controllers/orca";
 import { syncRaydiumPositionsForWallet } from "../controllers/raydium";

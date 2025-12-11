@@ -15,7 +15,7 @@ import {
 import { Work } from "../../constants";
 import { createQueue } from "../shared";
 import type { Position } from "../types";
-import type { transactionWorkSchema } from "../../workers/schema";
+import type { transactionWorkSchema } from "../../schemas";
 
 export const repositionOrcaPositions = async (
   {

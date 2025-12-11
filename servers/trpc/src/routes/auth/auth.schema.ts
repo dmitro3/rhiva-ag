@@ -2,7 +2,7 @@ import z from "zod";
 import { extendedUserSelectSchema } from "../../routers/users/user.schema";
 
 export const extraAuthSchema = z.object({
-  displayName: z.string(),
+  displayName: z.string().optional(),
 });
 
 export const walletAuthSchema = z.object({

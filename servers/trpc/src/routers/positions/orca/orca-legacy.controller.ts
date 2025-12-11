@@ -172,7 +172,10 @@ export const createPosition = async (
     replaceRecentBlockhash: true,
   });
 
-  throwBundleSimulationError(bundleSimulationResponse.result.value);
+  throwBundleSimulationError(
+    transactions,
+    bundleSimulationResponse.result.value,
+  );
 
   return {
     transactions,
@@ -246,7 +249,10 @@ export const claimReward = async (
       postExecutionAccountsConfigs: accountConfigs,
       preExecutionAccountsConfigs: accountConfigs,
     });
-    throwBundleSimulationError(simulationResponse.result.value);
+    throwBundleSimulationError(
+      claimRewardV0Transactions,
+      simulationResponse.result.value,
+    );
 
     const tokenBalanceChanges = getTokenBalanceChangesFromBundleSimulation(
       simulationResponse.result.value,
@@ -287,7 +293,10 @@ export const claimReward = async (
     replaceRecentBlockhash: true,
   });
 
-  throwBundleSimulationError(bundleSimulationResponse.result.value);
+  throwBundleSimulationError(
+    transactions,
+    bundleSimulationResponse.result.value,
+  );
 
   return {
     transactions,
@@ -362,7 +371,10 @@ export const closePosition = async (
       preExecutionAccountsConfigs: accountConfigs,
     });
 
-    throwBundleSimulationError(simulationResponse.result.value);
+    throwBundleSimulationError(
+      closePositionV0Transactions,
+      simulationResponse.result.value,
+    );
 
     tokenBalanceChanges = getTokenBalanceChangesFromBundleSimulation(
       simulationResponse.result.value,
@@ -408,7 +420,10 @@ export const closePosition = async (
       bundleSimulationResponse.result.value,
     );
 
-  throwBundleSimulationError(bundleSimulationResponse.result.value);
+  throwBundleSimulationError(
+    transactions,
+    bundleSimulationResponse.result.value,
+  );
 
   return {
     pool,
@@ -566,7 +581,10 @@ export const reposition = async (
     skipSigVerify: true,
   });
 
-  throwBundleSimulationError(bundleSimulationResponse.result.value);
+  throwBundleSimulationError(
+    transactions,
+    bundleSimulationResponse.result.value,
+  );
 
   return {
     transactions,

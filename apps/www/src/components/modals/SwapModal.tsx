@@ -24,8 +24,8 @@ import { sendTransaction } from "@/instances";
 import type { Token } from "./SelectTokenModal";
 import SelectTokenModal from "./SelectTokenModal";
 import { DefaultToken } from "@/constants/tokens";
-import { useAnalytics } from "@/hooks/useAnalytics";
 import { useBalances } from "@/hooks/useBalances";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 type SwapModalProps = {
   modal?: boolean;
@@ -103,24 +103,36 @@ function SwapForm({
         inputDecimals: values.inputToken.decimals,
         outputDecimals: values.outputToken.decimals,
       };
-      let data: typeof swapValue | { transactions: string[] } = swapValue;
+      let data:
+        | typeof swapValue
+        | {
+            transactions: string[];
+            inputMint: string;
+            outputMint: string;
+            inputDecimals: number;
+            outputDecimals: number;
+            quoteResponse: { inAmount: string; outAmount: string };
+          } = swapValue;
       if (user.wallet.external) {
         const jitoTipLamports = Number(
           await sendTransaction.recentJitoTip("50ema"),
         );
         if (wallet.publicKey) {
-          const { transaction } = await dex.swap.jupiter.buildSwap({
-            ...swapValue,
-            owner: wallet.publicKey,
-            prioritizationFeeLamports: {
-              jitoTipLamports,
-            },
-            amount: new Decimal(values.inputAmount)
-              .mul(Math.pow(10, values.inputToken.decimals))
-              .toFixed(0),
-          });
+          const { transaction, quoteResponse } =
+            await dex.swap.jupiter.buildSwap({
+              ...swapValue,
+              owner: wallet.publicKey,
+              prioritizationFeeLamports: {
+                jitoTipLamports,
+              },
+              amount: new Decimal(values.inputAmount)
+                .mul(Math.pow(10, values.inputToken.decimals))
+                .toFixed(0),
+            });
 
           data = {
+            ...swapValue,
+            quoteResponse,
             transactions: [
               (await wallet.signTransaction!(transaction))
                 .serialize()

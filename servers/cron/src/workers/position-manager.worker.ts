@@ -9,7 +9,7 @@ import type { KMSSecret, Secret, SendTransaction } from "@rhiva-ag/shared";
 import { runWorker } from "../runner";
 import type { Position } from "../controllers/types";
 import { CONCURRENT_WORK, Work } from "../constants";
-import { positionManagerWorkSchema } from "./schema";
+import { positionManagerWorkSchema } from "../schemas";
 import { repositionOrcaPositions } from "../controllers/orca";
 import { rebalanceMeteoraPositions } from "../controllers/meteora";
 import { repositionRaydiumPositions } from "../controllers/raydium";

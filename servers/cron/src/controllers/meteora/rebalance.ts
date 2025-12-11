@@ -14,7 +14,7 @@ import {
 import { Work } from "../../constants";
 import type { Position } from "../types";
 import { createQueue } from "../shared";
-import type { transactionWorkSchema } from "../../external";
+import type { transactionWorkSchema } from "../../schemas";
 
 export const rebalanceMeteoraPositions = async (
   {

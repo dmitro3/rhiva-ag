@@ -104,7 +104,6 @@ export class OrcaLegacyDLMM {
         }),
       );
     }
-
     const { tx, positionMint } = await pool.openPosition(
       lowerTick,
       upperTick,

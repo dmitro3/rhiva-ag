@@ -129,8 +129,11 @@ export const createPosition = async (
   const bundleSimulationResponse = await sender.simulateBundle({
     transactions,
   });
-  console.log(bundleSimulationResponse.result, { depth: null });
-  throwBundleSimulationError(bundleSimulationResponse.result.value);
+
+  throwBundleSimulationError(
+    transactions,
+    bundleSimulationResponse.result.value,
+  );
 
   return {
     transactions,
@@ -214,7 +217,10 @@ export const claimReward = async (
       postExecutionAccountsConfigs: accountConfigs,
     });
 
-    throwBundleSimulationError(simulationResponse.result.value);
+    throwBundleSimulationError(
+      claimRewardV0Transactions,
+      simulationResponse.result.value,
+    );
 
     const tokenBalanceChanges = getTokenBalanceChangesFromBundleSimulation(
       simulationResponse.result.value,
@@ -256,7 +262,10 @@ export const claimReward = async (
     postExecutionAccountsConfigs: accountConfigs,
   });
 
-  throwBundleSimulationError(bundleSimulationResponse.result.value);
+  throwBundleSimulationError(
+    transactions,
+    bundleSimulationResponse.result.value,
+  );
 
   return {
     position,
@@ -341,7 +350,10 @@ export const closePosition = async (
       postExecutionAccountsConfigs: accountConfigs,
     });
 
-    throwBundleSimulationError(simulationResponse.result.value);
+    throwBundleSimulationError(
+      closePositionV0Transactions,
+      simulationResponse.result.value,
+    );
 
     const tokenBalanceChanges = getTokenBalanceChangesFromBundleSimulation(
       simulationResponse.result.value,
@@ -381,7 +393,10 @@ export const closePosition = async (
     replaceRecentBlockhash: true,
   });
 
-  throwBundleSimulationError(bundleSimulationResponse.result.value);
+  throwBundleSimulationError(
+    transactions,
+    bundleSimulationResponse.result.value,
+  );
 
   return {
     transactions,
@@ -443,7 +458,10 @@ export const rebalancePosition = async (
     replaceRecentBlockhash: true,
   });
 
-  throwBundleSimulationError(bundleSimulationResponse.result.value);
+  throwBundleSimulationError(
+    transactions,
+    bundleSimulationResponse.result.value,
+  );
 
   return {
     transactions,

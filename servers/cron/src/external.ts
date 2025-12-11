@@ -4,4 +4,4 @@ export {
   transactionWorkSchema,
   transactionEventSchema,
   positionManagerWorkSchema,
-} from "./workers/schema";
+} from "./schemas";

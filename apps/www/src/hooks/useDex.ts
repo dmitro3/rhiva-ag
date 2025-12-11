@@ -20,8 +20,8 @@ export const useDex = () => {
   });
 
   const dex = useMemo(
-    () => new Dex(connection, raydium, wallet.publicKey),
-    [connection, raydium, wallet.publicKey],
+    () => new Dex(connection, raydium),
+    [connection, raydium],
   );
 
   return dex;

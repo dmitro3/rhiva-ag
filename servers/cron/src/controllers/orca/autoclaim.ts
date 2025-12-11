@@ -14,7 +14,7 @@ import {
 import { Work } from "../../constants";
 import { createQueue } from "../shared";
 import type { Position } from "../types";
-import type { transactionWorkSchema } from "../../external";
+import type { transactionWorkSchema } from "../../schemas";
 import { claimOrcaReward } from "../../../../trpc/src/index.node";
 
 export const autoclaimOrcaPositions = async (

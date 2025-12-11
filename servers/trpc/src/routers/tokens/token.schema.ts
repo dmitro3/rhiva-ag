@@ -1,6 +1,9 @@
 import z from "zod";
 import { address, publicKey } from "@rhiva-ag/datasource";
-import { externalTransactionSchema } from "../positions/position.schema";
+import {
+  externalTransactionSchema,
+  jitoTipConfigSchema,
+} from "../positions/position.schema";
 
 export const tokenChartFilter = z.object({
   before_timestamp: z.number().optional(),
@@ -16,17 +19,31 @@ export const tokenTradeFilter = z.object({
   trade_volume_in_usd_greater_than: z.number(),
 });
 
-export const tokenSwapSchema = z.union([
-  z.object({
-    amount: z.number(),
-    slippage: z.number(),
-    inputMint: address(),
-    outputMint: address(),
-    inputDecimals: z.number().int(),
-    outputDecimals: z.number().int(),
-  }),
-  externalTransactionSchema,
-]);
+export const tokenSwapSchema = z
+  .union([
+    z.object({
+      amount: z.number(),
+      slippage: z.number(),
+    }),
+    externalTransactionSchema.extend({
+      quoteResponse: z.object({
+        inAmount: z.string(),
+        outAmount: z.string(),
+      }),
+    }),
+  ])
+  .and(
+    z.object({
+      inputMint: address(),
+      outputMint: address(),
+      inputDecimals: z.number().int(),
+      outputDecimals: z.number().int(),
+      jitoConfig: jitoTipConfigSchema.default({
+        type: "dynamic",
+        priorityFeePercentile: "50ema",
+      }),
+    }),
+  );
 
 export const tokenSendSchema = z.union([
   z.object({

@@ -18,8 +18,8 @@ import {
 import { upsertPool } from "./shared";
 import { syncOrcaPositions } from "./sync";
 import { sendNotification } from "../send-notification";
+import type { transactionWorkSchema } from "../../schemas";
 import { getPositionById, getPositionsWhere } from "../shared";
-import type { transactionWorkSchema } from "../../workers/schema";
 
 export const syncOrcaPositionStateFromEvent = async ({
   db,

@@ -113,7 +113,6 @@ export const createPosition = async (
       poolInfo: pool.poolInfo,
       amount: new BN(addLiquidityAmount),
       slippage: percentageFromBps(slippage),
-
       inputA: addLiquidityMint === poolInfo.mintA.address,
     });
 
@@ -168,7 +167,10 @@ export const createPosition = async (
     skipSigVerify: true,
     replaceRecentBlockhash: true,
   });
-  throwBundleSimulationError(bundleSimulationResponse.result.value);
+  throwBundleSimulationError(
+    transactions,
+    bundleSimulationResponse.result.value,
+  );
 
   return {
     transactions,
@@ -253,7 +255,10 @@ export const claimReward = async (
       postExecutionAccountsConfigs: accountConfigs,
     });
 
-    throwBundleSimulationError(simulationResponse.result.value);
+    throwBundleSimulationError(
+      claimRewardV0Transactions,
+      simulationResponse.result.value,
+    );
 
     const tokenBalanceChanges = getTokenBalanceChangesFromBundleSimulation(
       simulationResponse.result.value,
@@ -290,7 +295,10 @@ export const claimReward = async (
     replaceRecentBlockhash: true,
   });
 
-  throwBundleSimulationError(bundleSimulationResponse.result.value);
+  throwBundleSimulationError(
+    transactions,
+    bundleSimulationResponse.result.value,
+  );
 
   return {
     transactions,
@@ -374,14 +382,15 @@ export const closePosition = async (
   ];
 
   if (swapToNative) {
+    const transactions = [closePositionV0Transaction];
     const simulationResponse = await sender.simulateBundle({
       skipSigVerify: true,
-      transactions: [closePositionV0Transaction],
+      transactions,
       postExecutionAccountsConfigs: accountConfigs,
       preExecutionAccountsConfigs: accountConfigs,
     });
 
-    throwBundleSimulationError(simulationResponse.result.value);
+    throwBundleSimulationError(transactions, simulationResponse.result.value);
 
     tokenBalanceChanges = getTokenBalanceChangesFromBundleSimulation(
       simulationResponse.result.value,
@@ -436,7 +445,10 @@ export const closePosition = async (
       bundleSimulationResponse.result.value,
     );
 
-  throwBundleSimulationError(bundleSimulationResponse.result.value);
+  throwBundleSimulationError(
+    transactions,
+    bundleSimulationResponse.result.value,
+  );
 
   return {
     tokenAAta,
@@ -621,7 +633,10 @@ export const reposition = async (
     skipSigVerify: true,
   });
 
-  throwBundleSimulationError(bundleSimulationResponse.result.value);
+  throwBundleSimulationError(
+    transactions,
+    bundleSimulationResponse.result.value,
+  );
 
   return {
     transactions,

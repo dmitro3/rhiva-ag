@@ -29,6 +29,7 @@
     "bs58": "^6.0.0"
   },
   "dependencies": {
+    "@rhiva-ag/decoder": "*",
     "@aws-sdk/client-kms": "^3.914.0",
     "lodash.chunk": "^4.2.0",
     "tweetnacl": "^1.0.3"

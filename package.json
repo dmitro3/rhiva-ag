@@ -19,8 +19,10 @@
   "trustedDependencies": [
     "@orca-so/whirlpools-sdk"
   ],
+  "optionalDependencies": {
+    "@rhiva-ag/repl": "*"
+  },
   "devDependencies": {
-    "@rhiva-ag/repl": "*",
     "@rhiva-ag/datasource": "*",
     "@biomejs/biome": "2.2.4",
     "@tsconfig/recommended": "^1.0.10",
@@ -41,7 +43,5 @@
     "servers/*",
     "apps/*",
     "tools/*"
-  ],
-  "module": "index.ts",
-  "type": "module"
+  ]
 }

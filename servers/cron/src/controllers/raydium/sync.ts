@@ -34,7 +34,7 @@ import {
 
 import { Work } from "../../constants";
 import { createQueue, getPositionsWhere } from "../shared";
-import type { positionManagerWorkSchema } from "../../workers/schema";
+import type { positionManagerWorkSchema } from "../../schemas";
 
 export const syncRaydiumPositionsForWallet = async ({
   db,

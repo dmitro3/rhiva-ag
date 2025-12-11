@@ -44,9 +44,6 @@ export class MeteoraDLMM {
     const binCount = maxBinId - minBinId;
 
     if (binCount > maxBinPerPosition) {
-      const midpoint = Math.floor(maxBinPerPosition / 2);
-      const lowerBinId = activeBin.binId - midpoint;
-      const upperBinId = activeBin.binId + midpoint;
       const transactions = await Promise.all([
         pool.createExtendedEmptyPosition(minBinId, maxBinId, position, owner),
         pool.addLiquidityByStrategy({
@@ -57,8 +54,8 @@ export class MeteoraDLMM {
           positionPubKey: position,
           strategy: {
             strategyType,
-            minBinId: lowerBinId,
-            maxBinId: upperBinId,
+            minBinId,
+            maxBinId,
           },
         }),
       ]);
@@ -76,7 +73,6 @@ export class MeteoraDLMM {
             maxBinId,
             minBinId,
             strategyType,
-            singleSidedX: totalXAmount.isZero() || totalYAmount.isZero(),
           },
         });
 

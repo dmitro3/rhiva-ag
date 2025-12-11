@@ -1,9 +1,9 @@
 import type crypto from "crypto";
 import {
-  GenerateDataKeyCommand,
-  type DataKeySpec,
   KMSClient,
   DecryptCommand,
+  GenerateDataKeyCommand,
+  type DataKeySpec,
 } from "@aws-sdk/client-kms";
 
 import { Secret } from "./secret";
@@ -33,6 +33,11 @@ export class KMSSecret {
       ivLength: number;
       algorithm: crypto.CipherGCMTypes;
     },
+    credentials?: {
+      accessKeyId: string;
+      secretAccessKey: string;
+      sessionToken: string;
+    },
   ) {
     this.options = {
       ivLength: 12,
@@ -42,6 +47,7 @@ export class KMSSecret {
 
     this.kmsClient = new KMSClient({
       region,
+      credentials,
     });
   }
 

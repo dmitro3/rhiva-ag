@@ -37,7 +37,9 @@ spec:
           args: ["$FILE"]
           envFrom:
             - secretRef:
-                name: rhiva-secrets   
+                name: rhiva-secrets
+            - secretRef: 
+                name: aws-credentials
           resources:
             requests:
               cpu: "0.25"
@@ -68,7 +70,7 @@ metadata:
     app: $NAME
     role: worker
 spec:
-  replicas: 5
+  replicas: 2
   selector: 
     matchLabels:
       app: $NAME
@@ -87,12 +89,14 @@ spec:
           envFrom:
             - secretRef:
                 name: rhiva-secrets
+            - secretRef: 
+                name: aws-credentials
           resources:
             requests:
-              cpu: "250m"
+              cpu: "0.25"
               memory: "256Mi"
             limits:
-              cpu: "1000m"
+              cpu: "1"
               memory: "512Mi"
 ---
 EOF
@@ -108,7 +112,7 @@ spec:
     apiVersion: apps/v1 
     kind: Deployment 
     name: $NAME-deployment 
-  minReplicas: 5
+  minReplicas: 2
   maxReplicas: 20
   metrics:
     - type: Resource 
@@ -132,7 +136,7 @@ metadata:
   labels:
     app: trpc
 spec:
-  replicas: 5
+  replicas: 2
   selector: 
     matchLabels:
       app: trpc
@@ -151,6 +155,8 @@ spec:
           envFrom:
             - secretRef:
                 name: rhiva-secrets   
+            - secretRef: 
+                name: aws-credentials
           env: 
             - name: REDIS_PASSWORD 
               valueFrom:
@@ -182,7 +188,7 @@ spec:
     apiVersion: apps/v1
     kind: Deployment 
     name: trpc-deployment
-  minReplicas: 5
+  minReplicas: 2
   maxReplicas: 20
   metrics:
     - type: Resource
@@ -203,7 +209,7 @@ metadata:
   labels:
     app: mcp
 spec:
-  replicas: 3
+  replicas: 2
   selector: 
     matchLabels:
       app: mcp
@@ -222,6 +228,8 @@ spec:
           envFrom:
             - secretRef:
                 name: rhiva-secrets   
+            - secretRef: 
+                name: aws-credentials
           ports: 
             - containerPort: 8000
           resources:
@@ -252,7 +260,7 @@ spec:
     apiVersion: apps/v1
     kind: Deployment 
     name: mcp-deployment
-  minReplicas: 3
+  minReplicas: 2
   maxReplicas: 20
   metrics:
     - type: Resource

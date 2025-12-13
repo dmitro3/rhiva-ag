@@ -1,7 +1,7 @@
 # syntax = docker/dockerfile:1.2
-# for this sake of christ don't edit this file unless you know what you're doing 
+# for christ sake don't edit this file unless you know what you're doing 
 
-FROM oven/bun:1.3.2 as base
+FROM oven/bun:1.3.4 as base
 
 ARG GITHUB_TOKEN
 ENV NODE_ENV="production"

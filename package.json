@@ -2,7 +2,7 @@
   "name": "rhiva-ag",
   "version": "0.0.0",
   "private": true,
-  "packageManager": "bun@1.2.9",
+  "packageManager": "bun@1.3.4",
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",

@@ -29,7 +29,7 @@ sudo kubectl create secret generic rhiva-secrets \
 
 export TAG="latest"
 export BUILD_TS=$(date +%s)
-export REGISTRY_URL="localhost:5000"
+export REGISTRY_URL="159.195.61.79:5000"
 
 if ! docker ps | grep -q registry; then
   sudo docker run -d -p 5000:5000 --restart=always --name registry registry:2

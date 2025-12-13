@@ -21,15 +21,19 @@ if [ -f "$AWS_REFRESH_FILE" ]; then
 fi 
 
 if ! kubectl get namespace rhiva-ag >/dev/null 2>&1; then
-  kubectl create namespace $NAMESPACE
+  sudo kubectl create namespace $NAMESPACE
 fi
 
-kubectl create secret generic rhiva-secrets \
+sudo kubectl create secret generic rhiva-secrets \
   --from-env-file=.env \
   --namespace $NAMESPACE \
   --dry-run=client -o yaml | kubectl apply -f -
-  
-docker build --build-arg GITHUB_TOKEN=$GITHUB_TOKEN -t rhiva-ag:latest . -f servers/Dockerfile
 
-./scripts/k8s-codegen.sh 
-kubectl apply -f infra/k8s
+export TAG="dev"
+export BUILD_TS=$(date +%s)
+  
+sudo docker build --build-arg GITHUB_TOKEN=$GITHUB_TOKEN -t rhiva-ag/servers:$TAG . -f servers/Dockerfile
+sudo docker save rhiva-ag/servers:$TAG | sudo ctr -n k8s.io images import -
+
+. ./scripts/k8s-codegen.sh 
+sudo kubectl apply -f infra/k8s

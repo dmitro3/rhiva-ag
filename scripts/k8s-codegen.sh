@@ -1,5 +1,5 @@
 #!/bin/sh 
-HASH=$(kubectl get secret rhiva-secrets -n rhiva-ag -o yaml | sha256sum | awk '{print $1}')
+HASH=$(sudo kubectl get secret rhiva-secrets -n rhiva-ag -o yaml | sha256sum | awk '{print $1}')
 SCHEDULER_OUTPUT="infra/k8s/schedulers.yml"
 SCHEDULER_PATH="servers/cron/src/schedulers"
 touch "$SCHEDULER_OUTPUT"
@@ -29,10 +29,12 @@ spec:
         app: $NAME
       annotations:
         configmap-hash: $HASH
+        dev.build.timestamp: "{{BUILD_TS}}"
     spec:
       containers:
         - name: scheduler
-          image: rhiva-ag:latest 
+          image: rhiva-ag/servers:$TAG
+          imagePullPolicy: IfNotPresent
           command: ["bun"]
           args: ["$FILE"]
           envFrom:
@@ -80,10 +82,12 @@ spec:
         app: $NAME
       annotations:
         configmap-hash: $HASH
+        dev.build.timestamp: "{{BUILD_TS}}"
     spec:
       containers:
         - name: worker
-          image: rhiva-ag:latest 
+          image: rhiva-ag/servers:$TAG
+          imagePullPolicy: IfNotPresent
           command: ["bun"]
           args: ["$FILE"]
           envFrom:
@@ -146,10 +150,12 @@ spec:
         app: trpc
       annotations:
         configmap-hash: $HASH
+        dev.build.timestamp: "{{BUILD_TS}}"
     spec:
       containers:
         - name: trpc 
-          image: rhiva-ag:latest 
+          image: rhiva-ag/servers:$TAG
+          imagePullPolicy: IfNotPresent
           command: ["bun"]
           args: ["servers/trpc/src/index.ts"]
           envFrom:
@@ -219,10 +225,12 @@ spec:
         app: mcp
       annotations:
         configmap-hash: $HASH
+        dev.build.timestamp: "{{BUILD_TS}}"
     spec:
       containers:
         - name: mcp
-          image: rhiva-ag:latest 
+          image: rhiva-ag/servers:$TAG
+          imagePullPolicy: IfNotPresent 
           command: ["bun"]
           args: ["servers/mcp/src/index.ts"]
           envFrom:

@@ -36,7 +36,7 @@ if ! docker ps | grep -q registry; then
 fi
 
 sudo docker build --build-arg GITHUB_TOKEN=$GITHUB_TOKEN -t $REGISTRY_URL/rhiva-ag/servers:$TAG . -f servers/Dockerfile
-sudo docker push $REGISTRY_URL/rhiva-ag/servers:$TAG
+sudo docker push http://$REGISTRY_URL/rhiva-ag/servers:$TAG
 
 . ./scripts/k8s-codegen.sh 
 sudo kubectl apply -f infra/k8s

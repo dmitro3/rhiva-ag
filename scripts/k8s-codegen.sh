@@ -1,7 +1,10 @@
 #!/bin/sh 
-HASH=$(sudo kubectl get secret rhiva-secrets -n rhiva-ag -o yaml | sha256sum | awk '{print $1}')
+TAG=${TAG:-dev}
+REGISTRY_URL=${REGISTRY_URL:-localhost:5000}
 SCHEDULER_OUTPUT="infra/k8s/schedulers.yml"
 SCHEDULER_PATH="servers/cron/src/schedulers"
+HASH=$(sudo kubectl get secret rhiva-secrets -n rhiva-ag -o yaml | sha256sum | awk '{print $1}')
+
 touch "$SCHEDULER_OUTPUT"
 > "$SCHEDULER_OUTPUT"
 
@@ -29,12 +32,10 @@ spec:
         app: $NAME
       annotations:
         configmap-hash: $HASH
-        dev.build.timestamp: "{{BUILD_TS}}"
     spec:
       containers:
         - name: scheduler
-          image: rhiva-ag/servers:$TAG
-          imagePullPolicy: Never
+          image: $REGISTRY_URL/rhiva-ag/servers:$TAG
           command: ["bun"]
           args: ["$FILE"]
           envFrom:
@@ -82,12 +83,11 @@ spec:
         app: $NAME
       annotations:
         configmap-hash: $HASH
-        dev.build.timestamp: "{{BUILD_TS}}"
     spec:
       containers:
         - name: worker
-          image: rhiva-ag/servers:$TAG
-          imagePullPolicy: Never
+          image: $REGISTRY_URL/rhiva-ag/servers:$TAG
+          
           command: ["bun"]
           args: ["$FILE"]
           envFrom:
@@ -150,12 +150,10 @@ spec:
         app: trpc
       annotations:
         configmap-hash: $HASH
-        dev.build.timestamp: "{{BUILD_TS}}"
     spec:
       containers:
         - name: trpc 
-          image: rhiva-ag/servers:$TAG
-          imagePullPolicy: Never
+          image: $REGISTRY_URL/rhiva-ag/servers:latest
           command: ["bun"]
           args: ["servers/trpc/src/index.ts"]
           envFrom:
@@ -225,12 +223,10 @@ spec:
         app: mcp
       annotations:
         configmap-hash: $HASH
-        dev.build.timestamp: "{{BUILD_TS}}"
     spec:
       containers:
         - name: mcp
-          image: rhiva-ag/servers:$TAG
-          imagePullPolicy: Never 
+          image: $REGISTRY_URL/rhiva-ag/servers:$TAG
           command: ["bun"]
           args: ["servers/mcp/src/index.ts"]
           envFrom:

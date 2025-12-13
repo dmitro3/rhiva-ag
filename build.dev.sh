@@ -27,11 +27,16 @@ sudo kubectl create secret generic rhiva-secrets \
   --namespace $NAMESPACE \
   --dry-run=client -o yaml | kubectl apply -f -
 
-export TAG="dev"
+export TAG="latest"
 export BUILD_TS=$(date +%s)
-  
-sudo docker build --build-arg GITHUB_TOKEN=$GITHUB_TOKEN -t rhiva-ag/servers:$TAG . -f servers/Dockerfile
-sudo docker save rhiva-ag/servers:$TAG | sudo ctr -n k8s.io images import -
+export REGISTRY_URL="localhost:5000"
+
+if ! docker ps | grep -q registry; then
+  sudo docker run -d -p 5000:5000 --restart=always --name registry registry:2
+fi
+
+sudo docker build --build-arg GITHUB_TOKEN=$GITHUB_TOKEN -t $REGISTRY_URL/rhiva-ag/servers:$TAG . -f servers/Dockerfile
+sudo docker push $REGISTRY_URL/rhiva-ag/servers:$TAG
 
 . ./scripts/k8s-codegen.sh 
 sudo kubectl apply -f infra/k8s

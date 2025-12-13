@@ -36,6 +36,7 @@ WORKDIR /usr/src/app
 COPY --from=codegen /usr/src/app/bin ./bin
 COPY --from=codegen /usr/src/app/bunfig.toml .
 
+# for some reason using json from turbo doesn't work
 COPY --from=codegen /usr/src/app/out/full .
 RUN --mount=type=cache,target=/root/.bun/cache\
   bun install --frozen-lockfile

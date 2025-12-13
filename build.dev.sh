@@ -13,8 +13,6 @@ NAMESPACE="rhiva-ag"
 AWS_REFRESH_FILE="$HOME/vps-infra/aws-refresh.sh"
 AWS_REFRESH_SCRIPT=". $HOME/rhiva-ag/scripts/aws-refresh.sh"
 if [ -f "$AWS_REFRESH_FILE" ]; then
-  
-  
   if ! grep -qF -- "$AWS_REFRESH_SCRIPT" "$AWS_REFRESH_FILE"; then 
     echo "$AWS_REFRESH_SCRIPT" >> "$AWS_REFRESH_FILE"
   fi

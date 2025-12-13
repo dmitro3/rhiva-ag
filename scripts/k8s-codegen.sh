@@ -34,7 +34,7 @@ spec:
       containers:
         - name: scheduler
           image: rhiva-ag/servers:$TAG
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Never
           command: ["bun"]
           args: ["$FILE"]
           envFrom:
@@ -87,7 +87,7 @@ spec:
       containers:
         - name: worker
           image: rhiva-ag/servers:$TAG
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Never
           command: ["bun"]
           args: ["$FILE"]
           envFrom:
@@ -155,7 +155,7 @@ spec:
       containers:
         - name: trpc 
           image: rhiva-ag/servers:$TAG
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Never
           command: ["bun"]
           args: ["servers/trpc/src/index.ts"]
           envFrom:
@@ -175,7 +175,7 @@ spec:
 apiVersion: v1
 kind: Service 
 metadata:
-  name: trpc-service
+  name: trpc
   namespace: rhiva-ag
 spec: 
   type: LoadBalancer
@@ -230,7 +230,7 @@ spec:
       containers:
         - name: mcp
           image: rhiva-ag/servers:$TAG
-          imagePullPolicy: IfNotPresent 
+          imagePullPolicy: Never 
           command: ["bun"]
           args: ["servers/mcp/src/index.ts"]
           envFrom:
@@ -248,7 +248,7 @@ spec:
 apiVersion: v1
 kind: Service 
 metadata:
-  name: mcp-service
+  name: mcp
   namespace: rhiva-ag
 spec: 
   type: LoadBalancer

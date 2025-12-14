@@ -32,9 +32,9 @@ spec:
       annotations:
         configmap-hash: $HASH
     spec:
+      imagePullSecrets:
+        - name: regcred
       containers:
-        imagePullSecrets:
-          - name: regcred
         - name: scheduler
           image: $REGISTRY_URL/rhiva-ag/servers:$TAG
           command: ["bun"]
@@ -85,9 +85,9 @@ spec:
       annotations:
         configmap-hash: $HASH
     spec:
+      imagePullSecrets:
+        - name: regcred    
       containers:
-        imagePullSecrets:
-          - name: regcred
         - name: worker
           image: $REGISTRY_URL/rhiva-ag/servers:$TAG
           command: ["bun"]
@@ -153,9 +153,9 @@ spec:
       annotations:
         configmap-hash: $HASH
     spec:
-      containers:
-        imagePullSecrets:
-          - name: regcred      
+      imagePullSecrets:
+        - name: regcred
+      containers:  
         - name: trpc 
           image: $REGISTRY_URL/rhiva-ag/servers:latest
           command: ["bun"]
@@ -228,9 +228,9 @@ spec:
       annotations:
         configmap-hash: $HASH
     spec:
+      imagePullSecrets:
+        - name: regcred
       containers:
-        imagePullSecrets:
-          - name: regcred
         - name: mcp
           image: $REGISTRY_URL/rhiva-ag/servers:$TAG
           command: ["bun"]

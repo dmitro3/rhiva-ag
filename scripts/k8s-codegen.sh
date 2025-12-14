@@ -165,22 +165,16 @@ spec:
                 name: rhiva-secrets   
             - secretRef: 
                 name: aws-credentials
-          env: 
-            - name: REDIS_PASSWORD 
-              valueFrom:
-                secretKeyRef:
-                  name: redis-secret 
-                  key: REDIS_PASSWORD  
           ports: 
             - containerPort: 8000
 ---
 apiVersion: v1
 kind: Service 
 metadata:
-  name: trpc
+  name: trpc-service
   namespace: rhiva-ag
 spec: 
-  type: LoadBalancer
+  type: ClusterIP
   selector: 
     app: trpc 
   ports: 
@@ -205,6 +199,28 @@ spec:
         target: 
           type: Utilization
           averageUtilization: 70
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress 
+metadata:
+  name: trpc-ingress 
+  namespace: rhiva-ag
+spec:
+  tls: 
+    - secretName: trpc-tls 
+      hosts:
+        - v1.api.rhiva.fun 
+rules:
+  - host: v1.api.rhiva.fun 
+    http:
+      - path: /
+        pathType: Prefix
+        backend: 
+          service:
+            name: trpc-service
+            port:
+              number: 80
+---
 EOF
 
 MCP_SERVER_OUTPUT="infra/k8s/mcp.yml"
@@ -253,7 +269,7 @@ metadata:
   name: mcp-service
   namespace: rhiva-ag
 spec: 
-  type: LoadBalancer
+  type: ClusterIP
   selector: 
     app: mcp 
   ports: 

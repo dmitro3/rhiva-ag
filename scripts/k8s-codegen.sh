@@ -213,13 +213,14 @@ spec:
   rules:
     - host: v1.api.rhiva.fun 
       http:
-        - path: /
-          pathType: Prefix
-          backend: 
-            service:
-              name: trpc-service
-              port:
-                number: 80
+       paths:
+         - path: /
+           pathType: Prefix
+           backend: 
+             service:
+               name: trpc-service
+               port:
+                 number: 80
 ---
 EOF
 

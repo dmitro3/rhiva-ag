@@ -142,7 +142,7 @@ metadata:
   labels:
     app: trpc
 spec:
-  replicas: 1
+  replicas: 2
   selector: 
     matchLabels:
       app: trpc
@@ -190,7 +190,7 @@ spec:
     apiVersion: apps/v1
     kind: Deployment 
     name: trpc-deployment
-  minReplicas: 1
+  minReplicas: 2
   maxReplicas: 20
   metrics:
     - type: Resource
@@ -237,7 +237,7 @@ metadata:
   labels:
     app: mcp
 spec:
-  replicas: 1
+  replicas: 2
   selector: 
     matchLabels:
       app: mcp
@@ -290,7 +290,7 @@ spec:
     apiVersion: apps/v1
     kind: Deployment 
     name: mcp-deployment
-  minReplicas: 1
+  minReplicas: 2
   maxReplicas: 20
   metrics:
     - type: Resource

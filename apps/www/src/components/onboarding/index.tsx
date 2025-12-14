@@ -27,8 +27,8 @@ export default function OnboardingWrapper({
     cookies.verified ? 1 : 0,
   );
   const onboard = useMemo(
-    () => (cookies.displayName ? false : !user.displayName),
-    [cookies.displayName, user.displayName],
+    () => (cookies.displayName ? false : !user?.displayName),
+    [cookies.displayName, user?.displayName],
   );
 
   return (

@@ -37,7 +37,8 @@ sudo docker push $REGISTRY_URL/rhiva-ag/servers:$TAG
 kubectl create secret generic regcred \
 --from-file=.dockerconfigjson=$HOME/.docker/config.json \
 --namespace $NAMESPACE \
---type=kubernetes.io/dockerconfigjson -o yaml | kubectl apply -f - 
+--type=kubernetes.io/dockerconfigjson\
+--dry-run=client -o yaml | kubectl apply -f - 
 
 . ./scripts/k8s-codegen.sh 
 sudo kubectl apply -f infra/k8s

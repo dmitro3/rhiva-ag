@@ -37,8 +37,11 @@ const store = new RedisStore({
 const apps = getApps();
 
 if (apps.length === 0) {
-  let serviceAccount = getEnv<ServiceAccount>("FIREBASE_SERVICE_KEY");
-  if (isString(serviceAccount)) serviceAccount = JSON.parse(serviceAccount);
+  const serviceAccount = JSON.parse(
+    Buffer.from(getEnv<string>("FIREBASE_SERVICE_KEY"), "base64").toString(
+      "utf-8",
+    ),
+  );
   initializeApp({
     credential: cert(serviceAccount),
   });

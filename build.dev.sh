@@ -34,5 +34,10 @@ export REGISTRY_URL="registry.rhiva.fun"
 sudo docker build --build-arg GITHUB_TOKEN=$GITHUB_TOKEN -t $REGISTRY_URL/rhiva-ag/servers:$TAG -f servers/Dockerfile .
 sudo docker push $REGISTRY_URL/rhiva-ag/servers:$TAG
 
+kubectl create secret generic regcred \
+--from-file=.dockerconfigjson=$HOME/.docker/config.json \
+--namespace $NAMESPACE \
+--type=kubernetes.io/dockerconfigjson -o yaml | kubectl apply -f - 
+
 . ./scripts/k8s-codegen.sh 
 sudo kubectl apply -f infra/k8s

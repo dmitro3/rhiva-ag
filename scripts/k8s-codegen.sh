@@ -2,7 +2,6 @@
 TAG=${TAG:-dev}
 SCHEDULER_OUTPUT="infra/k8s/schedulers.yml"
 SCHEDULER_PATH="servers/cron/src/schedulers"
-REGISTRY_URL=http://${REGISTRY_URL:-localhost:5000}
 HASH=$(sudo kubectl get secret rhiva-secrets -n rhiva-ag -o yaml | sha256sum | awk '{print $1}')
 
 touch "$SCHEDULER_OUTPUT"
@@ -244,7 +243,7 @@ spec:
 apiVersion: v1
 kind: Service 
 metadata:
-  name: mcp
+  name: mcp-service
   namespace: rhiva-ag
 spec: 
   type: LoadBalancer

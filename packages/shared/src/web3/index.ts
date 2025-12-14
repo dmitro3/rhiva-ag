@@ -268,8 +268,9 @@ export class SendTransaction {
         ];
       else
         return getTransferSolInstruction({
-          source: owner as TransactionSigner,
+          // todo
           amount: jitoTipLamports,
+          source: owner as unknown as any,
           destination: fromLegacyPublicKey(tipAddress),
         });
 

@@ -205,9 +205,8 @@ kind: Ingress
 metadata:
   name: trpc-ingress 
   namespace: rhiva-ag
-  metadata:
-    annotations:
-      cert-manager.io/cluster-issuer: letsencrypt
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
 spec:
   ingressClassName: caddy
   tls: 

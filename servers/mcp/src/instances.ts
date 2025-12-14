@@ -1,9 +1,9 @@
+import path from "path";
 import { DexApi } from "@rhiva-ag/dex-api";
 import { createDB } from "@rhiva-ag/datasource";
 import Coingecko from "@coingecko/coingecko-typescript";
 
 import { getEnv } from "./env";
-import path from "path";
 
 export const __srcdir =
   process.env.NODE_ENV === "production"

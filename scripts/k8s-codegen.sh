@@ -206,9 +206,10 @@ metadata:
   name: trpc-ingress 
   namespace: rhiva-ag
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: zerossl
 spec:
-  ingressClassName: caddy
+  ingressClassName: nginx
   tls: 
     - secretName: trpc-tls 
       hosts:

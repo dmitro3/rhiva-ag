@@ -175,10 +175,6 @@ const fn = async ({
         switch (data.type) {
           case "rebalance":
           case "reposition":
-            logger.info(
-              { type: data.type, dex: data.dex },
-              "position.manager.worker.task.ready",
-            );
             return startRebalanceTask(data, allPositions);
           case "claim":
             return startClaimTask(data, allPositions);
@@ -199,7 +195,7 @@ const fn = async ({
 
   worker.on("completed", (job) => {
     logger.info(
-      { id: job.id, data: job.data },
+      { id: job.id, data: job.data, returnvalue: job.returnvalue },
       "position.manager.worker.successful",
     );
   });

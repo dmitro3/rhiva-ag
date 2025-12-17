@@ -16,6 +16,7 @@ import type { Position } from "../types";
 import { createQueue } from "../shared";
 import type { transactionWorkSchema } from "../../schemas";
 
+// Todo notification alert on rebalance
 export const rebalanceMeteoraPositions = async (
   {
     dex,

@@ -216,12 +216,12 @@ export const syncRaydiumPositions = async ({
         );
 
         if (repositionDeltaTime >= offchainPosition.config.repositionTime)
-          inActivePositions.push(fromLegacyPublicKey(position.publicKey));
+          inActivePositions.push(fromLegacyPublicKey(position.nftMint));
         if (
           offchainPosition.config.enableAutoClaim &&
           autoclaimDeltaTime >= offchainPosition.config.autoclaimTime
         )
-          claimPositions.push(fromLegacyPublicKey(position.publicKey));
+          claimPositions.push(fromLegacyPublicKey(position.nftMint));
       }
     }
 

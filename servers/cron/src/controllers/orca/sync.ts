@@ -271,12 +271,12 @@ export const syncOrcaPositions = async ({
         );
 
         if (repositionDeltaTime >= offchainPosition.config.repositionTime)
-          inActivePositions.push(position.pubkey);
+          inActivePositions.push(position.data.positionMint);
         if (
           offchainPosition.config.enableAutoClaim &&
           autoclaimDeltaTime >= offchainPosition.config.autoclaimTime
         )
-          claimPositions.push(position.pubkey);
+          claimPositions.push(position.data.positionMint);
       }
     }
 

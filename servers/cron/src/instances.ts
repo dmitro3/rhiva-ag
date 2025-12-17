@@ -59,7 +59,7 @@ export const createRedis = (options?: RedisOptions) => {
     });
   else if (options)
     redis = defaultCreateRedis(getEnv("REDIS_URL"), {
-      password: getEnv("REDIS_PASSWORD"),
+      password: getEnv("REDIS_PASSWORD", undefined, false),
       ...options,
     });
   else redis = defaultCreateRedis(getEnv("REDIS_URL"));

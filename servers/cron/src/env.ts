@@ -32,7 +32,17 @@ type Env =
   | "SOLANA_RPC_URL"
   | "DEV_WALLET";
 
-export const getEnv = <T>(name: Env, refine?: <K>(value: K) => T): T => {
+export function getEnv<T>(name: Env, refine?: <K>(value: K) => T): T;
+export function getEnv<T>(
+  name: Env,
+  refine: (<K>(value: K) => T) | undefined,
+  strict: boolean,
+): T | undefined;
+export function getEnv<T>(
+  name: Env,
+  refine?: <K>(value: K) => T,
+  strict: boolean = true,
+) {
   const value = process.env[name] || process.env[format("APP_%s", name)];
   if (value)
     try {
@@ -41,5 +51,7 @@ export const getEnv = <T>(name: Env, refine?: <K>(value: K) => T): T => {
     } catch {
       return (refine ? refine(value) : value) as T;
     }
-  throw new Error(format("%s not found in env file", name));
-};
+  if (strict) throw new Error(format("%s not found in env file", name));
+
+  return undefined;
+}

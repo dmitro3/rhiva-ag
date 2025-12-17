@@ -2,7 +2,7 @@ import type z from "zod";
 import Dex from "@rhiva-ag/dex";
 import type { Logger } from "pino";
 import { Worker, type Job } from "bullmq";
-import { and, eq, inArray, not } from "drizzle-orm";
+import { and, inArray, not } from "drizzle-orm";
 import { positions, type Database } from "@rhiva-ag/datasource";
 import type { KMSSecret, Secret, SendTransaction } from "@rhiva-ag/shared";
 
@@ -44,16 +44,6 @@ const fn = async ({
     positions: Position[],
   ) => {
     switch (data.dex) {
-      case "orca": {
-        return repositionOrcaPositions(
-          {
-            dex,
-            secret,
-            sender,
-          },
-          ...positions,
-        );
-      }
       case "meteora":
         return rebalanceMeteoraPositions(
           {
@@ -63,9 +53,21 @@ const fn = async ({
           },
           ...positions,
         );
+      case "orca": {
+        return repositionOrcaPositions(
+          {
+            db,
+            dex,
+            secret,
+            sender,
+          },
+          ...positions,
+        );
+      }
       case "raydium-clmm":
         return repositionRaydiumPositions(
           {
+            db,
             dex,
             secret,
             sender,
@@ -168,7 +170,7 @@ const fn = async ({
             },
             where: and(
               inArray(positions.id, data.positions),
-              not(eq(positions.state, "closed")),
+              not(inArray(positions.state, ["closed", "repositioned"])),
             ),
           })
           .execute();

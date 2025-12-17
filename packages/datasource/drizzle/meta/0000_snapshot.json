@@ -1,5 +1,5 @@
 {
-  "id": "3c9f7bb5-fa09-44bb-8311-cc50b2a1370b",
+  "id": "9f1877d7-3e4f-45d3-ae17-17ed7c6ed5de",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -760,7 +760,7 @@
           "type": "double precision",
           "primaryKey": false,
           "notNull": true,
-          "default": 0.5
+          "default": 10
         },
         "autoclaimTime": {
           "name": "autoclaimTime",

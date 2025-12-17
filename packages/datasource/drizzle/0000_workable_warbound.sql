@@ -108,7 +108,7 @@ CREATE TABLE "rewards" (
 CREATE TABLE "settings" (
 	"user" uuid PRIMARY KEY NOT NULL,
 	"extra" jsonb DEFAULT '{"claim":{"swapToNative":true},"close":{"swapToNative":true}}'::jsonb NOT NULL,
-	"slippage" double precision DEFAULT 0.5 NOT NULL,
+	"slippage" double precision DEFAULT 10 NOT NULL,
 	"autoclaimTime" double precision DEFAULT 3600000 NOT NULL,
 	"autocompoundTime" double precision DEFAULT 3600000 NOT NULL,
 	"rebalanceTime" double precision DEFAULT 60000 NOT NULL,

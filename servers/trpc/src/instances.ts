@@ -14,7 +14,7 @@ import {
 import { getEnv } from "./env";
 
 export const secret =
-  "AWS_KMS_KEY_ID" in process.env && "AWS_REGION" in process.env
+  "APP_AWS_KMS_KEY_ID" in process.env && "APP_AWS_REGION" in process.env
     ? new KMSSecret(getEnv("AWS_KMS_KEY_ID"), getEnv("AWS_REGION"), {
         ivLength: 12,
         algorithm: "aes-256-gcm",

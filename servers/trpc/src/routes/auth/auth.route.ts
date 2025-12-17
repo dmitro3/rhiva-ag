@@ -58,7 +58,6 @@ const firebaseTokenSignInRoute = async (
   reply: FastifyReply,
 ) => {
   const data = firebaseTokenAuthSchema.parse(request.body);
-  console.log(data);
   const auth = getAuth();
   const decodedUser = await auth.verifyIdToken(data.token, true);
   const user = await AuthMiddleware.upsertUser(

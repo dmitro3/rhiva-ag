@@ -22,7 +22,6 @@ import registerRoutes from "./routes";
 import { createRedis } from "./instances";
 import { createContext } from "./context";
 import { appRouter, type AppRouter } from "./routers";
-import { isString } from "util";
 
 const server = fastify({
   logger: true,
@@ -37,7 +36,7 @@ const store = new RedisStore({
 const apps = getApps();
 
 if (apps.length === 0) {
-  const serviceAccount = JSON.parse(
+  const serviceAccount: ServiceAccount = JSON.parse(
     Buffer.from(getEnv<string>("FIREBASE_SERVICE_KEY"), "base64").toString(
       "utf-8",
     ),

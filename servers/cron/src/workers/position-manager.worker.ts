@@ -175,6 +175,10 @@ const fn = async ({
         switch (data.type) {
           case "rebalance":
           case "reposition":
+            logger.info(
+              { type: data.type, dex: data.dex },
+              "position.manager.worker.task.ready",
+            );
             return startRebalanceTask(data, allPositions);
           case "claim":
             return startClaimTask(data, allPositions);
@@ -184,7 +188,7 @@ const fn = async ({
       }
       logger.error(
         { data, error: result.error?.format() },
-        "worker.position.sync.error",
+        "position.manager.worker.error",
       );
     },
     {
@@ -192,6 +196,31 @@ const fn = async ({
       connection: createRedis({ maxRetriesPerRequest: null }),
     },
   );
+
+  worker.on("completed", (job) => {
+    logger.info(
+      { id: job.id, data: job.data },
+      "position.manager.worker.successful",
+    );
+  });
+
+  worker.on("failed", async (job, error) => {
+    logger.error(
+      {
+        error,
+        job: {
+          id: job?.id,
+          data: job?.data,
+          stacktrace: job?.stacktrace,
+          failedReason: job?.failedReason,
+        },
+      },
+      "position.manager.worker.failed",
+    );
+  });
+  worker.on("error", (error) => {
+    logger.error({ error }, "position.manager.worker.error");
+  });
 
   if (!worker.isRunning()) await worker.run();
 

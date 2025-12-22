@@ -29,9 +29,9 @@ pub struct RedisOptions {
 
 pub fn get_redis_client(_options: Option<RedisOptions>) -> redis::RedisResult<redis::Client> {
     let name = std::env::var("APP_REDIS_MASTER_NAME").ok();
-    let port = std::env::var("APP_REDIS_MASTER_NAME").ok();
-    let host = std::env::var("APP_REDIS_MASTER_NAME").ok();
-    let password = std::env::var("APP_REDIS_MASTER_NAME").ok();
+    let port = std::env::var("APP_REDIS_SENTINEL_PORT").ok();
+    let host = std::env::var("APP_REDIS_SENTINEL_HOSTNAME").ok();
+    let password = std::env::var("APP_REDIS_PASSWORD").ok();
 
     let client = if let (Some(name), Some(host), Some(port)) = (name, host, port) {
         let mut url = format!("redis-sentinel://{}:{}?master_name={}", host, port, name);

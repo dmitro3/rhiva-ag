@@ -6,6 +6,7 @@ WORKDIR /usr/src/app
 COPY Cargo.toml Cargo.lock ./
 RUN mkdir src && echo "fn main() { println!(\"fuck you\"); }" > src/main.rs
 RUN cargo build --release
+RUN rm -rf src
 COPY ./src ./src
 RUN cargo build --release
 
@@ -14,5 +15,4 @@ RUN apt-get update && apt-get install -y ca-certificates libssl3 && rm -rf /var/
 WORKDIR /usr/src/app
 COPY --from=builder /usr/src/app/ .
 ENV RUST_LOG=debug
-RUN ls -a
 CMD ["sh", "-c", "ls -R && ./target/release/rpcpool"]

@@ -73,8 +73,7 @@ impl RedisOptions {
 
                 if let Some(password) = &options.password {
                     nodes.push(format!(
-                        "redis://:{}@{}:{}",
-                        urlencoding::encode(password),
+                        "redis://{}:{}",
                         options.host,
                         options.port
                     ));

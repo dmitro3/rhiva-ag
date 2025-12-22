@@ -328,7 +328,7 @@ spec:
       imagePullSecrets:
         - name: regcred
       containers:
-        - name: mcp
+        - name: rpcpool
           image: $REGISTRY_URL/rhiva-ag/rpcpool:$TAG
           envFrom:
             - secretRef:

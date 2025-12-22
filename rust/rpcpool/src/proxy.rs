@@ -67,8 +67,7 @@ impl SolanaRpcProxy {
             .status(status)
             .body(axum::body::Body::from(body_bytes))
             .unwrap();
-        *response.status_mut() = status;
-        *response.headers_mut() = clean_headers(&headers);
+        // *response.headers_mut() = clean_headers(&headers);
         Ok(response)
     }
 

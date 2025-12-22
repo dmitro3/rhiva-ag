@@ -15,4 +15,4 @@ RUN apt-get update && apt-get install -y ca-certificates libssl3 && rm -rf /var/
 WORKDIR /usr/src/app
 COPY --from=builder /usr/src/app/outputs .
 ENV RUST_LOG=info
-CMD ["sh", "-c", "./rpcpool-seed & ./rpcpool"]
+CMD ["./rpcpool"]

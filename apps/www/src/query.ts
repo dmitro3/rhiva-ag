@@ -20,9 +20,6 @@ export const makeQueryClient = () =>
           );
         },
       },
-      // hydrate: {
-      //   deserializeData: SuperJSON.deserialize,
-      // },
     },
   });
 export const getQueryClient = cache(() => new QueryClient());

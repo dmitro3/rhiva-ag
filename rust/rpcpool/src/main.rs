@@ -55,13 +55,13 @@ async fn main() {
 #[tokio::main]
 #[cfg(feature = "seed")]
 async fn main() -> redis::RedisResult<()> {
-    use crate::{
-        rpc::{RpcHealth, RpcProvider, RpcSupport},
-        utils::get_redis_client,
-    };
+    use crate::rpc::{RpcHealth, RpcProvider, RpcSupport};
 
     dotenv().ok();
-    let redis = get_redis_client(None).expect("can't open redis connection");
+    let redis = RedisOptions::sentinel_config_from_env()
+        .init()
+        .expect("redis factory initialization failed");
+    let redis = (redis)().unwrap();
     let providers = vec![
         RpcProvider::new(
             "helius",

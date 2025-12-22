@@ -55,6 +55,7 @@ impl RedisOptions {
         })
     }
 
+    #[allow(dead_code)]
     pub fn redis_config_from_env() -> Self {
         let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL is required in env");
 

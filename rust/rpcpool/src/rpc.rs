@@ -213,6 +213,10 @@ impl<'a> RpcPool<'a> {
         });
 
         let mut last_error: Option<reqwest::Error> = None;
+        if providers.len() == 0 {
+            panic!("no provider found");
+        }
+
         for provider in providers {
             let mut provider = provider.clone();
             println!("provider={}", provider.http_url);

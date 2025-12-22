@@ -3,10 +3,8 @@ FROM rust:1.91.0 AS builder
 RUN apt-get update && apt-get install -y pkg-config libssl-dev
 
 WORKDIR /usr/src/app
-# COPY Cargo.toml Cargo.lock ./
-# RUN mkdir src && echo "fn main() { println!(\"fuck you\"); }" > src/main.rs
-# RUN cargo build --release
 COPY . .
+RUN cargo run --features=seed --release
 RUN cargo build --release
 
 FROM debian:bookworm-slim

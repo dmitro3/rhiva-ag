@@ -1,6 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use hyper::http::header::{HeaderMap, HeaderName, HeaderValue};
+use redis::sentinel::SentinelNodeConnectionInfo;
 
 const BLACKLIST_HEADERS: [&str; 3] = ["host", "content-length", "transfer-encoding"];
 
@@ -68,6 +69,8 @@ impl RedisOptions {
             }
             Self::Sentinel(options) => {
                 let mut nodes = vec![];
+                let mut redis_connection_info = redis::RedisConnectionInfo::default();
+
                 if let Some(password) = &options.password {
                     nodes.push(format!(
                         "redis://:{}@{}:{}",
@@ -75,15 +78,22 @@ impl RedisOptions {
                         options.host,
                         options.port
                     ));
+
+                    redis_connection_info = redis_connection_info.set_password(password);
                 } else {
                     nodes.push(format!("redis://{}:{}", options.host, options.port));
                 }
+
+                let sentinel_master_node_connection_info = SentinelNodeConnectionInfo::default()
+                    .set_redis_connection_info(redis_connection_info)
+                    .set_tls_mode(redis::TlsMode::Insecure);
+
                 println!("nodes={:?}", nodes);
                 let master_name = options.master_name.clone();
                 let sentinel = redis::sentinel::SentinelClient::build(
                     nodes,
                     master_name,
-                    None,
+                    Some(sentinel_master_node_connection_info),
                     redis::sentinel::SentinelServerType::Master,
                 )?;
 

@@ -3,9 +3,8 @@ use std::sync::{Arc, Mutex};
 use hyper::http::header::{HeaderMap, HeaderName, HeaderValue};
 use redis::sentinel::SentinelNodeConnectionInfo;
 
-const BLACKLIST_HEADERS: [&str; 3] = ["host", "content-length", "transfer-encoding"];
 
-pub fn clean_headers<T>(headers: &T) -> HeaderMap
+pub fn clean_headers<'a, T>(headers: &T, blacklist_headers: &'a [&str]) -> HeaderMap
 where
     T: IntoIterator<Item = (Option<HeaderName>, HeaderValue)> + Clone,
 {
@@ -14,7 +13,7 @@ where
     for (name_opt, value) in headers.clone() {
         if let Some(name) = name_opt {
             let lower_name = name.as_str().to_lowercase();
-            if !BLACKLIST_HEADERS.contains(&lower_name.as_str()) {
+            if !blacklist_headers.contains(&lower_name.as_str()) {
                 request_headers.append(name, value);
             }
         }

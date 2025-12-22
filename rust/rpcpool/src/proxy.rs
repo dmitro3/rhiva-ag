@@ -39,7 +39,7 @@ impl SolanaRpcProxy {
         let rpc_pool = RpcPool::new(&providers);
         let (parts, body) = request.into_parts();
 
-        let request_headers = clean_headers(&parts.headers);
+        let request_headers = clean_headers(&parts.headers, &["host"]);
 
         let body_bytes = axum::body::to_bytes(body, usize::MAX)
             .await
@@ -58,16 +58,15 @@ impl SolanaRpcProxy {
         let status = response.status();
         let headers = response.headers().clone();
         let body_bytes = response
-            .text()
+            .bytes()
             .await
             .map_err(|error| (axum::http::StatusCode::BAD_GATEWAY, axum::Error::new(error)))?;
-
         let mut response = axum::http::Response::builder()
             .header("content-type", "application/json")
             .status(status)
             .body(axum::body::Body::from(body_bytes))
             .unwrap();
-        // *response.headers_mut() = clean_headers(&headers);
+        *response.headers_mut() = clean_headers(&headers, &["host", "content-length", "transfer-encoding"]);
         Ok(response)
     }
 

@@ -1,6 +1,6 @@
 use redis::Commands;
 use serde::{Deserialize, Serialize};
-use tracing::warn;
+use tracing::{info, warn};
 
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
 pub enum RpcSupport {
@@ -219,7 +219,6 @@ impl<'a> RpcPool<'a> {
 
         for provider in providers {
             let mut provider = provider.clone();
-            println!("provider={}", provider.http_url);
             let latency = std::time::Instant::now();
             let response = client
                 .request(method.clone(), &provider.http_url)
@@ -231,7 +230,7 @@ impl<'a> RpcPool<'a> {
             match response {
                 Ok(response) => {
                     let status = response.status();
-                    println!("status={:?} url={:?}", status, provider.http_url);
+                    info!("status={:?} url={:?} rpc request", status, provider.http_url);
 
                     let latency = latency.elapsed();
 

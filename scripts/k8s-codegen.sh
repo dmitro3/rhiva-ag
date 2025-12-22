@@ -207,7 +207,7 @@ metadata:
   namespace: rhiva-ag
   annotations:
     kubernetes.io/ingress.class: "nginx"
-    cert-manager.io/cluster-issuer: zerossl
+    cert-manager.io/cluster-issuer: letsencrypt
 spec:
   ingressClassName: nginx
   tls:
@@ -380,7 +380,7 @@ metadata:
   namespace: rhiva-ag
   annotations:
     kubernetes.io/ingress.class: "nginx"
-    cert-manager.io/cluster-issuer: zerossl
+    cert-manager.io/cluster-issuer: letsencrypt
 spec:
   ingressClassName: nginx
   tls:

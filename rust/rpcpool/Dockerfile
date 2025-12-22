@@ -1,24 +1,17 @@
-FROM rust:1.91.0 AS builder 
+FROM rust:1.91.0 AS builder
 
-RUN apt-get update && apt-get install -y pkg-config libssl-dev 
+RUN apt-get update && apt-get install -y pkg-config libssl-dev
 
-WORKDIR /usr/src/app 
-
+WORKDIR /usr/src/app
 COPY Cargo.toml Cargo.lock ./
-
 RUN mkdir src && echo "fn main() {}" > src/main.rs
-RUN cargo build --release 
-
+RUN cargo build --release
 COPY . .
+RUN cargo build --release
 
-RUN cargo build --release 
-
-FROM alpine:latest
-
-RUN apk update && apk --no-cache add libressl-dev ca-certificates
-WORKDIR /usr/src/app 
-
+FROM debian:bookworm-slim
+RUN apt-get update && apt-get install -y ca-certificates libssl3 && rm -rf /var/lib/apt/lists/*
+WORKDIR /usr/src/app
 COPY --from=builder /usr/src/app/target/release/rpcpool .
 ENV RUST_LOG=info
-
 CMD ["./rpcpool"]

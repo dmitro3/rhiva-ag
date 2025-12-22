@@ -72,11 +72,7 @@ impl RedisOptions {
                 let mut redis_connection_info = redis::RedisConnectionInfo::default();
 
                 if let Some(password) = &options.password {
-                    nodes.push(format!(
-                        "redis://{}:{}",
-                        options.host,
-                        options.port
-                    ));
+                    nodes.push(format!("redis://{}:{}", options.host, options.port));
 
                     redis_connection_info = redis_connection_info.set_password(password);
                 } else {
@@ -84,8 +80,7 @@ impl RedisOptions {
                 }
 
                 let sentinel_master_node_connection_info = SentinelNodeConnectionInfo::default()
-                    .set_redis_connection_info(redis_connection_info)
-                    .set_tls_mode(redis::TlsMode::Insecure);
+                    .set_redis_connection_info(redis_connection_info);
 
                 println!("nodes={:?}", nodes);
                 let master_name = options.master_name.clone();

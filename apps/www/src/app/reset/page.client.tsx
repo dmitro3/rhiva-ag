@@ -1,4 +1,5 @@
 "use client";
+import { format } from "util";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
@@ -10,10 +11,14 @@ export default function ResetPageClient() {
 
   useEffect(() => {
     if (mounted) {
-      document.cookie.split(";").forEach((c) => {
-        document.cookie = c
+      document.cookie.split(";").forEach((cookie) => {
+        // biome-ignore lint/suspicious/noDocumentCookie: todo using cookieStore with polyfill
+        document.cookie = cookie
           .replace(/^ +/, "")
-          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+          .replace(
+            /=.*/,
+            format("=;expires=%s;path=/", new Date().toUTCString()),
+          );
       });
       window.localStorage.clear();
       return router.replace("/");

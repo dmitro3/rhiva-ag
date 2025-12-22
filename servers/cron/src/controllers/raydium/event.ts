@@ -259,7 +259,7 @@ export const syncRaydiumPositionStateFromEvent = async ({
       ]);
 
       results.push(updatedPosition);
-    } else if (event.name === "collectPersonalFeeEvent") {
+    } else if (!isClosed && event.name === "collectPersonalFeeEvent") {
       const data = event.data;
       const offchainPosition = await getPositionById(
         db,

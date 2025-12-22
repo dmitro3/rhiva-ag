@@ -41,7 +41,7 @@ export default function ClosePositionTable({
       limit: itemsPerPage.current,
       sortBy: { createdAt: "desc" },
       filter: {
-        state: { eq: "closed" },
+        state: { notInArray: ["open", "rebalanced"] },
       },
     }),
   });

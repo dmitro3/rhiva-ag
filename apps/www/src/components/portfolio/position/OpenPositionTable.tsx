@@ -85,7 +85,7 @@ export default function OpenPositionTable({
       limit: itemsPerPage.current,
       sortBy: { createdAt: "desc" },
       filter: {
-        state: { eq: "open" },
+        state: { notInArray: ["closed", "repositioned"] },
       },
     }),
   });
@@ -320,7 +320,7 @@ export default function OpenPositionTable({
                             padding: 96,
                             to: "bottom start",
                           }}
-                          className="flex flex-col absolute bg-dark z-50 border border-white/10 outline-none rounded-md 
+                          className="flex flex-col absolute bg-dark z-50 border border-white/10 outline-none rounded-md
                           [&_button]:flex [&_button]:items-center [&_button]:space-x-2 [&_button]:text-start [&_button]:text-sm [&_button]:p-2 [&_button]:text-nowrap [&_button:focus]:bg-white/10"
                         >
                           <MenuItem

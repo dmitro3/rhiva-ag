@@ -1,5 +1,6 @@
 import { router } from "../trpc";
 import { aiRoute } from "./ai/ai.route";
+import { jobRoute } from "./jobs/job.route";
 import { pnlRoute } from "./pnls/pnl.route";
 import { statRoute } from "./stat/stat.route";
 import { userRoute } from "./users/user.route";
@@ -16,6 +17,7 @@ import { notificationRoute } from "./notifications/notification.route";
 export const appRouter = router({
   ai: aiRoute,
   pnl: pnlRoute,
+  job: jobRoute,
   stat: statRoute,
   pool: poolRoute,
   user: userRoute,

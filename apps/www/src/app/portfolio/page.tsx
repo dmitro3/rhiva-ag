@@ -25,7 +25,7 @@ export default async function PortfolioPage(_props: PageProps<"/portfolio">) {
         limit: 5,
         sortBy: { createdAt: "desc" },
         filter: {
-          state: { eq: "closed" },
+          state: { notInArray: ["open", "rebalanced"] },
         },
       }),
     ),
@@ -35,7 +35,7 @@ export default async function PortfolioPage(_props: PageProps<"/portfolio">) {
         limit: 5,
         sortBy: { createdAt: "desc" },
         filter: {
-          state: { eq: "open" },
+          state: { notInArray: ["closed", "repositioned"] },
         },
       }),
     ),

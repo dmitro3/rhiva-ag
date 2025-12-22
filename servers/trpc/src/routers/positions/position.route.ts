@@ -1,16 +1,13 @@
 import z from "zod";
 import { TRPCError } from "@trpc/server";
 import { and, type SQL } from "drizzle-orm";
-import { observable } from "@trpc/server/observable";
-import { Work, transactionEventSchema } from "@rhiva-ag/cron";
 import {
   buildDrizzleWhereClauseFromObject,
   buildOrderByClauseFromObject,
 } from "@rhiva-ag/datasource";
 
 import { orcaRoute } from "./orca/orca.route";
-import { createRedis } from "../../instances";
-import { privateProcedure, publicProcedure, router } from "../../trpc";
+import { privateProcedure, router } from "../../trpc";
 import { meteoraRoute } from "./meteora/meteora.route";
 import { raydiumRoute } from "./raydium/raydium.route";
 import { positionFilterSchema, positionSortSchema } from "./position.schema";
@@ -60,28 +57,6 @@ export const positionRoute = router({
         orderBy,
         limit: input?.limit,
         offset: input?.offset,
-      });
-    }),
-  transaction: publicProcedure
-    .input(z.object({ jobId: z.string() }))
-    .subscription(async ({ input }) => {
-      const redis = createRedis({ maxRetriesPerRequest: null });
-      return observable<z.infer<typeof transactionEventSchema>>((emit) => {
-        const handler = (_channel: Work, message: string) => {
-          const result = transactionEventSchema.safeParse(JSON.parse(message));
-          if (result.success) {
-            const data = result.data;
-            if (data.jobId === input.jobId) emit.next(data);
-          }
-        };
-
-        redis.subscribe(Work.syncTransaction);
-        redis.on("message", handler);
-
-        return () => {
-          redis.off("message", handler);
-          redis.disconnect();
-        };
       });
     }),
 });

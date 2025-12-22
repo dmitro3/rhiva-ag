@@ -25,6 +25,7 @@ import {
 } from "@rhiva-ag/decoder/programs/meteora/index";
 
 import { runWorker } from "../runner";
+import { sendEvent } from "../utils";
 import { transactionWorkSchema } from "../schemas";
 import { CONCURRENT_WORK, Work } from "../constants";
 import { syncOrcaPositionStateFromEvent } from "../controllers/orca";
@@ -193,15 +194,13 @@ const fn = async ({
       const result = transactionWorkSchema.safeParse(data);
 
       if (result.success) {
-        await redis.publish(
-          Work.syncTransaction,
-          JSON.stringify({
+        if (job.id)
+          await sendEvent(redis, job.id, {
             jobId: job.id,
             type: data.type,
             status: "progress",
             message: "Processing transaction",
-          }),
-        );
+          });
         const transactionPipeline = createTransactionPipeline({
           db,
           rpc,
@@ -224,16 +223,14 @@ const fn = async ({
         const bundle = await pRetry(() =>
           sender.safeGetBundle(data.bundleId, 30),
         );
-
-        await redis.publish(
-          Work.syncTransaction,
-          JSON.stringify({
+        if (job.id)
+          await sendEvent(redis, job.id, {
             jobId: job.id,
             type: data.type,
             status: "progress",
             message: "Transaction bundle parsed",
-          }),
-        );
+          });
+
         const response = mapFilter(
           await connection.getParsedTransactions(bundle.transactions, {
             maxSupportedTransactionVersion: 0,
@@ -262,29 +259,25 @@ const fn = async ({
 
   worker.on("active", async (job) => {
     const redis = await worker.client;
-    await redis.publish(
-      Work.syncTransaction,
-      JSON.stringify({
-        jobId: job.id,
-        status: "pending",
-        type: job.data.type,
-        message: "Processing bundle transactions",
-      }),
-    );
+    await sendEvent(redis, job.id!, {
+      jobId: job.id,
+      status: "pending",
+      type: job.data.type,
+      message: "Processing bundle transactions",
+    });
   });
 
   worker.on("completed", async (job) => {
-    const redis = await worker.client;
-    await redis.publish(
-      Work.syncTransaction,
-      JSON.stringify({
+    if (job.id) {
+      const redis = await worker.client;
+      await sendEvent(redis, job.id, {
         jobId: job.id,
+        status: "completed",
         type: job.data.type,
         result: job.returnvalue,
-        status: "completed",
         message: "Bundle transactions processed",
-      }),
-    );
+      });
+    }
 
     logger.info(
       { id: job.id, data: job.data },
@@ -292,17 +285,16 @@ const fn = async ({
     );
   });
   worker.on("failed", async (job, error) => {
-    const redis = await worker.client;
-    await redis.publish(
-      Work.syncTransaction,
-      JSON.stringify({
-        jobId: job?.id,
+    if (job?.id) {
+      const redis = await worker.client;
+      await sendEvent(redis, job!.id!, {
+        jobId: job.id,
         status: "error",
-        type: job?.data.type,
-        stacktrace: job?.stacktrace,
-        message: job?.failedReason,
-      }),
-    );
+        type: job.data.type,
+        stacktrace: job.stacktrace,
+        message: job.failedReason,
+      });
+    }
 
     logger.error(
       {

@@ -2,9 +2,8 @@ import Link from "next/link";
 import { format } from "util";
 import { MdOpenInNew } from "react-icons/md";
 import { useCallback, useMemo } from "react";
-import { useSubscription } from "@trpc/tanstack-react-query";
 
-import { useTRPC } from "@/trpc.client";
+import { useJob } from "@/hooks/useJob";
 import BackgroundJobToast from "./BackgroundJobToast";
 
 type ConfirmBundleToastProps = {
@@ -22,12 +21,7 @@ export default function ConfirmTransactionToast({
   onSuccess,
   ...props
 }: ConfirmBundleToastProps) {
-  const trpc = useTRPC();
-  const { data, error } = useSubscription(
-    trpc.position.transaction.subscriptionOptions({
-      jobId: bundleId,
-    }),
-  );
+  const { data, error } = useJob(bundleId);
 
   const transformStatus = useCallback(
     (status?: NonNullable<typeof data>["status"]) => {

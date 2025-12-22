@@ -80,9 +80,9 @@ export default function RootLayout({ children }: React.PropsWithChildren) {
                 <div className="flex-1 flex z-10 lt-sm:flex-col-reverse overflow-y-scroll">
                   <NavBar />
                   {children}
-                  <ToastContainer theme="dark" />
                 </div>
               </OnboardingWrapper>
+              <ToastContainer theme="dark" />
             </body>
           </html>
         </Provider>

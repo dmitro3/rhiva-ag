@@ -261,7 +261,10 @@ export const syncMeteoraPositionStateFromEvent = async ({
 
         results.push(updatedPosition);
       }
-    } else if ("claimFee" === event.name || "claimReward" === event.name) {
+    } else if (
+      !closedPosition &&
+      ("claimFee" === event.name || "claimReward" === event.name)
+    ) {
       const data = event.data;
       const offchainPosition = await getPositionById(
         db,

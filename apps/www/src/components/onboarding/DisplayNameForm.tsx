@@ -14,11 +14,11 @@ type Extra = z.infer<typeof extraAuthSchema>;
 
 export default function DisplayNameForm() {
   const trpc = useTRPCClient();
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [cookies, setCookies] = useCookies<keyof Extra, Extra>(["displayName"]);
   const { mutateAsync } = useMutation({
     mutationFn: async (values: Extra) => {
-      if (user) return trpc.user.update.mutate(values);
+      if (user) return trpc.user.update.mutate(values).then(updateUser);
       else return setCookies("displayName", values.displayName);
     },
   });

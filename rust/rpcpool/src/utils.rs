@@ -71,14 +71,15 @@ impl RedisOptions {
                 if let Some(password) = &options.password {
                     nodes.push(format!(
                         "redis://:{}@{}:{}",
-                        password, options.host, options.port
+                        urlencoding::encode(password),
+                        options.host,
+                        options.port
                     ));
                 } else {
                     nodes.push(format!("redis://{}:{}", options.host, options.port));
                 }
-
+                println!("nodes={:?}", nodes);
                 let master_name = options.master_name.clone();
-
                 let sentinel = redis::sentinel::SentinelClient::build(
                     nodes,
                     master_name,

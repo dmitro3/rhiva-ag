@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use hyper::http::header::{HeaderMap, HeaderName, HeaderValue};
 
 const BLACKLIST_HEADERS: [&str; 3] = ["host", "content-length", "transfer-encoding"];
@@ -20,31 +22,77 @@ where
     request_headers
 }
 
-pub struct RedisOptions {
-    pub _master_name: String,
-    pub _password: String,
-    pub _port: u16,
-    pub _host: String,
+pub struct SentinelRedisOption {
+    pub master_name: String,
+    pub port: String,
+    pub host: String,
+    pub password: Option<String>,
 }
 
-pub fn get_redis_client(_options: Option<RedisOptions>) -> redis::RedisResult<redis::Client> {
-    let name = std::env::var("APP_REDIS_MASTER_NAME").ok();
-    let port = std::env::var("APP_REDIS_SENTINEL_PORT").ok();
-    let host = std::env::var("APP_REDIS_SENTINEL_HOSTNAME").ok();
-    let password = std::env::var("APP_REDIS_PASSWORD").ok();
+pub enum RedisOptions {
+    Sentinel(SentinelRedisOption),
+    Default(String),
+}
 
-    let client = if let (Some(name), Some(host), Some(port)) = (name, host, port) {
-        let mut url = format!("redis-sentinel://{}:{}?master_name={}", host, port, name);
+pub type RedisClientFactory = Arc<dyn Fn() -> redis::RedisResult<redis::Client> + Send + Sync>;
 
-        if let Some(password) = password {
-            url = format!("{}&{}", url, password);
+impl RedisOptions {
+    pub fn sentinel_config_from_env() -> Self {
+        let password = std::env::var("APP_REDIS_PASSWORD").ok();
+        let port = std::env::var("APP_REDIS_SENTINEL_PORT")
+            .expect("APP_REDIS_SENTINEL_PORT is required in env");
+        let host = std::env::var("APP_REDIS_SENTINEL_HOSTNAME")
+            .expect("APP_REDIS_SENTINEL_HOSTNAME is required in env");
+        let master_name = std::env::var("APP_REDIS_MASTER_NAME")
+            .expect("APP_REDIS_SENTINEL_PORT is required in env");
+
+        Self::Sentinel(SentinelRedisOption {
+            port,
+            host,
+            master_name,
+            password,
+        })
+    }
+
+    pub fn redis_config_from_env() -> Self {
+        let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL is required in env");
+
+        Self::Default(redis_url)
+    }
+
+    pub fn init(&self) -> redis::RedisResult<RedisClientFactory> {
+        match self {
+            Self::Default(redis_url) => {
+                let redis_url = redis_url.clone();
+                Ok(Arc::new(move || redis::Client::open(redis_url.as_str())))
+            }
+            Self::Sentinel(options) => {
+                let mut nodes = vec![];
+                if let Some(password) = &options.password {
+                    nodes.push(format!(
+                        "redis://:{}@{}:{}",
+                        password, options.host, options.port
+                    ));
+                } else {
+                    nodes.push(format!("redis://{}:{}", options.host, options.port));
+                }
+
+                let master_name = options.master_name.clone();
+
+                let sentinel = redis::sentinel::SentinelClient::build(
+                    nodes,
+                    master_name,
+                    None,
+                    redis::sentinel::SentinelServerType::Master,
+                )?;
+
+                let sentinel = Arc::new(Mutex::new(sentinel));
+
+                Ok(Arc::new(move || {
+                    let mut sentinel = sentinel.lock().expect("Sentinel mutex poisoned");
+                    sentinel.get_client()
+                }))
+            }
         }
-
-        redis::Client::open(url.as_str())?
-    } else {
-        let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL is required in .env file");
-        redis::Client::open(redis_url.as_str())?
-    };
-
-    Ok(client)
+    }
 }

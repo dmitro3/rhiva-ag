@@ -1,20 +1,20 @@
 use std::usize;
 
-use log::info;
+use log::{ error};
 use serde_json::json;
 
 use crate::{
     rpc::{RpcPool, RpcProvider},
     types::HandlerResult,
-    utils::clean_headers,
+    utils::{RedisClientFactory, clean_headers},
 };
 
 pub struct SolanaRpcProxy {
-    redis: redis::Client,
+    redis: RedisClientFactory,
 }
 
 impl SolanaRpcProxy {
-    pub fn new(redis: redis::Client) -> Self {
+    pub fn new(redis: RedisClientFactory) -> Self {
         Self { redis }
     }
 
@@ -23,7 +23,13 @@ impl SolanaRpcProxy {
         request: axum::http::Request<axum::body::Body>,
     ) -> HandlerResult {
         let client = reqwest::Client::new();
-        let providers = RpcProvider::load_all(&self.redis).map_err(|error| {
+        let redis = (self.redis)().map_err(|error| {
+            (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                axum::Error::new(error),
+            )
+        })?;
+        let providers = RpcProvider::load_all(&redis).map_err(|error| {
             (
                 axum::http::StatusCode::INTERNAL_SERVER_ERROR,
                 axum::Error::new(error),
@@ -41,7 +47,7 @@ impl SolanaRpcProxy {
         let method = reqwest::Method::from_bytes(parts.method.as_str().as_bytes())
             .map_err(|error| (axum::http::StatusCode::BAD_GATEWAY, axum::Error::new(error)))?;
         let response = rpc_pool
-            .send_request(&self.redis, &client, method, body_bytes, &request_headers)
+            .send_request(&redis, &client, method, body_bytes, &request_headers)
             .await
             .map_err(|error| {
                 (
@@ -73,7 +79,7 @@ impl SolanaRpcProxy {
         match self.handle_request(request).await {
             Ok(response) => response,
             Err((status, message)) => {
-                info!("Request failed: {} - {}", status, message);
+                error!("Request failed: {} - {}", status, message);
                 let error_body = json!({
                   "status": status.as_u16(),
                   "error": message.to_string(),
@@ -82,7 +88,7 @@ impl SolanaRpcProxy {
                 axum::http::Response::builder()
                     .status(status)
                     .header(
-                        axum::http::HeaderName::from_static("content-length"),
+                        axum::http::HeaderName::from_static("content-type"),
                         axum::http::HeaderValue::from_static("application/json"),
                     )
                     .body(axum::body::Body::from(error_body.to_string()))

@@ -1,5 +1,6 @@
 use redis::Commands;
 use serde::{Deserialize, Serialize};
+use tracing::warn;
 
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
 pub enum RpcSupport {
@@ -99,13 +100,13 @@ impl RpcProvider {
 
     #[allow(dead_code)]
     pub fn load(redis: &redis::Client, name: &str) -> redis::RedisResult<Option<Self>> {
-        let conn = redis.get_connection()?;
-        let value: Option<String> = conn.hget(Self::RPC_PROVIDER_KEY, name)?;
+        let mut connection = redis.get_connection()?;
+        let value: Option<String> = connection.hget(Self::RPC_PROVIDER_KEY, name)?;
         match value {
             Some(value) => {
                 let provider: Self = serde_json::from_str(&value).map_err(|err| {
                     redis::RedisError::from((
-                        redis::ErrorKind::TypeError,
+                        redis::ErrorKind::Parse,
                         "Deserialization error",
                         err.to_string(),
                     ))
@@ -117,14 +118,14 @@ impl RpcProvider {
     }
 
     pub fn load_all(redis: &redis::Client) -> redis::RedisResult<Vec<Self>> {
-        let conn = redis.get_connection()?;
+        let mut connection = redis.get_connection()?;
         let results: std::collections::HashMap<String, String> =
-            conn.hgetall(Self::RPC_PROVIDER_KEY)?;
+            connection.hgetall(Self::RPC_PROVIDER_KEY)?;
         let mut providers = Vec::new();
         for (_name, json) in results {
             let provider: Self = serde_json::from_str(&json).map_err(|err| {
                 redis::RedisError::from((
-                    redis::ErrorKind::TypeError,
+                    redis::ErrorKind::Parse,
                     "Deserialization error",
                     err.to_string(),
                 ))
@@ -136,23 +137,23 @@ impl RpcProvider {
     }
 
     pub fn save(&self, redis: &redis::Client) -> redis::RedisResult<()> {
-        let conn = redis.get_connection()?;
+        let mut connection = redis.get_connection()?;
         let value = serde_json::to_string(self).map_err(|err| {
             redis::RedisError::from((
-                redis::ErrorKind::TypeError,
+                redis::ErrorKind::Parse,
                 "Serialization error",
                 err.to_string(),
             ))
         })?;
 
-        conn.hset::<_, _, _, ()>(Self::RPC_PROVIDER_KEY, &self.name, &value)?;
+        connection.hset::<_, _, _, ()>(Self::RPC_PROVIDER_KEY, &self.name, &value)?;
 
         Ok(())
     }
 
     #[allow(dead_code)]
     pub fn save_all(redis: &redis::Client, providers: &[Self]) -> redis::RedisResult<()> {
-        let conn = redis.get_connection()?;
+        let mut connection = redis.get_connection()?;
         let values = providers
             .iter()
             .map(|provider| {
@@ -161,7 +162,7 @@ impl RpcProvider {
                     serde_json::to_string(provider)
                         .map_err(|err| {
                             redis::RedisError::from((
-                                redis::ErrorKind::TypeError,
+                                redis::ErrorKind::Parse,
                                 "Serialization error",
                                 err.to_string(),
                             ))
@@ -171,7 +172,7 @@ impl RpcProvider {
             })
             .collect::<Vec<(&String, String)>>();
 
-        conn.hset_multiple::<_, _, _, ()>(Self::RPC_PROVIDER_KEY, &values)?;
+        connection.hset_multiple::<_, _, _, ()>(Self::RPC_PROVIDER_KEY, &values)?;
 
         Ok(())
     }
@@ -249,12 +250,20 @@ impl<'a> RpcPool<'a> {
                     provider.save(redis).ok();
 
                     if Self::WHITELISTED_STATUS.contains(&status) {
+                        warn!(
+                            "provider={} url={} rpc request failed",
+                            provider.name, provider.http_url
+                        );
                         continue;
                     }
 
                     return Ok(response);
                 }
                 Err(error) => {
+                    warn!(
+                        "provider={} url={} rpc request error={}",
+                        provider.name, provider.http_url, error
+                    );
                     last_error = Some(error);
                     continue;
                 }

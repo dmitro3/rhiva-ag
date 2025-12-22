@@ -10,7 +10,7 @@ use axum::{
     routing::any,
 };
 
-use crate::{proxy::SolanaRpcProxy, utils::get_redis_client};
+use crate::{proxy::SolanaRpcProxy, utils::RedisOptions};
 
 mod proxy;
 mod rpc;
@@ -28,7 +28,9 @@ async fn proxy_handler(
 #[cfg(not(feature = "seed"))]
 async fn main() {
     dotenv().ok();
-    let redis = get_redis_client(None).expect("can't open redis connection");
+    let redis = RedisOptions::sentinel_config_from_env()
+        .init()
+        .expect("redis factory initialization failed");
     tracing_subscriber::registry()
         .with(tracing_subscriber::EnvFilter::new(
             std::env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string()),

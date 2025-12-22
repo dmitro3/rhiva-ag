@@ -6,8 +6,7 @@ WORKDIR /usr/src/app
 COPY Cargo.toml Cargo.lock ./
 RUN mkdir src && echo "fn main() { println!(\"fuck you\"); }" > src/main.rs
 RUN cargo build --release
-RUN rm -rf src
-COPY ./src ./src
+COPY . .
 RUN cargo build --release
 
 FROM debian:bookworm-slim

@@ -43,5 +43,10 @@ sudo kubectl create secret generic regcred \
 --type=kubernetes.io/dockerconfigjson \
 --dry-run=client -o yaml | kubectl apply -f - 
 
+VPS_INFRA_AWS_REFRESH_FILE="$HOME/vps-infra/aws-refresh.sh"
+if [ -n $VPS_INFRA_AWS_REFRESH_FILE ]; then
+  bash "$VPS_INFRA_AWS_REFRESH_FILE"
+fi
+
 . ./scripts/k8s-codegen.sh 
 sudo kubectl apply -f infra/k8s

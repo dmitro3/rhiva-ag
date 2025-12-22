@@ -34,6 +34,9 @@ export REGISTRY_URL="registry.rhiva.fun"
 sudo docker build --build-arg GITHUB_TOKEN=$GITHUB_TOKEN -t $REGISTRY_URL/rhiva-ag/servers:$TAG -f servers/Dockerfile .
 sudo docker push $REGISTRY_URL/rhiva-ag/servers:$TAG
 
+sudo docker build -t $REGISTRY_URL/rhiva-ag/rpcpool:$TAG -f rust/rpcpool/Dockerfile ./rust/rpcpool
+sudo docker push $REGISTRY_URL/rhiva-ag/rpcpool:$TAG
+
 sudo kubectl create secret generic regcred \
 --from-file=.dockerconfigjson=$HOME/.docker/config.json \
 --namespace $NAMESPACE \
